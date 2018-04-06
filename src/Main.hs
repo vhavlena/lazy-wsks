@@ -9,6 +9,8 @@ exampleFormula2 = Lo.Exists "X" (Lo.Conj (Lo.FormulaAtomic (Lo.Sing "X")) ( Lo.E
 exampleFormula3 = Lo.Exists "X" (Lo.Conj (Lo.Neg (Lo.FormulaAtomic (Lo.Sing "X"))) (Lo.FormulaAtomic (Lo.Sing "X")))
 
 
+-- |Show formula and its validity
+showValid :: Lo.Formula -> IO ()
 showValid f = do
    putStrLn $ show f
    putStrLn $ show $ DP.isValid exampleFormula3
