@@ -144,10 +144,10 @@ formula2Terms f = formula2TermsVars f []
 
 
 -- |Decide whether given ground formula is valid.
-isValid :: Lo.Formula -> Bool
+isValid :: Lo.Formula -> Either Bool String
 isValid f
-   | Lo.freeVars f == [] = botIn $ unwindFixpoints $ formula2Terms (Lo.removeForAll f)
-   | otherwise = error "isValid: Only ground formula is allowed"
+   | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms (Lo.removeForAll f)
+   | otherwise = Right "isValid: Only ground formula is allowed"
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the definitions of basic tree automata

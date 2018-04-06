@@ -13,7 +13,12 @@ exampleFormula3 = Lo.Exists "X" (Lo.Conj (Lo.Neg (Lo.FormulaAtomic (Lo.Sing "X")
 showValid :: Lo.Formula -> IO ()
 showValid f = do
    putStrLn $ show f
-   putStrLn $ show $ DP.isValid exampleFormula3
+   putStrLn $ formatAnswer $ DP.isValid exampleFormula3
 
+
+-- |Format validity answer
+formatAnswer :: (Show a, Show b) => Either a b -> String
+formatAnswer (Left x) = show x
+formatAnswer (Right y) = "Error: " ++ show y
 
 main = showValid exampleFormula3
