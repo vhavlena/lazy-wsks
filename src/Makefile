@@ -1,6 +1,10 @@
+#
+# Makefile for WSkS decision procedure written in Haskell
+# Author: Vojtech Havlena, 2018
+#
 
 all:
-	ghc --make Main.hs
+	ghc -odir obj -hidir obj --make Main.hs
 
 clean:
-	rm *.o *.hi
+	rm obj/*.o obj/*.hi
