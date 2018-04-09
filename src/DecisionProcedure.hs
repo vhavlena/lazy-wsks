@@ -8,6 +8,7 @@ License     : GPL-3
 module DecisionProcedure (
    Term(..)
    , isValid
+   , isValidLazy
    , formula2Terms
    , unwindFixpoints
 ) where
@@ -44,7 +45,7 @@ instance Show Term where
 
 -- |Prints the term in human readable format.
 showTerm (TSet set) = "{" ++ show set ++ "}"
-showTerm (TPair t1 t2) = "(" ++ showTerm t1 ++ "," ++ showTerm t2 ++ ")"
+showTerm (TPair t1 t2) = "\n(\n\t" ++ showTerm t1 ++ "\n\t,\n\t" ++ showTerm t2 ++ "\n)\n"
 showTerm (TMinusClosure t sym) = "(" ++ showTerm t ++ ") - {" ++ show sym ++ "}*"
 showTerm (TProj var t) = "Proj_"++ show var ++ "( " ++ showTerm t ++ " )"
 showTerm (TCompl t) = "¬(" ++ showTerm t ++ ")"
@@ -65,6 +66,7 @@ minusSymbol (TPair (TSet tset1) (TSet tset2)) sym = TSet (Set.fromList [minusSym
 minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
    | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylidrifySymbol sym var1))
    | otherwise = error "minusSymbol: Inconsistent basic automata"
+minusSymbol (TPair term1@(TMinusClosure _ _) term2@(TMinusClosure _ _)) sym = minusSymbol (TPair (unwindFixpoints term1) (unwindFixpoints term2)) sym
 minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
@@ -96,7 +98,6 @@ fixpointComp term sset = fixpointComp (TSet (Set.fromList [term])) sset
 -- |Unwind fixpoints into sets of terms (corresponding to applying all fixpoints).
 unwindFixpoints :: Term -> Term
 unwindFixpoints t@(TStates _ _ _) = t
---unwindFixpoints (TMinusClosure t sset) | Dbg.trace ("unwindFixpoints " ++ show t ++ "------" ++ show sset) False = undefined
 unwindFixpoints (TMinusClosure t sset) = fixpointComp (unwindFixpoints t) sset
 unwindFixpoints (TUnion t1 t2) = TUnion (unwindFixpoints t1) (unwindFixpoints t2)
 unwindFixpoints (TIntersect t1 t2) = TIntersect (unwindFixpoints t1) (unwindFixpoints t2)
@@ -152,6 +153,44 @@ isValid :: Lo.Formula -> Either Bool String
 isValid f
    | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms (Lo.removeForAll f)
    | otherwise = Right "isValid: Only ground formula is allowed"
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the lazy approach
+--------------------------------------------------------------------------------------------------------------
+
+botInLazy :: Term -> Bool
+botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
+botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
+botInLazy (TCompl t) = not $ botInLazy t
+botInLazy (TSet tset) =
+   foldr gather False (Set.toList tset) where
+      gather t b = (botInLazy t) || b
+botInLazy (TProj _ t) = botInLazy t
+botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
+botInLazy (TMinusClosure t sset) = (botInLazy t) || (fixpointCompLazy (unwindFixpoints t) sset)
+
+
+ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
+ominusSymbolsLazy (TSet tset) sset = TSet (Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset])
+ominusSymbolsLazy term@(TMinusClosure _ _) sset = ominusSymbolsLazy (unwindFixpoints term) sset
+ominusSymbolsLazy _ _ = error "ominusSymbolsLazy: Ominus is defined only on a set of terms"
+
+
+fixpointCompLazy :: Term -> Set.Set Alp.Symbol -> Bool
+--fixpointCompLazy term@(TSet tset) sset | Dbg.trace ("fixpointCompLazy " ++ show term ++ "------" ++ show sset) False = undefined
+fixpointCompLazy term@(TSet tset) sset =
+   case ominusSymbolsLazy term sset of
+      TSet modifset ->
+         if Set.isSubsetOf modifset tset then False
+         else (botInLazy $ TSet modifset) || (fixpointCompLazy (TSet $ Set.union modifset tset) sset)
+      _ -> error "fixpointComp: Ominus is defined only on a set of terms"
+fixpointCompLazy term sset = fixpointCompLazy (TSet (Set.fromList [term])) sset
+
+
+isValidLazy :: Lo.Formula -> Either Bool String
+isValidLazy f
+   | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms (Lo.removeForAll f)
+   | otherwise = Right "isValidLazy: Only ground formula is allowed"
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the definitions of basic tree automata
