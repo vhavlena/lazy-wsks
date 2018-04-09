@@ -133,9 +133,13 @@ formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas wi
 -- |Convert atomic formula to term.
 atom2Terms :: Lo.Atom -> Term
 atom2Terms (Lo.Sing var) = TStates aut [var] (TA.leaves aut) where
-   aut = sing var
+   aut = singAut var
 atom2Terms (Lo.Cat v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
-   aut = cat v1 v2
+   aut = catAut v1 v2
+atom2Terms (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+   aut = subseteqAut v1 v2
+atom2Terms (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where
+   aut = epsAut var
 
 
 -- |Convert formula to term representation.
@@ -154,12 +158,12 @@ isValid f
 --------------------------------------------------------------------------------------------------------------
 
 singSymbol s x = ([s], Set.fromList [x])
-catSymbol v1 v2 x1 x2 = ([v1,v2], Set.fromList [x1, x2])
+pairSymbol v1 v2 x1 x2 = ([v1,v2], Set.fromList [x1, x2])
 
 
 -- |Tree automaton for an atomic predicate Sing(X).
-sing :: Lo.Var -> WS2STreeAut
-sing var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [1])
+singAut :: Lo.Var -> WS2STreeAut
+singAut var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [1])
    (Map.fromList[ (([1,0], (singSymbol '0' var)), Set.fromList [0])
       , (([1,1], (singSymbol '1' var)), Set.fromList [0])
       , (([0,1], (singSymbol '0' var)), Set.fromList [0])
@@ -167,9 +171,22 @@ sing var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.from
 
 
 -- |Tree automaton for an atomic predicate X=Y.L.
-cat :: Lo.Var -> Lo.Var -> WS2STreeAut
-cat v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [0])
-   (Map.fromList[ (([0,0], (catSymbol '0' '0' v1 v2)), Set.fromList [0])
-      , (([0,0], (catSymbol '0' '1' v1 v2)), Set.fromList [1])
-      , (([1,0], (catSymbol '1' '1' v1 v2)), Set.fromList [1])
-      , (([1,0], (catSymbol '1' '0' v1 v2)), Set.fromList [0])])
+catAut :: Lo.Var -> Lo.Var -> WS2STreeAut
+catAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [0])
+   (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
+      , (([0,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [1])
+      , (([1,0], (pairSymbol '1' '1' v1 v2)), Set.fromList [1])
+      , (([1,0], (pairSymbol '1' '0' v1 v2)), Set.fromList [0])])
+
+
+subseteqAut :: Lo.Var -> Lo.Var -> WS2STreeAut
+subseteqAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0]) (Set.fromList [0]) (Set.fromList [0])
+   (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
+      , (([0,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [0])
+      , (([0,0], (pairSymbol '1' '1' v1 v2)), Set.fromList [0])])
+
+
+epsAut :: Lo.Var -> WS2STreeAut
+epsAut var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [1])
+   (Map.fromList[ (([1,1], (singSymbol '1' var)), Set.fromList [0])
+      , (([0,0], (singSymbol '0' var)), Set.fromList [0])])

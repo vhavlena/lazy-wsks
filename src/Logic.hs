@@ -1,7 +1,7 @@
 {-|
 Module      : Logic
 Description : Basic operations for logic formulae
-Author      : Ondrej Lengal, 2018
+Author      : Ondrej Lengal, Vojtech Havlena, 2018
 License     : GPL-3
 -}
 
@@ -17,7 +17,8 @@ type Var = String
 data Atom =
    Sing Var
    | Cat Var Var
-   deriving (Show)
+   | Subseteq Var Var
+   | Eps Var
 
 
 -- formula type
@@ -39,9 +40,21 @@ showFormula (Neg f)             = "¬(" ++ (showFormula f) ++ ")"
 showFormula (Exists var f)      = "∃" ++ var ++ ". (" ++ (showFormula f) ++ ")"
 showFormula (ForAll var f)      = "∀" ++ var ++ ". (" ++ (showFormula f) ++ ")"
 
+-- |Print atom in human-readable format
+showAtom :: Atom -> String
+showAtom (Sing v) = "Sing(" ++ v ++ ")"
+showAtom (Cat v1 v2) = v1 ++ "=" ++ v2 ++ ".L"
+showAtom (Subseteq v1 v2) = v1 ++ "⊆" ++ v2
+showAtom (Eps v) = v ++ "=ε"
+
 -- instantiance of the data type as class Show
 instance Show Formula where
   show = showFormula
+
+
+-- |For converting atom to string
+instance Show Atom where
+   show = showAtom
 
 
 -- removes the universal quantifier
@@ -64,9 +77,12 @@ freeVars (Exists var f) = delete var $ freeVars f
 freeVars (ForAll var f) = freeVars (Exists var f)
 
 
+-- |Free variables in atoms.
 freeVarsAtom :: Atom -> [Var]
 freeVarsAtom (Sing x) = [x]
 freeVarsAtom (Cat x y) = [x,y]
+freeVarsAtom (Subseteq x y) = [x,y]
+freeVarsAtom (Eps x) = [x]
 
 
 antiprenex :: Formula -> Formula
