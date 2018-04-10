@@ -66,7 +66,9 @@ minusSymbol (TPair (TSet tset1) (TSet tset2)) sym = TSet (Set.fromList [minusSym
 minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
    | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylidrifySymbol sym var1))
    | otherwise = error "minusSymbol: Inconsistent basic automata"
-minusSymbol (TPair term1@(TMinusClosure _ _) term2@(TMinusClosure _ _)) sym = minusSymbol (TPair (unwindFixpoints term1) (unwindFixpoints term2)) sym
+minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
+minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
+minusSymbol (TPair term2@(TSet t2) (TMinusClosure t1 _)) sym = minusSymbol (TPair t1 term2) sym
 minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
@@ -127,7 +129,7 @@ formula2TermsVars (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars f1 vars) (for
 formula2TermsVars (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars f1 vars) (formula2TermsVars f2 vars)
 formula2TermsVars (Lo.Neg f) vars = TCompl (formula2TermsVars f vars)
 formula2TermsVars (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (formula2TermsVars f (var:vars)) (Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) (var:vars)))
+   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) (Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) (var:vars)))
 formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
 
 
@@ -158,6 +160,24 @@ isValid f
 -- Part with the lazy approach
 --------------------------------------------------------------------------------------------------------------
 
+-- botInLazy :: Term -> (Term, Bool)
+-- botInLazy (TUnion t1 t2) = (TUnion m1 m2, r1 || r2) where
+--    (m1,r1) = botInLazy t1
+--    (m2,r2) = botInLazy t2
+-- botInLazy (TIntersect t1 t2) = (TUnion m1 m2, r1 && r2) where
+--    (m1,r1) = botInLazy t1
+--    (m2,r2) = botInLazy t2
+-- botInLazy (TCompl t) = (TCompl m1, not r1) where
+--    (m1,r1) = botInLazy t
+-- botInLazy (TSet tset) = (TSet s, r) where
+--    (s,r) = foldr gather ([],False) (Set.toList tset) where
+--       gather t (lst,ret) = ((fst term):lst, ret || b) where
+--          term = botInLazy t
+-- botInLazy (TProj a t) = (TProj a m1, r1) where
+--    (m1,r1) = botInLazy t
+-- botInLazy (TStates aut _ st) = (TStates aut (Set.intersection (TA.roots aut) st), (Set.intersection (TA.roots aut) st) /= Set.empty)
+-- botInLazy (TMinusClosure t sset) = (botInFixPoint t) || (fixpointCompLazy t sset)
+
 botInLazy :: Term -> Bool
 botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
 botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
@@ -167,13 +187,36 @@ botInLazy (TSet tset) =
       gather t b = (botInLazy t) || b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
-botInLazy (TMinusClosure t sset) = (botInLazy t) || (fixpointCompLazy (unwindFixpoints t) sset)
+botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then (botInLazy t) else (botInLazy (step term)))
+botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
+isComplete (TSet modif) (TSet term) = Set.isSubsetOf modif term
+
+isExpanded :: Term -> Bool
+isExpanded (TStates _ _ _) = True
+isExpanded (TMinusClosure t sset) = (isExpanded t) && (isComplete (ominusSymbolsLazy t sset) t)
+isExpanded (TUnion t1 t2) = (isExpanded t1) && (isExpanded t2)
+isExpanded (TIntersect t1 t2) = (isExpanded t1) && (isExpanded t2)
+isExpanded (TCompl t) = isExpanded t
+isExpanded (TProj _ t) = isExpanded t
+isExpanded (TSet tset) =
+   foldr gather True (Set.toList tset) where
+      gather t b = (isExpanded t) && b
+
+step :: Term -> Term
+step (TMinusClosure t sset) = TMinusClosure (TSet $ unionTerms [ominusSymbolsLazy st sset, st]) sset where
+   st = step t
+step term@(TStates _ _ _) = term
+step (TUnion t1 t2) = TIntersect (step t1) (step t2)
+step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
+step (TCompl t) = TCompl (step t)
+step (TProj a t) = TProj a (step t)
+step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
 
 ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
 ominusSymbolsLazy (TSet tset) sset = TSet (Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset])
-ominusSymbolsLazy term@(TMinusClosure _ _) sset = ominusSymbolsLazy (unwindFixpoints term) sset
-ominusSymbolsLazy _ _ = error "ominusSymbolsLazy: Ominus is defined only on a set of terms"
+ominusSymbolsLazy term@(TMinusClosure t _) sset = ominusSymbolsLazy t sset
+ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
 
 
 fixpointCompLazy :: Term -> Set.Set Alp.Symbol -> Bool
