@@ -190,11 +190,12 @@ botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then (botInLazy t) else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
-isComplete (TSet modif) (TSet term) = Set.isSubsetOf modif term
+terminationCond :: Term -> Term -> Bool
+terminationCond (TSet modif) (TSet term) = Set.isSubsetOf modif term
 
 isExpanded :: Term -> Bool
 isExpanded (TStates _ _ _) = True
-isExpanded (TMinusClosure t sset) = (isExpanded t) && (isComplete (ominusSymbolsLazy t sset) t)
+isExpanded (TMinusClosure t sset) = (isExpanded t) && (terminationCond (ominusSymbolsLazy t sset) t)
 isExpanded (TUnion t1 t2) = (isExpanded t1) && (isExpanded t2)
 isExpanded (TIntersect t1 t2) = (isExpanded t1) && (isExpanded t2)
 isExpanded (TCompl t) = isExpanded t
@@ -203,6 +204,8 @@ isExpanded (TSet tset) =
    foldr gather True (Set.toList tset) where
       gather t b = (isExpanded t) && b
 
+-- |One step of all nested fixpoint computations. Returns modified term (fixpoints
+-- are unwinded into TMinusClosure t)
 step :: Term -> Term
 step (TMinusClosure t sset) = TMinusClosure (TSet $ unionTerms [ominusSymbolsLazy st sset, st]) sset where
    st = step t
