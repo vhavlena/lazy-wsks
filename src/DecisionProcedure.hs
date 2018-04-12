@@ -105,7 +105,8 @@ unwindFixpoints (TUnion t1 t2) = TUnion (unwindFixpoints t1) (unwindFixpoints t2
 unwindFixpoints (TIntersect t1 t2) = TIntersect (unwindFixpoints t1) (unwindFixpoints t2)
 unwindFixpoints (TCompl t) = TCompl (unwindFixpoints t)
 unwindFixpoints (TProj var t) = TProj var (TSet $ Set.fromList [unwindFixpoints t])
-unwindFixpoints _ = error "unwindFixpoints: Unwind is not defined for pair and minus terms"
+unwindFixpoints (TSet tset) = TSet $ Set.fromList[unwindFixpoints t | t <- Set.toList tset]
+unwindFixpoints t = error ("unwindFixpoints: Unwind is not defined for pair and minus terms" ++ (show t))
 
 
 -- |Test whether bottom is in the language of the term.

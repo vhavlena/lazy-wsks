@@ -5,7 +5,10 @@ Author      : Vojtech Havlena, 2018
 License     : GPL-3
 -}
 
-module MonaWrapper where
+module MonaWrapper (
+  getLogicFormula
+  , getFormulas
+) where
 
 import Text.Parsec
 import Text.Parsec.Char
@@ -86,6 +89,10 @@ convertBase2Simple (MoPa.MonaFormulaDisj f1 f2) = Lo.Disj (convertBase2Simple f1
 convertBase2Simple (MoPa.MonaFormulaNeg f) = Lo.Neg (convertBase2Simple f)
 convertBase2Simple (MoPa.MonaFormulaAtomic atom) = Lo.FormulaAtomic (convertAtom atom)
 convertBase2Simple _ = error "Unimplemented" -- TODO: Complete
+
+
+getLogicFormula :: MoPa.MonaFormula -> Lo.Formula
+getLogicFormula = convertBase2Simple . convert2Base
 
 loadFormulas p = do
    file <- MoPa.parseFile p
