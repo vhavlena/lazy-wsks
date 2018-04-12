@@ -7,37 +7,78 @@ License     : GPL-3
 
 module MonaWrapper where
 
+import Text.Parsec
+import Text.Parsec.Char
+import Text.Parsec.Expr
+import Text.Parsec.Language
+import Text.Parsec.Prim
+import Text.Parsec.String
+import Text.Parsec.Token
+import Control.Applicative ((<*))
+
 import qualified MonaParser as MoPa
 import qualified Logic as Lo
 
 
 convert2Base :: MoPa.MonaFormula -> MoPa.MonaFormula
-convert2Base t@(MoPa.MonaFormulaEx1 var f) = unwindVars t
-convert2Base t@(MoPa.MonaFormulaEx2 var f) = unwindVars t
-convert2Base t@(MoPa.MonaFormulaAll1 var f) = unwindVars t
-convert2Base t@(MoPa.MonaFormulaAll2 var f) = unwindVars t
+convert2Base t@(MoPa.MonaFormulaEx1 var f) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaEx2 var f) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaAll1 var f) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaAll2 var f) = unwindQuantif t
 convert2Base (MoPa.MonaFormulaAtomic atom) = MoPa.MonaFormulaAtomic atom
 convert2Base (MoPa.MonaFormulaImpl f1 f2) = MoPa.MonaFormulaDisj (MoPa.MonaFormulaNeg (convert2Base f1)) (convert2Base f2)
+convert2Base _ = error "Unimplemented" -- TODO: Complete
 
-unwindVars (MoPa.MonaFormulaEx1 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "Sing "++ (fst x) ++ " term")))
-unwindVars (MoPa.MonaFormulaEx1 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindVars (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "Sing "++ (fst x) ++ " term")))
-unwindVars (MoPa.MonaFormulaAll1 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "Sing "++ (fst x) ++ " term")))
-unwindVars (MoPa.MonaFormulaAll1 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindVars (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "Sing "++ (fst x) ++ " term")))
-unwindVars (MoPa.MonaFormulaAll2 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (convert2Base f)
-unwindVars (MoPa.MonaFormulaAll2 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (unwindVars (MoPa.MonaFormulaAll2 xs f))
-unwindVars (MoPa.MonaFormulaEx2 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (convert2Base f)
-unwindVars (MoPa.MonaFormulaEx2 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (unwindVars (MoPa.MonaFormulaEx2 xs f))
+
+unwindQuantif :: MoPa.MonaFormula -> MoPa.MonaFormula
+unwindQuantif (MoPa.MonaFormulaEx1 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaEx1 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaEx2 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (convert2Base f)
+unwindQuantif (MoPa.MonaFormulaEx2 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaEx2 xs f))
+unwindQuantif (MoPa.MonaFormulaAll1 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaAll1 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaAll2 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (convert2Base f)
+unwindQuantif (MoPa.MonaFormulaAll2 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaAll2 xs f))
+unwindQuantif _ = error "Unimplemented" -- TODO: Complete
 
 
 handleWhere :: (String, Maybe MoPa.MonaFormula) -> (String, Maybe MoPa.MonaFormula)
 handleWhere = id
+
 
 getFormulas :: MoPa.MonaFile -> [MoPa.MonaFormula]
 getFormulas file = map (\(MoPa.MonaDeclFormula f) -> f) $ filter (declFilter) (MoPa.mf_decls file) where
    declFilter (MoPa.MonaDeclFormula _) = True
    declFilter _ = False
 
+
+parseAtom :: String -> Maybe Lo.Atom
+parseAtom atom = parseSimpleAtom $ words atom
+
+
+parseSimpleAtom :: [String] ->  Maybe Lo.Atom
+parseSimpleAtom arr =
+   if (length arr) /= 3 then Nothing
+   else case arr !! 1 of
+      "sing" -> Just $ Lo.Sing $ arr !! 0
+      "sub" -> Just $ Lo.Subseteq (arr !! 0) (arr !! 2)
+
+
+convertAtom :: String -> Lo.Atom
+convertAtom atom = case (parseAtom atom) of
+   Nothing   -> error $ "Parse error" ++ (show atom)
+   Just res -> res
+
+
+convertBase2Simple :: MoPa.MonaFormula -> Lo.Formula
+convertBase2Simple (MoPa.MonaFormulaAll2 [p] f) = Lo.ForAll (fst p) (convertBase2Simple f)
+convertBase2Simple (MoPa.MonaFormulaEx2 [p] f) = Lo.Exists (fst p) (convertBase2Simple f)
+convertBase2Simple (MoPa.MonaFormulaDisj f1 f2) = Lo.Disj (convertBase2Simple f1) (convertBase2Simple f2)
+convertBase2Simple (MoPa.MonaFormulaNeg f) = Lo.Neg (convertBase2Simple f)
+convertBase2Simple (MoPa.MonaFormulaAtomic atom) = Lo.FormulaAtomic (convertAtom atom)
+convertBase2Simple _ = error "Unimplemented" -- TODO: Complete
+
 loadFormulas p = do
    file <- MoPa.parseFile p
    let formulas = getFormulas file in
-      putStrLn $ show $ convert2Base $ head formulas
+      putStrLn $ show $ convertBase2Simple $ convert2Base $ head formulas
