@@ -12,7 +12,7 @@ import qualified Logic as Lo
 -- |Examples of WSkS formulas.
 exampleFormula0 = Lo.Exists "X" (Lo.Neg (Lo.FormulaAtomic (Lo.Sing "X")))
 exampleFormula1 = Lo.Neg (Lo.Exists "X" (Lo.Neg (Lo.FormulaAtomic (Lo.Sing "X"))))
-exampleFormula2 = Lo.Exists "X" (Lo.Conj (Lo.FormulaAtomic (Lo.Sing "X")) ( Lo.Exists "Y" (Lo.FormulaAtomic (Lo.Cat "X" "Y"))))
+exampleFormula2 = Lo.Exists "X" (Lo.Conj (Lo.FormulaAtomic (Lo.Sing "X")) ( Lo.Exists "Y" (Lo.FormulaAtomic (Lo.Cat1 "X" "Y"))))
 exampleFormula3 = Lo.Exists "X" (Lo.Conj (Lo.Neg (Lo.FormulaAtomic (Lo.Sing "X"))) (Lo.FormulaAtomic (Lo.Sing "X")))
 exampleFormula4 = Lo.Exists "X" (Lo.Exists "Y" (Lo.FormulaAtomic (Lo.Subseteq "X" "Y")))
 exampleFormula5 = Lo.Exists "X" (Lo.Exists "Y" (Lo.Conj (Lo.FormulaAtomic (Lo.Eps "X")) (Lo.FormulaAtomic (Lo.Subseteq "X" "Y"))))

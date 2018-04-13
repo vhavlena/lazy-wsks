@@ -112,6 +112,8 @@ def = emptyDef{ commentStart = "/*"
                 , "include"
                 , "execute"
                 , "const"
+                , "sing"
+                , "cat1"
                 ]
               }
 
@@ -230,6 +232,7 @@ atomicFormulaParser = try (binAtomParser "=")
                   <|> try (binAtomParser "in")
                   <|> try (binAtomParser "notin")
                   <|> try (binAtomParser "sub")
+                  <|> try (binAtomParser "cat1")
                   <?> "atomic formula"
 
 
@@ -257,6 +260,14 @@ formulaTerm = m_parens formulaParser
           <|> atomicFormulaParser
           <|> (m_reserved "true" >> return (MonaFormulaAtomic "true"))
           <|> (m_reserved "false" >> return (MonaFormulaAtomic "false"))
+          <|> do { m_reserved "sing"
+                 ; var <- m_identifier
+                 ; return (MonaFormulaAtomic $ "term sing " ++ var )
+                 }
+          <|> do { m_reserved "eps"
+                ; var <- m_identifier
+                ; return (MonaFormulaAtomic $ "term eps " ++ var )
+                }
           <|> do { m_reserved "ex0"
                  ; (varWhereList, phi) <- parseQuantSuffix
                  ; let varList = map fst varWhereList

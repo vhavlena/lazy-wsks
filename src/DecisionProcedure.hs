@@ -138,7 +138,7 @@ formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas wi
 atom2Terms :: Lo.Atom -> Term
 atom2Terms (Lo.Sing var) = TStates aut [var] (TA.leaves aut) where
    aut = singAut var
-atom2Terms (Lo.Cat v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms (Lo.Cat1 v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = catAut v1 v2
 atom2Terms (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subseteqAut v1 v2

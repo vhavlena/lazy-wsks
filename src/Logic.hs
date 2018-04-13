@@ -17,6 +17,7 @@ type Var = String
 data Atom =
    Sing Var
    | Cat1 Var Var
+   | Cat2 Var Var
    | Subseteq Var Var
    | Eps Var
 
