@@ -16,7 +16,7 @@ type Var = String
 -- Atomic formula
 data Atom =
    Sing Var
-   | Cat Var Var
+   | Cat1 Var Var
    | Subseteq Var Var
    | Eps Var
 
@@ -43,7 +43,7 @@ showFormula (ForAll var f)      = "∀" ++ var ++ ". (" ++ (showFormula f) ++ ")
 -- |Print atom in human-readable format
 showAtom :: Atom -> String
 showAtom (Sing v) = "Sing(" ++ v ++ ")"
-showAtom (Cat v1 v2) = v1 ++ "=" ++ v2 ++ ".L"
+showAtom (Cat1 v1 v2) = v1 ++ "=" ++ v2 ++ ".L"
 showAtom (Subseteq v1 v2) = v1 ++ "⊆" ++ v2
 showAtom (Eps v) = v ++ "=ε"
 
@@ -80,7 +80,7 @@ freeVars (ForAll var f) = freeVars (Exists var f)
 -- |Free variables in atoms.
 freeVarsAtom :: Atom -> [Var]
 freeVarsAtom (Sing x) = [x]
-freeVarsAtom (Cat x y) = [x,y]
+freeVarsAtom (Cat1 x y) = [x,y]
 freeVarsAtom (Subseteq x y) = [x,y]
 freeVarsAtom (Eps x) = [x]
 
