@@ -151,7 +151,7 @@ formula2Terms :: Lo.Formula -> Term
 formula2Terms f = formula2TermsVars f []
 
 
--- |Decide whether given ground formula is valid.
+-- |Decide whether given ground formula is valid (strict approach).
 isValid :: Lo.Formula -> Either Bool String
 isValid f
    | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms (Lo.removeForAll f)
@@ -179,6 +179,7 @@ isValid f
 -- botInLazy (TStates aut _ st) = (TStates aut (Set.intersection (TA.roots aut) st), (Set.intersection (TA.roots aut) st) /= Set.empty)
 -- botInLazy (TMinusClosure t sset) = (botInFixPoint t) || (fixpointCompLazy t sset)
 
+-- |Lazy testing of bottom membership in the language of a given term.
 botInLazy :: Term -> Bool
 botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
 botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
@@ -191,9 +192,13 @@ botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then (botInLazy t) else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
+
+-- |Fixpoint termination condition.
 terminationCond :: Term -> Term -> Bool
 terminationCond (TSet modif) (TSet term) = Set.isSubsetOf modif term
 
+
+-- |Test whether a given term is fully expanded (i.e., all fixpoints are expanded).
 isExpanded :: Term -> Bool
 isExpanded (TStates _ _ _) = True
 isExpanded (TMinusClosure t sset) = (isExpanded t) && (terminationCond (ominusSymbolsLazy t sset) t)
@@ -204,6 +209,7 @@ isExpanded (TProj _ t) = isExpanded t
 isExpanded (TSet tset) =
    foldr gather True (Set.toList tset) where
       gather t b = (isExpanded t) && b
+
 
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
@@ -217,12 +223,16 @@ step (TCompl t) = TCompl (step t)
 step (TProj a t) = TProj a (step t)
 step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
 
+
+-- |Term ominus set of symbols for a lazy approach.
 ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
 ominusSymbolsLazy (TSet tset) sset = TSet (Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset])
 ominusSymbolsLazy term@(TMinusClosure t _) sset = ominusSymbolsLazy t sset
 ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
 
 
+-- |Fixpoint computation for a lazy approach. Simultaneously with every step
+-- check bottom membership.
 fixpointCompLazy :: Term -> Set.Set Alp.Symbol -> Bool
 --fixpointCompLazy term@(TSet tset) sset | Dbg.trace ("fixpointCompLazy " ++ show term ++ "------" ++ show sset) False = undefined
 fixpointCompLazy term@(TSet tset) sset =
@@ -234,6 +244,7 @@ fixpointCompLazy term@(TSet tset) sset =
 fixpointCompLazy term sset = fixpointCompLazy (TSet (Set.fromList [term])) sset
 
 
+-- |Decide whether given ground formula is valid (lazy approach).
 isValidLazy :: Lo.Formula -> Either Bool String
 isValidLazy f
    | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms (Lo.removeForAll f)
