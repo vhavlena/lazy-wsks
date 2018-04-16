@@ -239,10 +239,20 @@ fixpointCompLazy term@(TSet tset) sset =
    case ominusSymbolsLazy term sset of
       TSet modifset ->
          if Set.isSubsetOf modifset tset then False
-         else (botInLazy $ TSet modifset) || (fixpointCompLazy (TSet $ Set.union modifset tset) sset)
+         else (botInLazy $ TSet modifset) || (fixpointCompLazy (TSet $ Set.fromList $ filter (isSubsumed slist) slist) sset)
+            where
+               slist = Set.toList (Set.union modifset tset)
       _ -> error "fixpointComp: Ominus is defined only on a set of terms"
 fixpointCompLazy term sset = fixpointCompLazy (TSet (Set.fromList [term])) sset
 
+
+isSubsumed :: [Term] -> Term -> Bool
+isSubsumed [] _ = False
+isSubsumed (x:xs) term@(TSet tset) = case x of
+   (TSet sbset) -> if Set.isSubsetOf tset sbset then True
+                   else isSubsumed xs term
+   _ -> False
+   
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValidLazy :: Lo.Formula -> Either Bool String
