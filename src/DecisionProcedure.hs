@@ -189,7 +189,7 @@ botInLazy (TSet tset) =
       gather t b = (botInLazy t) || b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
-botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then (botInLazy t) else (botInLazy (step term)))
+botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then False else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
 
