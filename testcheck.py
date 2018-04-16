@@ -21,17 +21,21 @@ def main():
 
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
-        program_output = subprocess.check_output([program, filename])
-        lines = string.split(program_output, '\n')
+        program_output = subprocess.check_output([program, filename]).decode()
+        lines = program_output.split('\n')
+        lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)
-        if lines[-1] == "True" and valid
-
+        if (lines[-1] == "True" and valid) or (lines[-1] == "False" and not valid):
+            print("Correct: {0}".format(monafile))
+        else:
+            print("Fail: {0}".format(monafile))
 
 
 def parse_validity(content):
-    lines = string.split(content, '\n')
+    p = re.compile(r'^#\s*Validity:\s*(?P<valid>\w*)')
+    lines = content.split('\n')
     for line in lines:
-        mobject = re.match(r'^#\s*Validity:\s*(?P=valid)', line)
+        mobject = p.match(line)
         if mobject is not None:
             if mobject.group("valid").startswith("valid"):
                 return True
