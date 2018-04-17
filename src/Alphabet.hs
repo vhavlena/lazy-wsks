@@ -14,6 +14,7 @@ module Alphabet (
    , remSymbol
    , remSymbolVars
    , cylidrifySymbol
+   , showSymbolDbg
 ) where
 
 
@@ -25,8 +26,14 @@ import qualified AuxFunctions as Aux
 type Variable = String
 type Symbol = ([Char], Set.Set Variable)
 
+
 -- |Empty symbol = epsilon
 emptySymbol = ([], Set.empty)
+
+
+-- |Show symbol in human readable debug format.
+showSymbolDbg :: Symbol -> String
+showSymbolDbg (str, _) = str
 
 
 -- |Make projection of a symbol wrt a given variable (i.e. it returns symbols

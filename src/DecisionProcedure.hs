@@ -40,7 +40,7 @@ data Term =
    deriving (Eq, Ord)
 
 instance Show Term where
-   show = showTerm
+   show = showTermDbg
 
 
 -- |Prints the term in human readable format.
@@ -52,6 +52,17 @@ showTerm (TCompl t) = "¬(" ++ showTerm t ++ ")"
 showTerm (TUnion t1 t2) = "(" ++ showTerm t1 ++ ") ∨ (" ++ showTerm t2 ++ ")"
 showTerm (TIntersect t1 t2) = "(" ++ showTerm t1 ++ ") ∧ (" ++ showTerm t2 ++ ")"
 showTerm (TStates _ _ st) = show st
+
+
+-- |Prints the term in human readable debug format.
+showTermDbg (TSet set) = "{" ++ show (Set.toList set) ++ "}"
+showTermDbg (TPair t1 t2) = "\n(\n\t" ++ showTermDbg t1 ++ "\n\t,\n\t" ++ showTermDbg t2 ++ "\n)\n"
+showTermDbg (TMinusClosure t sym) = "(" ++ showTermDbg t ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
+showTermDbg (TProj var t) = "Proj_"++ show var ++ "( " ++ showTermDbg t ++ " )"
+showTermDbg (TCompl t) = "¬(" ++ showTermDbg t ++ ")"
+showTermDbg (TUnion t1 t2) = "(" ++ showTermDbg t1 ++ ") ∨ (" ++ showTermDbg t2 ++ ")"
+showTermDbg (TIntersect t1 t2) = "(" ++ showTermDbg t1 ++ ") ∧ (" ++ showTermDbg t2 ++ ")"
+showTermDbg (TStates _ _ st) = show $ Set.toList st
 
 
 -- |Term minus symbol -- defined only for the term-pairs.
@@ -161,24 +172,6 @@ isValid f
 -- Part with the lazy approach
 --------------------------------------------------------------------------------------------------------------
 
--- botInLazy :: Term -> (Term, Bool)
--- botInLazy (TUnion t1 t2) = (TUnion m1 m2, r1 || r2) where
---    (m1,r1) = botInLazy t1
---    (m2,r2) = botInLazy t2
--- botInLazy (TIntersect t1 t2) = (TUnion m1 m2, r1 && r2) where
---    (m1,r1) = botInLazy t1
---    (m2,r2) = botInLazy t2
--- botInLazy (TCompl t) = (TCompl m1, not r1) where
---    (m1,r1) = botInLazy t
--- botInLazy (TSet tset) = (TSet s, r) where
---    (s,r) = foldr gather ([],False) (Set.toList tset) where
---       gather t (lst,ret) = ((fst term):lst, ret || b) where
---          term = botInLazy t
--- botInLazy (TProj a t) = (TProj a m1, r1) where
---    (m1,r1) = botInLazy t
--- botInLazy (TStates aut _ st) = (TStates aut (Set.intersection (TA.roots aut) st), (Set.intersection (TA.roots aut) st) /= Set.empty)
--- botInLazy (TMinusClosure t sset) = (botInFixPoint t) || (fixpointCompLazy t sset)
-
 -- |Lazy testing of bottom membership in the language of a given term.
 botInLazy :: Term -> Bool
 botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
@@ -189,6 +182,7 @@ botInLazy (TSet tset) =
       gather t b = (botInLazy t) || b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
+botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n") False = undefined
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then False else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
@@ -252,7 +246,7 @@ isSubsumed (x:xs) term@(TSet tset) = case x of
    (TSet sbset) -> if Set.isSubsetOf tset sbset then True
                    else isSubsumed xs term
    _ -> False
-   
+
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValidLazy :: Lo.Formula -> Either Bool String
