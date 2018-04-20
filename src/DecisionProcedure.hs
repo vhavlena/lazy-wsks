@@ -40,7 +40,7 @@ data Term =
    deriving (Eq, Ord)
 
 instance Show Term where
-   show = showTermDbg
+   show = showTermDbg 0
 
 
 -- |Prints the term in human readable format.
@@ -55,14 +55,14 @@ showTerm (TStates _ _ st) = show st
 
 
 -- |Prints the term in human readable debug format.
-showTermDbg (TSet set) = "{" ++ show (Set.toList set) ++ "}"
-showTermDbg (TPair t1 t2) = "\n(\n\t" ++ showTermDbg t1 ++ "\n\t,\n\t" ++ showTermDbg t2 ++ "\n)\n"
-showTermDbg (TMinusClosure t sym) = "(" ++ showTermDbg t ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
-showTermDbg (TProj var t) = "Proj_"++ show var ++ "( " ++ showTermDbg t ++ " )"
-showTermDbg (TCompl t) = "¬(" ++ showTermDbg t ++ ")"
-showTermDbg (TUnion t1 t2) = "(" ++ showTermDbg t1 ++ ") ∨ (" ++ showTermDbg t2 ++ ")"
-showTermDbg (TIntersect t1 t2) = "(" ++ showTermDbg t1 ++ ") ∧ (" ++ showTermDbg t2 ++ ")"
-showTermDbg (TStates _ _ st) = show $ Set.toList st
+showTermDbg ind (TSet set) = "\n" ++ (replicate ind ' ') ++ "{" ++ unwords (map (\a -> "\n" ++ (replicate (ind+2) ' ') ++ (showTermDbg (ind+2) a) ++ ",") (Set.toList set)) ++ "\n" ++ (replicate ind ' ') ++ "}"
+showTermDbg ind (TPair t1 t2) = "\n" ++ (replicate ind ' ') ++ "(\n" ++ showTermDbg (ind+2) t1 ++ "\n\t,\n\t" ++ showTermDbg (ind+2) t2 ++ "\n)\n"
+showTermDbg ind (TMinusClosure t sym) = "(" ++ showTermDbg ind t ++ (replicate ind ' ') ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
+showTermDbg ind (TProj var t) = "Proj_"++ show var ++ "( " ++ showTermDbg ind t ++ " )"
+showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
+showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
+showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
+showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
 
 
 -- |Term minus symbol -- defined only for the term-pairs.
