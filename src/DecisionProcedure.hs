@@ -35,6 +35,7 @@ data Term =
    | TCompl Term
    | TProj Alp.Variable Term
    | TMinusClosure Term (Set.Set Alp.Symbol)
+   | TIncrSet Term Term
    | TPair Term Term
    | TSet (Set.Set Term)
    deriving (Eq, Ord)
@@ -180,6 +181,7 @@ botInLazy (TCompl t) = not $ botInLazy t
 botInLazy (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botInLazy t) || b
+botInLazy (TIncrSet a b) = botInLazy b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n") False = undefined
@@ -203,19 +205,28 @@ isExpanded (TProj _ t) = isExpanded t
 isExpanded (TSet tset) =
    foldr gather True (Set.toList tset) where
       gather t b = (isExpanded t) && b
+isExpanded (TIncrSet a _) = isExpanded a
 
 
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term
-step (TMinusClosure t sset) = TMinusClosure (TSet $ unionTerms [ominusSymbolsLazy st sset, st]) sset where
-   st = step t
+step (TMinusClosure t sset) = case t of
+   (TSet a) ->  TMinusClosure (TIncrSet t (unionTerms [ominusSymbolsLazy st sset, st])) sset where
+      st = step t
+   (TIncrSet a b) -> TMinusClosure (TIncrSet complete new) sset where
+      st = step t
+      (TSet new) = ominusSymbolsLazy st sset
+      complete = unionTerms [new, st]
+--   TMinusClosure (TIncrSet $ unionTerms [ominusSymbolsLazy st sset, st]) sset where
+--   st = step t
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TIntersect (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl (step t)
 step (TProj a t) = TProj a (step t)
 step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
+step (TIncrSet a b) = TIncrSet (step a) b
 
 
 -- |Term ominus set of symbols for a lazy approach.
