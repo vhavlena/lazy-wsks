@@ -64,6 +64,7 @@ showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
 showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
+showTermDbg ind (TIncrSet _ b) = showTermDbg ind b
 
 
 -- |Term minus symbol -- defined only for the term-pairs.
@@ -81,14 +82,21 @@ minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
 minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
 minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
 minusSymbol (TPair term2@(TSet t2) (TMinusClosure t1 _)) sym = minusSymbol (TPair t1 term2) sym
+minusSymbol (TPair (TIncrSet _ a) (TIncrSet _ b)) sym = minusSymbol (TPair a b) sym
 minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
 -- |Union set of terms -- defined only for a list of the form
--- [TSet a, TSet b, ..] and gives TSet (a union b union ...).
+-- [TSet a, TSet b, ..] and gives Set (a union b union ...).
 unionTerms :: [Term] -> Set.Set Term
 unionTerms [] = Set.empty
 unionTerms ((TSet a):xs) = Set.union a (unionTerms xs)
+
+
+-- |Union set of terms -- defined only for a list of the form
+-- [TSet a, TSet b, ..] and gives TSet (a union b union ...).
+unionTSets :: [Term] -> Term
+unionTSets = TSet . unionTerms
 
 
 -- |Ominus for a set of symbols. Defined only for a term of the form (TSet a).
@@ -211,15 +219,12 @@ isExpanded (TIncrSet a _) = isExpanded a
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term
-step (TMinusClosure t sset) = case t of
-   (TSet a) ->  TMinusClosure (TIncrSet t (unionTerms [ominusSymbolsLazy st sset, st])) sset where
-      st = step t
-   (TIncrSet a b) -> TMinusClosure (TIncrSet complete new) sset where
-      st = step t
-      (TSet new) = ominusSymbolsLazy st sset
-      complete = unionTerms [new, st]
---   TMinusClosure (TIncrSet $ unionTerms [ominusSymbolsLazy st sset, st]) sset where
---   st = step t
+step (TMinusClosure t sset) =
+  let st = step t
+      incr = ominusSymbolsLazy st sset in case t of
+        (TSet a) ->  TMinusClosure (TIncrSet (unionTSets [incr, st]) incr) sset
+        (TIncrSet a b) -> TMinusClosure (TIncrSet complete incr) sset where
+          complete = unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TIntersect (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
