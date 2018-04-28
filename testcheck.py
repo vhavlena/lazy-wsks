@@ -21,7 +21,7 @@ def main():
 
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
-        program_output = subprocess.check_output([program, filename]).decode()
+        program_output = subprocess.check_output([program, filename]).decode("utf-8")
         lines = program_output.split('\n')
         lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)

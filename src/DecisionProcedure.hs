@@ -64,7 +64,7 @@ showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
 showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
-showTermDbg ind (TIncrSet _ b) = showTermDbg ind b
+showTermDbg ind (TIncrSet a b) = (showTermDbg ind a) ++ "---" ++ (showTermDbg ind b)
 
 
 -- |Term minus symbol -- defined only for the term-pairs.
@@ -82,7 +82,8 @@ minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
 minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
 minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
 minusSymbol (TPair term2@(TSet t2) (TMinusClosure t1 _)) sym = minusSymbol (TPair t1 term2) sym
-minusSymbol (TPair (TIncrSet _ a) (TIncrSet _ b)) sym = minusSymbol (TPair a b) sym
+minusSymbol (TPair (TIncrSet a _) (TIncrSet b _)) sym = minusSymbol (TPair a b) sym
+minusSymbol (TPair (TIncrSet a _) b) sym = minusSymbol (TPair a b) sym
 minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
@@ -91,6 +92,7 @@ minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pai
 unionTerms :: [Term] -> Set.Set Term
 unionTerms [] = Set.empty
 unionTerms ((TSet a):xs) = Set.union a (unionTerms xs)
+unionTerms ((TIncrSet a _):xs) = unionTerms (a:xs)
 
 
 -- |Union set of terms -- defined only for a list of the form
@@ -192,7 +194,7 @@ botInLazy (TSet tset) =
 botInLazy (TIncrSet a b) = botInLazy b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
-botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n") False = undefined
+--botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n") False = undefined
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then False else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
@@ -200,6 +202,9 @@ botInLazy _ = error "botInLazy: Bottom membership is not defined"
 -- |Fixpoint termination condition.
 terminationCond :: Term -> Term -> Bool
 terminationCond (TSet modif) (TSet term) = Set.isSubsetOf modif term
+terminationCond (TIncrSet a _) t = terminationCond a t
+terminationCond t (TIncrSet a _) = terminationCond t a
+terminationCond t1 t2 = error $ "terminationCond: Not defined" ++ (show t1) ++ (show t2)
 
 
 -- |Test whether a given term is fully expanded (i.e., all fixpoints are expanded).
@@ -237,7 +242,8 @@ step (TIncrSet a b) = TIncrSet (step a) b
 -- |Term ominus set of symbols for a lazy approach.
 ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
 ominusSymbolsLazy (TSet tset) sset = TSet (Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset])
-ominusSymbolsLazy term@(TMinusClosure t _) sset = ominusSymbolsLazy t sset
+ominusSymbolsLazy (TMinusClosure t _) sset = ominusSymbolsLazy t sset
+ominusSymbolsLazy (TIncrSet a b) sset = ominusSymbolsLazy a sset
 ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
 
 
