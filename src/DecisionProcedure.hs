@@ -45,6 +45,7 @@ instance Show Term where
 
 
 -- |Prints the term in human readable format.
+showTerm :: Term -> String
 showTerm (TSet set) = "{" ++ show set ++ "}"
 showTerm (TPair t1 t2) = "\n(\n\t" ++ showTerm t1 ++ "\n\t,\n\t" ++ showTerm t2 ++ "\n)\n"
 showTerm (TMinusClosure t sym) = "(" ++ showTerm t ++ ") - {" ++ show sym ++ "}*"
@@ -56,6 +57,7 @@ showTerm (TStates _ _ st) = show st
 
 
 -- |Prints the term in human readable debug format.
+showTermDbg :: Int -> Term -> String
 showTermDbg ind (TSet set) = "\n" ++ (replicate ind ' ') ++ "{" ++ unwords (map (\a -> "\n" ++ (replicate (ind+2) ' ') ++ (showTermDbg (ind+2) a) ++ ",") (Set.toList set)) ++ "\n" ++ (replicate ind ' ') ++ "}"
 showTermDbg ind (TPair t1 t2) = "\n" ++ (replicate ind ' ') ++ "(\n" ++ showTermDbg (ind+2) t1 ++ "\n\t,\n\t" ++ showTermDbg (ind+2) t2 ++ "\n)\n"
 showTermDbg ind (TMinusClosure t sym) = "(" ++ showTermDbg ind t ++ (replicate ind ' ') ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
