@@ -1,7 +1,8 @@
 
 import System.Environment
 
-import qualified DecisionProcedure as DP
+import qualified LazyDecisionProcedure as LDP
+import qualified StrictDecisionProcedure as SDP
 import qualified Logic as Lo
 import qualified Examples as Ex
 import qualified MonaWrapper as MoWr
@@ -12,14 +13,14 @@ import qualified MonaParser as MoPa
 showValid :: Lo.Formula -> IO ()
 showValid f = do
    putStrLn $ show f
-   putStrLn $ formatAnswer $ DP.isValid f
+   putStrLn $ formatAnswer $ SDP.isValid f
 
 
 -- |Show formula and its validity (lazy approach)
 showValidLazy :: Lo.Formula -> IO ()
 showValidLazy f = do
    putStrLn $ show f
-   putStrLn $ formatAnswer $ DP.isValidLazy f
+   putStrLn $ formatAnswer $ LDP.isValid f
 
 
 -- |Format validity answer
