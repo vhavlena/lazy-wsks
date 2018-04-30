@@ -87,12 +87,10 @@ isExpanded (TIncrSet a _) = isExpanded a
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term
-step (TMinusClosure t sset) =
-  let st = step t
-      incr = ominusSymbolsLazy st sset in case t of
-        (TSet a) ->  TMinusClosure (TIncrSet (unionTSets [incr, st]) incr) sset
-        (TIncrSet a b) -> TMinusClosure (TIncrSet complete incr) sset where
-          complete = unionTSets [incr, st]
+step (TMinusClosure t sset) = TMinusClosure (TIncrSet complete incr) sset where
+    st = step t
+    incr = ominusSymbolsLazy st sset
+    complete = unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TIntersect (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
@@ -133,9 +131,22 @@ isSubsumed (x:xs) term@(TSet tset) = case x of
    _ -> False
 
 
+-- |Convert formula to lazy term representation (differs on using TIncrSet). Uses
+-- additional information about quantified variables reachable to a given term.
+formula2TermsVarsLazy :: Lo.Formula -> [Alp.Variable] -> Term
+formula2TermsVarsLazy (Lo.FormulaAtomic atom) vars = atom2Terms atom
+formula2TermsVarsLazy (Lo.Disj f1 f2) vars = TUnion (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
+formula2TermsVarsLazy (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
+formula2TermsVarsLazy (Lo.Neg f) vars = TCompl (formula2TermsVarsLazy f vars)
+formula2TermsVarsLazy (Lo.Exists var f) vars =
+   TProj var (TMinusClosure (TIncrSet innerTerm innerTerm) (Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) (var:vars))) where
+     innerTerm = TSet (Set.fromList [formula2TermsVarsLazy f (var:vars)])
+formula2TermsVarsLazy (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
+
+
 -- |Convert formula to term representation.
 formula2Terms :: Lo.Formula -> Term
-formula2Terms f = formula2TermsVars f []
+formula2Terms f = formula2TermsVarsLazy f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).
