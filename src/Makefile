@@ -9,5 +9,8 @@ all:
 debug:
 	ghc -odir obj -hidir obj -prof -fprof-auto -rtsopts --make Main.hs
 
+test:
+	cd .. && python testcheck.py src/Main examples/
+
 clean:
 	rm obj/*.o obj/*.hi

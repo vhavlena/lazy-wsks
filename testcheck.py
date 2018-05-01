@@ -9,7 +9,7 @@ import os.path
 
 def main():
     if len(sys.argv) != 3:
-        sys.stderr.write("Bad input arguments.\n")
+        sys.stderr.write("Bad input arguments. \nFormat: ./testcheck [program] [formula folder]\n")
         sys.exit()
 
     program = sys.argv[1]
