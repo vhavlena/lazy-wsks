@@ -41,7 +41,7 @@ botInLazy (TIncrSet a b) = botInLazy b
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n") False = undefined
-botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpanded t) then False else (botInLazy (step term)))
+botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpandedIncr t) then False else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
 
@@ -67,21 +67,32 @@ isExpanded (TSet tset) =
 isExpanded (TIncrSet a _) = isExpanded a
 
 
--- isExpandedIncr :: Term -> Bool
--- isExpandedIncr (TStates _ _ _) = True
--- isExpandedIncr (TMinusClosure t sset) = (isExpandedIncrCl t) && (terminationCond (ominusSymbolsLazy t sset) t)
--- isExpanded (TUnion t1 t2) = (isExpanded t1) && (isExpanded t2)
--- isExpanded (TIntersect t1 t2) = (isExpanded t1) && (isExpanded t2)
--- isExpanded (TCompl t) = isExpanded t
--- isExpanded (TProj _ t) = isExpanded t
--- isExpanded (TSet tset) =
---    foldr gather True (Set.toList tset) where
---       gather t b = (isExpanded t) && b
--- isExpanded (TIncrSet a _) = isExpanded a
---
---
--- isExpandedIncrCl (TSet _) = False
--- isExpandedIncrCl (TIncrSet a _) = isExpandedIncr a
+-- |Recursively remove incremental terms. Necessary for checking term inclusion
+-- (bottom check).
+removeIncrTerm :: Term -> Term
+removeIncrTerm (TUnion t1 t2) = TUnion (removeIncrTerm t1) (removeIncrTerm t2)
+removeIncrTerm (TIntersect t1 t2) = TIntersect (removeIncrTerm t1) (removeIncrTerm t2)
+removeIncrTerm (TCompl t) = TCompl (removeIncrTerm t)
+removeIncrTerm (TProj var t) = TProj var (removeIncrTerm t)
+removeIncrTerm (TMinusClosure t sset) = TMinusClosure (removeIncrTerm t) sset
+removeIncrTerm (TPair t1 t2) = TPair (removeIncrTerm t1) (removeIncrTerm t2)
+removeIncrTerm (TSet tset) = TSet (Set.map (removeIncrTerm) tset)
+removeIncrTerm (TIncrSet t incr) = removeIncrTerm t
+removeIncrTerm t = t
+
+
+-- |Test whether a given term is fully expanded. Uses incremental terms.
+isExpandedIncr :: Term -> Bool
+isExpandedIncr (TStates _ _ _) = True
+isExpandedIncr (TMinusClosure t sset) = isExpandedIncr t
+isExpandedIncr (TUnion t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
+isExpandedIncr (TIntersect t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
+isExpandedIncr (TCompl t) = isExpandedIncr t
+isExpandedIncr (TProj _ t) = isExpandedIncr t
+isExpandedIncr (TSet tset) =
+   foldr gather True (Set.toList tset) where
+      gather t b = (isExpandedIncr t) && b
+isExpandedIncr (TIncrSet a b) = (isExpandedIncr a) && (terminationCond b (removeIncrTerm a))
 
 
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
