@@ -1,0 +1,3 @@
+cmd: "cd src && make all"
+name: "Makefile"
+sh: true
