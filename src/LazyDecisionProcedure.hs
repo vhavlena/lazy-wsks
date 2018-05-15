@@ -100,7 +100,7 @@ isExpandedIncr (TIncrSet a b) = (isExpandedIncr a) && (terminationCond b (remove
 step :: Term -> Term
 step (TMinusClosure t sset) = TMinusClosure (TIncrSet complete incr) sset where
     st = step t
-    incr = ominusSymbolsLazy st sset
+    incr = removeRedundantTerms $ ominusSymbolsLazy st sset
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TIntersect (step t1) (step t2)
@@ -108,7 +108,7 @@ step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl (step t)
 step (TProj a t) = TProj a (step t)
 step (TSet tset) = removeRedundantTerms $ TSet $ Set.fromList [step t | t <- Set.toList tset]
-step (TIncrSet a b) = TIncrSet (step a) b
+step (TIncrSet a b) = TIncrSet (step a) (removeRedundantTerms b)
 
 
 -- |Term ominus set of symbols for a lazy approach.
@@ -134,6 +134,7 @@ fixpointCompLazy term@(TSet tset) sset =
 fixpointCompLazy term sset = fixpointCompLazy (TSet (Set.fromList [term])) sset
 
 
+-- |Very basic term subsumption based only on one-level subset.
 isSubsumed :: [Term] -> Term -> Bool
 isSubsumed [] _ = False
 isSubsumed (x:xs) term@(TSet tset) = case x of
@@ -142,18 +143,23 @@ isSubsumed (x:xs) term@(TSet tset) = case x of
    _ -> False
 
 
+-- |Structural term subsumption. Test whether the first term is subsumed by
+-- the second term. Now it is implemented on the structural level.
 isSubsumedLazy :: Term -> Term -> Bool
 isSubsumedLazy (TUnion t1 t2) (TUnion t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
 isSubsumedLazy (TIntersect t1 t2) (TIntersect t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
 isSubsumedLazy (TCompl t1) (TCompl t2) = isSubsumedLazy t1 t2
 isSubsumedLazy (TProj _ t1) (TProj _ t2) = isSubsumedLazy t1 t2
-isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= \a -> return (any (isSubsumedLazy a) (Set.toList tset2)))
+isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= \a -> return (any (isSubsumedLazy a) lst))
+  where
+    lst = Set.toList tset2
 isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && (sset1 == sset2)
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (st1 == st2)
 isSubsumedLazy t1 t2 = False
 --isSubsumedLazy t1 t2 = error $ "Incompatible types: isSubsumedLazy " ++ (show t1) ++ "\n***\n" ++ (show t2)
 
 
+-- |Remove redundant terms from a given set of terms.
 removeRedundantTerms :: Term -> Term
 removeRedundantTerms (TSet tset) = TSet $ Set.fromList $ lst >>= \a -> if (any (isSubsumedLazy a) (List.delete a lst)) then [] else [a]
     where
