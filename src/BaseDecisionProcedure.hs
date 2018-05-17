@@ -59,7 +59,7 @@ showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
 showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
-showTermDbg ind (TIncrSet a b) = (showTermDbg ind a) ++ "---" ++ (showTermDbg ind b)
+showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg ind b)
 
 
 -- |Term minus symbol -- defined only for the term-pairs.

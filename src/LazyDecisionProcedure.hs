@@ -95,13 +95,25 @@ isExpandedIncr (TSet tset) =
 isExpandedIncr (TIncrSet a b) = (isExpandedIncr a) && (terminationCond b (removeIncrTerm a))
 
 
+removeFixpoints :: Term -> Term
+removeFixpoints (TUnion t1 t2) = TUnion (removeFixpoints t1) (removeFixpoints t2)
+removeFixpoints (TIntersect t1 t2) = TIntersect (removeFixpoints t1) (removeFixpoints t2)
+removeFixpoints (TCompl t) = TCompl (removeFixpoints t)
+removeFixpoints (TProj var t) = TProj var (removeFixpoints t)
+removeFixpoints (TMinusClosure t sset) = removeFixpoints t
+removeFixpoints (TPair t1 t2) = TPair (removeFixpoints t1) (removeFixpoints t2)
+removeFixpoints (TSet tset) = TSet (Set.map (removeFixpoints) tset)
+removeFixpoints (TIncrSet t incr) = removeFixpoints t
+removeFixpoints t = t
+
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term --if (isExpandedIncr term) then (TMinusClosure t sset) else
-step term@(TMinusClosure t sset) =  TMinusClosure (TIncrSet complete incr) sset where
+step term@(TMinusClosure t sset) = if (isExpandedIncr newTerm) then (TIncrSet (removeFixpoints complete) incr) else TMinusClosure newTerm sset where
     st = step t
     incr = removeRedundantTerms $ ominusSymbolsLazy st sset
     complete = removeRedundantTerms $ unionTSets [incr, st]
+    newTerm = (TIncrSet complete incr)
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TIntersect (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
@@ -145,16 +157,21 @@ isSubsumed (x:xs) term@(TSet tset) = case x of
 
 -- |Structural term subsumption. Test whether the first term is subsumed by
 -- the second term. Now it is implemented on the structural level.
+-- TODO: incomplete
 isSubsumedLazy :: Term -> Term -> Bool
 isSubsumedLazy (TUnion t1 t2) (TUnion t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
 isSubsumedLazy (TIntersect t1 t2) (TIntersect t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
 isSubsumedLazy (TCompl t1) (TCompl t2) = isSubsumedLazy t1 t2
-isSubsumedLazy (TProj _ t1) (TProj _ t2) = isSubsumedLazy t1 t2
+isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
+  | v1 == v2 = isSubsumedLazy t1 t2
+  | otherwise = (v1 < v2)
 isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return (any (isSubsumedLazy a) lst)))
   where
     lst = Set.toList tset2
-isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && (sset1 == sset2)
+isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (st1 == st2)
+isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
+--isSubsumedLazy (TMinusClosure t1 sset1) t2 = isSubsumedLazy t1 t2
 isSubsumedLazy t1 t2 = False
 --isSubsumedLazy t1 t2 = error $ "Incompatible types: isSubsumedLazy " ++ (show t1) ++ "\n***\n" ++ (show t2)
 
