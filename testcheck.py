@@ -6,6 +6,7 @@ import string
 import re
 import os
 import os.path
+import resource
 
 def main():
     if len(sys.argv) != 3:
@@ -22,13 +23,14 @@ def main():
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
         program_output = subprocess.check_output([program, filename]).decode("utf-8")
+        time = resource.getrusage(resource.RUSAGE_CHILDREN).ru_utime
         lines = program_output.split('\n')
         lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)
         if (lines[-1] == "True" and valid) or (lines[-1] == "False" and not valid):
-            print("Correct: {0}".format(monafile))
+            print("Correct: {0}; Time: {1}".format(monafile, time))
         else:
-            print("Fail: {0}".format(monafile))
+            print("Fail: {0}; Time: {1}".format(monafile, time))
 
 
 def parse_validity(content):
