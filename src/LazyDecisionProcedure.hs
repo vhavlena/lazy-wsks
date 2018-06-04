@@ -37,7 +37,7 @@ botInLazy (TCompl t) = not $ botInLazy t
 botInLazy (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botInLazy t) || b
-botInLazy (TIncrSet a b) = botInLazy b
+botInLazy (TIncrSet a b) = botInLazy a
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 --botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n" ++ show (isExpandedIncr t)) False = undefined
@@ -119,7 +119,7 @@ step term@(TMinusClosure t sset) =
     complete = removeRedundantTerms $ unionTSets [incr, st]
     newTerm = (TIncrSet complete incr)
 step term@(TStates _ _ _) = term
-step (TUnion t1 t2) = TIntersect (step t1) (step t2)
+step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl (step t)
 step (TProj a t) = TProj a (step t)
