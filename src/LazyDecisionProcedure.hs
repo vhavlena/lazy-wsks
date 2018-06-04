@@ -214,5 +214,5 @@ formula2Terms f = formula2TermsVarsLazy f []
 -- |Decide whether given ground formula is valid (lazy approach).
 isValid :: Lo.Formula -> Either Bool String
 isValid f
-   | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms (Lo.removeForAll f)
+   | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms f
    | otherwise = Right "isValidLazy: Only ground formula is allowed"

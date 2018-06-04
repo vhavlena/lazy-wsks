@@ -77,8 +77,8 @@ minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
 minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
 minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
 minusSymbol (TPair term2@(TSet t2) (TMinusClosure t1 _)) sym = minusSymbol (TPair t1 term2) sym
-minusSymbol (TPair (TIncrSet a _) (TIncrSet b _)) sym = minusSymbol (TPair a b) sym
 minusSymbol (TPair (TIncrSet a _) b) sym = minusSymbol (TPair a b) sym
+minusSymbol (TPair a (TIncrSet b _)) sym = minusSymbol (TPair a b) sym
 minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 

@@ -36,4 +36,4 @@ main = do
    else do
       file <- MoPa.parseFile $ head args
       let formulas = MoWr.getFormulas file in
-         showValidLazy $ MoWr.getLogicFormula $ head formulas
+         showValidLazy $ Lo.antiprenex $ Lo.removeForAll $ MoWr.getLogicFormula $ head formulas
