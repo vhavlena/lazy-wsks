@@ -8,6 +8,8 @@ License     : GPL-3
 module Logic where
 
 import Data.List
+import Data.Monoid
+import qualified Data.Foldable as Fd
 
 
 -- second-order variable type
@@ -30,6 +32,46 @@ data Formula =
   | Neg Formula
   | Exists Var Formula
   | ForAll Var Formula
+
+
+-- Chain of quantifiers
+data QuantifChain a =
+  EmptyChain
+  | ForAllChain a
+  | ExistsChain a
+
+
+-- Chain of quantifiers with variables
+type QuantifVarChain = QuantifChain [Var]
+
+
+-- |Definition of functor of QuantifChain
+instance Functor QuantifChain where
+  fmap f EmptyChain = EmptyChain
+  fmap f (ExistsChain val) = ExistsChain (f val)
+  fmap f (ForAllChain val) = ForAllChain (f val)
+
+
+-- |Definition of applicative functor of QuantifChain
+instance Applicative QuantifChain where
+  pure = ExistsChain
+  EmptyChain <*> _ = EmptyChain
+  (ExistsChain f) <*> st = fmap f st
+  (ForAllChain f) <*> st = fmap f st
+
+
+-- |Definition of Semigroup of QuantifChain
+instance (Monoid a) => Semigroup (QuantifChain a) where
+  (<>) = mappend
+
+
+-- |Definition of monoid of QuantifChain
+instance (Monoid a) => Monoid (QuantifChain a) where
+  mempty = EmptyChain
+  mappend EmptyChain s = s
+  mappend s EmptyChain = s
+  mappend (ForAllChain v1) (ForAllChain v2) = ForAllChain (mappend v1 v2)
+  mappend (ExistsChain v1) (ExistsChain v2) = ExistsChain (mappend v1 v2)
 
 
 -- prints the formula in human-readable format
@@ -89,47 +131,37 @@ freeVarsAtom (Eps x) = [x]
 -- |Flush (unfold) a chain of existential quantifiers. Given list of variables,
 -- it expands to a chain of existential quatifiers, on the most nested level with
 -- formula f.
-flushExistsChain :: [Var] -> Formula -> Formula
-flushExistsChain [] f = f
-flushExistsChain (x:xs) f = Exists x (flushExistsChain xs f)
+flushQuantifChain :: QuantifVarChain -> Formula -> Formula
+flushQuantifChain EmptyChain f = f
+flushQuantifChain (ForAllChain xs) f = Fd.foldr (ForAll) f xs
+flushQuantifChain (ExistsChain xs) f = Fd.foldr (Exists) f xs
+
+
+-- |Propagate quantifiers to binary formula operator (conjunction, disjunction).
+propagateTo :: (Formula -> Formula -> Formula) -> Formula -> Formula -> QuantifVarChain -> Formula
+propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where
+  fv1 = fmap (intersect (freeVars f1)) chain
+  fv2 = fmap (intersect (freeVars f2)) chain
+  remChain = (intersect) <$> fv1 <*> fv2
+  rem1 = (\\) <$> fv1 <*> remChain
+  rem2 = (\\) <$> fv2 <*> remChain
 
 
 -- |Antiprenexing  with quantifiers distribution and permutation. Given starting
 -- chain of quantifiers.
--- TODO: chaining of universal quantifiers
-antiprenexFreeVar :: Formula -> [Var] -> Formula
-antiprenexFreeVar (Neg f) chain = flushExistsChain chain (Neg $ antiprenexFreeVar f [])
-antiprenexFreeVar (Conj f1 f2) chain = flushExistsChain remChain (Conj (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where
-  fv1 = intersect chain (freeVars f1)
-  fv2 = intersect chain (freeVars f2)
-  remChain = intersect fv1 fv2
-  rem1 = fv1 \\ remChain
-  rem2 = fv2 \\ remChain
-antiprenexFreeVar (Disj f1 f2) chain = flushExistsChain remChain (Disj (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where
-  fv1 = intersect chain (freeVars f1)
-  fv2 = intersect chain (freeVars f2)
-  remChain = intersect fv1 fv2
-  rem1 = fv1 \\ remChain
-  rem2 = fv2 \\ remChain
-antiprenexFreeVar (Exists var f) chain = antiprenexFreeVar f (var:chain)
-antiprenexFreeVar (ForAll var f) chain = flushExistsChain chain (ForAll var (antiprenexFreeVar f []))
-antiprenexFreeVar f@(FormulaAtomic _) chain = flushExistsChain chain f
+antiprenexFreeVar :: Formula -> QuantifVarChain -> Formula
+antiprenexFreeVar (Neg f) chain = flushQuantifChain chain (Neg $ antiprenexFreeVar f EmptyChain)
+antiprenexFreeVar (Conj f1 f2) chain = propagateTo (Conj) f1 f2 chain
+antiprenexFreeVar (Disj f1 f2) chain = propagateTo (Disj) f1 f2 chain
+antiprenexFreeVar (Exists var f) chain@(ForAllChain c) = flushQuantifChain chain (antiprenexFreeVar f (ExistsChain [var]))
+antiprenexFreeVar (Exists var f) EmptyChain = antiprenexFreeVar f ((:) <$> (ExistsChain var) <*> (ExistsChain []))
+antiprenexFreeVar (Exists var f) chain = antiprenexFreeVar f ((:) <$> (ForAllChain var) <*> chain)
+antiprenexFreeVar (ForAll var f) chain@(ExistsChain c) = flushQuantifChain chain (antiprenexFreeVar f (ForAllChain [var]))
+antiprenexFreeVar (ForAll var f) EmptyChain = antiprenexFreeVar f ((:) <$> (ForAllChain var) <*> (ForAllChain []))
+antiprenexFreeVar (ForAll var f) chain = antiprenexFreeVar f ((:) <$> (ForAllChain var) <*> chain)
+antiprenexFreeVar f@(FormulaAtomic _) chain = flushQuantifChain chain f
 
 
 -- |Antiprenexing.
-antiprenex f = antiprenexFreeVar f []
-
-
--- antiprenex :: Formula -> Formula
--- antiprenex f@(FormulaAtomic _) = f
--- antiprenex (Disj f1 f2)        = Disj (antiprenex f1) (antiprenex f2)
--- antiprenex (Conj f1 f2)        = Conj (antiprenex f1) (antiprenex f2)
--- antiprenex (Neg f)             = Neg (antiprenex f)
--- antiprenex (Exists var f) =
---   case f of
---     Disj g1 g2 -> (Exists var $ antiprenex g1) `Disj` (Exists var $ antiprenex g2)
---     _          -> Exists var $ antiprenex f
--- antiprenex (ForAll var f) =
---   case f of
---     Conj g1 g2 -> (ForAll var $ antiprenex g1) `Conj` (ForAll var $ antiprenex g2)
---     _          -> ForAll var $ antiprenex f
+antiprenex :: Formula -> Formula
+antiprenex f = antiprenexFreeVar f EmptyChain
