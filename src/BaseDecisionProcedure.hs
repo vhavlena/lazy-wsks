@@ -106,6 +106,8 @@ atom2Terms (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subseteqAut v1 v2
 atom2Terms (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where
    aut = epsAut var
+atom2Terms (Lo.Eqn v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+   aut = eqAut v1 v2
 
 
 -- |Convert formula to term representation. Uses additional information about
