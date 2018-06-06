@@ -22,6 +22,8 @@ data Atom =
    | Cat2 Var Var
    | Subseteq Var Var
    | Eps Var
+   | Neq Var Var
+   | Eqn Var Var
 
 
 -- formula type
@@ -89,6 +91,8 @@ showAtom (Sing v) = "Sing(" ++ v ++ ")"
 showAtom (Cat1 v1 v2) = v1 ++ "=" ++ v2 ++ ".L"
 showAtom (Subseteq v1 v2) = v1 ++ "⊆" ++ v2
 showAtom (Eps v) = v ++ "=ε"
+showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
+showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 
 -- instantiance of the data type as class Show
 instance Show Formula where
@@ -110,6 +114,22 @@ removeForAll (Exists var f)      = (Exists var (removeForAll f))
 removeForAll (ForAll var f)      = (Neg $ Exists var $ Neg (removeForAll f))
 
 
+-- |Replace atoms which are not basic.
+removeAtoms :: Formula -> Formula
+removeAtoms (FormulaAtomic (Neq v1 v2)) = Neg (FormulaAtomic (Eqn v1 v2))
+removeAtoms (FormulaAtomic phi) = (FormulaAtomic phi)
+removeAtoms (Disj f1 f2)        = (Disj (removeAtoms f1) (removeAtoms f2))
+removeAtoms (Conj f1 f2)        = (Conj (removeAtoms f1) (removeAtoms f2))
+removeAtoms (Neg f)             = (Neg (removeAtoms f))
+removeAtoms (Exists var f)      = (Exists var (removeAtoms f))
+removeAtoms (ForAll var f)      = (Neg $ Exists var $ Neg (removeAtoms f))
+
+
+-- |Convert to base formula containing only basic atoms and quantifiers.
+convertToBaseFormula :: Formula -> Formula
+convertToBaseFormula = removeAtoms . removeForAll
+
+
 -- retrieves free variables of a formula
 freeVars :: Formula -> [Var]
 freeVars (FormulaAtomic phi) = freeVarsAtom phi
@@ -126,6 +146,8 @@ freeVarsAtom (Sing x) = [x]
 freeVarsAtom (Cat1 x y) = [x,y]
 freeVarsAtom (Subseteq x y) = [x,y]
 freeVarsAtom (Eps x) = [x]
+freeVarsAtom (Neq x y) = [x,y]
+freeVarsAtom (Eqn x y) = [x,y]
 
 
 -- |Flush (unfold) a chain of existential quantifiers. Given list of variables,
@@ -165,3 +187,34 @@ antiprenexFreeVar f@(FormulaAtomic _) chain = flushQuantifChain chain f
 -- |Antiprenexing.
 antiprenex :: Formula -> Formula
 antiprenex f = antiprenexFreeVar f EmptyChain
+
+
+-- |Simplyfication of a given formula.
+simplifyFormula :: Formula -> Formula
+simplifyFormula = simplifyNeg . moveNegToLeaves . simplifyNeg
+
+
+-- |Simplyfication of double negation.
+simplifyNeg :: Formula -> Formula
+simplifyNeg (Neg (Neg f)) = simplifyNeg f
+simplifyNeg f@(FormulaAtomic _) = f
+simplifyNeg (Disj f1 f2) = Disj (simplifyNeg f1) (simplifyNeg f2)
+simplifyNeg (Conj f1 f2) = Conj (simplifyNeg f1) (simplifyNeg f2)
+simplifyNeg (Neg f) = Neg (simplifyNeg f)
+simplifyNeg (ForAll var f) = ForAll var (simplifyNeg f)
+simplifyNeg (Exists var f) = Exists var (simplifyNeg f)
+
+
+-- |Move negation to the formula leaves.
+moveNegToLeaves :: Formula -> Formula
+moveNegToLeaves (Neg (Conj f1 f2)) = moveNegToLeaves (Disj (Neg f1) (Neg f2))
+moveNegToLeaves (Neg (Disj f1 f2)) = moveNegToLeaves (Conj (Neg f1) (Neg f2))
+moveNegToLeaves (Disj f1 f2) = Disj (moveNegToLeaves f1) (moveNegToLeaves f2)
+moveNegToLeaves (Conj f1 f2) = Conj (moveNegToLeaves f1) (moveNegToLeaves f2)
+moveNegToLeaves (Neg f) = Neg (moveNegToLeaves f)
+moveNegToLeaves (ForAll var f) = ForAll var (moveNegToLeaves f)
+moveNegToLeaves (Exists var f) = Exists var (moveNegToLeaves f)
+moveNegToLeaves f@(FormulaAtomic _) = f
+
+
+--getConjunctionList :: Formula -> [Formula]
