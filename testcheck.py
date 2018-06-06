@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+ Script for automated testing.
+ @title testcheck.py
+ @author Vojtech Havlena, May 2018
+"""
+
 import sys
 import subprocess
 import string

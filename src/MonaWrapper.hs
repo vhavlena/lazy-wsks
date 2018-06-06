@@ -78,6 +78,7 @@ parseSimpleAtom arr =
       "eps" -> Just $ Lo.Eps $ arr !! 2
       "in" -> Just $ Lo.Subseteq (arr !! 0) (arr !! 2)
       "~=" -> Just $ Lo.Neq (arr !! 0) (arr !! 2)
+      "=" -> Just $ Lo.Eqn (arr !! 0) (arr !! 2)
 
 
 -- |Convert Mona string containing atom to Logic.Atom

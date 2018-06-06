@@ -194,7 +194,7 @@ simplifyFormula :: Formula -> Formula
 simplifyFormula = simplifyNeg . moveNegToLeaves . simplifyNeg
 
 
--- |Simplyfication of double negation.
+-- |Simplification of double negation.
 simplifyNeg :: Formula -> Formula
 simplifyNeg (Neg (Neg f)) = simplifyNeg f
 simplifyNeg f@(FormulaAtomic _) = f
