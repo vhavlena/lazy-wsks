@@ -71,8 +71,9 @@ minusSymbol (TPair (TProj v1 t1) (TProj v2 t2)) sym
    | v1 == v2 = TProj v1 (TSet $ unionTerms [minusSymbol (TPair t1 t2) s | s <- Set.toList $ Alp.projSymbol sym v1])
    | otherwise = error "minusSymbol: Projection variables do not match"
 minusSymbol (TPair (TSet tset1) (TSet tset2)) sym = TSet (Set.fromList [minusSymbol (TPair t1 t2) sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
+--minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym | Dbg.trace ("minus: " ++ show sym ++ " --- " ++ (show $ Alp.cylindrifySymbol var1 sym) ++"\n") False = undefined
 minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
-   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylidrifySymbol sym var1))
+   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylindrifySymbol var1 sym))
    | otherwise = error "minusSymbol: Inconsistent basic automata"
 minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
 minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
@@ -108,6 +109,8 @@ atom2Terms (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where
    aut = epsAut var
 atom2Terms (Lo.Eqn v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = eqAut v1 v2
+atom2Terms (Lo.In v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+   aut = inAut v1 v2
 
 
 -- |Convert formula to term representation. Uses additional information about
@@ -118,5 +121,5 @@ formula2TermsVars (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars f1 vars) (for
 formula2TermsVars (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars f1 vars) (formula2TermsVars f2 vars)
 formula2TermsVars (Lo.Neg f) vars = TCompl (formula2TermsVars f vars)
 formula2TermsVars (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) (Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) (var:vars)))
+   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) ((Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) ([var]))))
 formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"

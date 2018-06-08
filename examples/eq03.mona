@@ -3,3 +3,4 @@
 ws2s;
 
 all2 X, Y, Z: (X=Y & Y=Z) => X=Z;
+#~ex2 X: ex2 Y: (X=Y & (ex2 Z: (Y=Z & X~=Z)));

@@ -40,16 +40,14 @@ botInLazy (TSet tset) =
 botInLazy (TIncrSet a b) = botInLazy a
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
---botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n" ++ show (isExpandedIncr t)) False = undefined
-botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpandedIncr t) then False else (botInLazy (step term)))
+--botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n ... " ++ show (step term)) False = undefined
+botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpandedLight t) then False else (botInLazy (step term)))
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
 
 -- |Fixpoint termination condition.
 terminationCond :: Term -> Term -> Bool
 terminationCond t1@(TSet modif) t2@(TSet term) = if (modif == (Set.empty)) then False else Set.isSubsetOf modif term
---terminationCond (TIncrSet a _) t = terminationCond a t
---terminationCond t (TIncrSet a _) = terminationCond t a
 terminationCond t1 t2 = error $ "terminationCond: Not defined" ++ (show t1) ++ (show t2)
 
 
@@ -81,7 +79,7 @@ removeIncrTerm (TIncrSet t incr) = removeIncrTerm t
 removeIncrTerm t = t
 
 
--- Remove subterms representing fixpoint computation, i.e., TIncrSet and TMinusClosure.
+-- |Remove subterms representing fixpoint computation, i.e., TIncrSet and TMinusClosure.
 removeFixpoints :: Term -> Term
 removeFixpoints (TUnion t1 t2) = TUnion (removeFixpoints t1) (removeFixpoints t2)
 removeFixpoints (TIntersect t1 t2) = TIntersect (removeFixpoints t1) (removeFixpoints t2)
@@ -94,34 +92,47 @@ removeFixpoints (TIncrSet t incr) = removeFixpoints t
 removeFixpoints t = t
 
 
+-- |Lightweight check of a term expansion.
+isExpandedLight :: Term -> Bool
+isExpandedLight (TUnion t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
+isExpandedLight (TIntersect t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
+isExpandedLight (TCompl t) = isExpandedLight t
+isExpandedLight (TProj var t) = isExpandedLight t
+isExpandedLight (TMinusClosure t sset) = False
+isExpandedLight (TPair t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
+isExpandedLight (TSet tset) = Set.foldr (&&) True (Set.map (isExpandedLight) tset)
+isExpandedLight (TIncrSet t incr) = isExpandedLight t
+isExpandedLight t = True
+
+
 -- |Test whether a given term is fully expanded. Uses incremental terms.
 isExpandedIncr :: Term -> Bool
-isExpandedIncr (TStates _ _ _) = True
-isExpandedIncr (TMinusClosure t sset) = isExpandedIncr t
-isExpandedIncr (TUnion t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
-isExpandedIncr (TIntersect t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
-isExpandedIncr (TCompl t) = isExpandedIncr t
-isExpandedIncr (TProj _ t) = isExpandedIncr t
-isExpandedIncr (TSet tset) =
-   foldr gather True (Set.toList tset) where
-      gather t b = (isExpandedIncr t) && b
-isExpandedIncr (TIncrSet a b) = (isExpandedIncr a) && (terminationCond b (removeIncrTerm a))
+isExpandedIncr t = isSubsumedLazy (removeFixpoints $ step t) (removeFixpoints t)
+-- isExpandedIncr (TStates _ _ _) = True
+-- isExpandedIncr (TMinusClosure t sset) = isExpandedIncr t
+-- isExpandedIncr (TUnion t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
+-- isExpandedIncr (TIntersect t1 t2) = (isExpandedIncr t1) && (isExpandedIncr t2)
+-- isExpandedIncr (TCompl t) = isExpandedIncr t
+-- isExpandedIncr (TProj _ t) = isExpandedIncr t
+-- isExpandedIncr (TSet tset) =
+--    foldr gather True (Set.toList tset) where
+--       gather t b = (isExpandedIncr t) && b
+-- isExpandedIncr (TIncrSet a b) = (isExpandedIncr a) && (terminationCond b (removeIncrTerm a))
 
 
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term --if (isExpandedIncr term) then (TMinusClosure t sset) else
 step term@(TMinusClosure t sset) =
-  if (isExpandedIncr newTerm) then (TIncrSet (removeFixpoints complete) incr)
-  else TMinusClosure newTerm sset where
+  if isSubsumedLazy incr st then complete
+  else TMinusClosure complete sset where
     st = step t
     incr = removeRedundantTerms $ ominusSymbolsLazy st sset
     complete = removeRedundantTerms $ unionTSets [incr, st]
-    newTerm = (TIncrSet complete incr)
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
-step (TCompl t) = TCompl (step t)
+step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
 step (TSet tset) =  TSet $ Set.fromList [step t | t <- Set.toList tset]
 step (TIncrSet a b) = TIncrSet (step a) b
@@ -138,7 +149,6 @@ ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a 
 -- |Fixpoint computation for a lazy approach. Simultaneously with every step
 -- check bottom membership.
 fixpointCompLazy :: Term -> Set.Set Alp.Symbol -> Bool
---fixpointCompLazy term@(TSet tset) sset | Dbg.trace ("fixpointCompLazy " ++ show term ++ "------" ++ show sset) False = undefined
 fixpointCompLazy term@(TSet tset) sset =
    case ominusSymbolsLazy term sset of
       TSet modifset ->
@@ -181,7 +191,6 @@ isSubsumedLazy t1 t2 = False
 -- partial order (we can have a<=b and b<=a and a!=b). Therefore, we may not remove
 -- all terms from a set.
 removeRedundantTerms :: Term -> Term
---removeRedundantTerms t@(TSet tset) | Dbg.trace ("removeRedundantTerms: " ++ show t ++ "\n" ++ show (TSet $ Set.fromList $ ((Set.toList tset) >>= (\a -> if (any (isSubsumedLazy a) (List.delete a (Set.toList tset))) then [] else [a])))) False = undefined
 removeRedundantTerms (TSet tset) = TSet $ Set.fromList $ if (not $ Set.null tset) && (null reduced) then [head lst] else reduced
     where
       lst = Set.toList $ Set.map (removeRedundantTerms) tset
@@ -201,7 +210,7 @@ formula2TermsVarsLazy (Lo.Disj f1 f2) vars = TUnion (formula2TermsVarsLazy f1 va
 formula2TermsVarsLazy (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
 formula2TermsVarsLazy (Lo.Neg f) vars = TCompl (formula2TermsVarsLazy f vars)
 formula2TermsVarsLazy (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (TIncrSet innerTerm (TSet Set.empty)) (Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) (var:vars))) where
+   TProj var (TMinusClosure innerTerm ((Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) ([var])))) where
      innerTerm = TSet (Set.fromList [formula2TermsVarsLazy f (var:vars)])
 formula2TermsVarsLazy (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
 

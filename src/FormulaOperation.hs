@@ -105,7 +105,7 @@ antiprenex f = antiprenexFreeVar f EmptyChain
 
 -- |Simplyfication of a given formula.
 simplifyFormula :: Formula -> Formula
-simplifyFormula = simplifyNeg . moveNegToLeaves . simplifyNeg
+simplifyFormula =  simplifyNeg . moveNegToLeaves
 
 
 -- |Simplification of double negation.

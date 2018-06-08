@@ -20,6 +20,7 @@ data Atom =
    | Cat1 Var Var
    | Cat2 Var Var
    | Subseteq Var Var
+   | In Var Var
    | Eps Var
    | Neq Var Var
    | Eqn Var Var
@@ -52,6 +53,7 @@ showAtom (Subseteq v1 v2) = v1 ++ "⊆" ++ v2
 showAtom (Eps v) = v ++ "=ε"
 showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
+showAtom (In v1 v2) = v1 ++ " in " ++ v2
 
 -- instantiance of the data type as class Show
 instance Show Formula where
@@ -107,3 +109,4 @@ freeVarsAtom (Subseteq x y) = [x,y]
 freeVarsAtom (Eps x) = [x]
 freeVarsAtom (Neq x y) = [x,y]
 freeVarsAtom (Eqn x y) = [x,y]
+freeVarsAtom (In x y) = [x,y]

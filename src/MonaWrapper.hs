@@ -40,12 +40,17 @@ convert2Base t = error $ "Unimplemented: " ++ (show t) -- TODO: Complete
 -- |Unwind several chained quatifiers to chain of quatifiers (i.e.
 -- Forall X1, X2 ---> Forall X1, Forall X2). Replace first order quatifiers as well.
 unwindQuantif :: MoPa.MonaFormula -> MoPa.MonaFormula
-unwindQuantif (MoPa.MonaFormulaEx1 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
-unwindQuantif (MoPa.MonaFormulaEx1 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+-- unwindQuantif (MoPa.MonaFormulaEx1 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+-- unwindQuantif (MoPa.MonaFormulaEx1 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaEx1 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (convert2Base f)
+unwindQuantif (MoPa.MonaFormulaEx1 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaEx2 xs f))
 unwindQuantif (MoPa.MonaFormulaEx2 [x] f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (convert2Base f)
 unwindQuantif (MoPa.MonaFormulaEx2 (x:xs) f) = MoPa.MonaFormulaEx2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaEx2 xs f))
-unwindQuantif (MoPa.MonaFormulaAll1 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
-unwindQuantif (MoPa.MonaFormulaAll1 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+-- unwindQuantif (MoPa.MonaFormulaAll1 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (convert2Base f) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+-- unwindQuantif (MoPa.MonaFormulaAll1 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (MoPa.MonaFormulaConj (unwindQuantif (MoPa.MonaFormulaEx1 xs f)) (MoPa.MonaFormulaAtomic ( "term sing "++ (fst x))))
+unwindQuantif (MoPa.MonaFormulaAll1 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (convert2Base f)
+unwindQuantif (MoPa.MonaFormulaAll1 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaAll2 xs f))
+
 unwindQuantif (MoPa.MonaFormulaAll2 [x] f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (convert2Base f)
 unwindQuantif (MoPa.MonaFormulaAll2 (x:xs) f) = MoPa.MonaFormulaAll2 [(handleWhere x)] (unwindQuantif (MoPa.MonaFormulaAll2 xs f))
 unwindQuantif t = error $ "Unimplemented: " ++ (show t) -- TODO: Complete
@@ -76,7 +81,7 @@ parseSimpleAtom arr =
       "sub" -> Just $ Lo.Subseteq (arr !! 0) (arr !! 2)
       "cat1" -> Just $ Lo.Cat1 (arr !! 0) (arr !! 2)
       "eps" -> Just $ Lo.Eps $ arr !! 2
-      "in" -> Just $ Lo.Subseteq (arr !! 0) (arr !! 2)
+      "in" -> Just $ Lo.In (arr !! 0) (arr !! 2)
       "~=" -> Just $ Lo.Neq (arr !! 0) (arr !! 2)
       "=" -> Just $ Lo.Eqn (arr !! 0) (arr !! 2)
 

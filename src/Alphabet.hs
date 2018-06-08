@@ -13,7 +13,8 @@ module Alphabet (
    , projSymbolVars
    , remSymbol
    , remSymbolVars
-   , cylidrifySymbol
+   , cylindrifySymbol
+   , cylindrifySymbols
    , showSymbolDbg
 ) where
 
@@ -71,5 +72,8 @@ remSymbolVars s (x:xs) = remSymbolVars (remSymbol s x) xs
 
 
 -- |Cylindrify symbol -- maintain values of only those variables which are in the list.
-cylidrifySymbol :: Symbol -> [Variable] -> Symbol
-cylidrifySymbol sym vars = remSymbolVars sym (Set.toList $ Set.difference (snd sym) (Set.fromList vars))
+cylindrifySymbol :: [Variable] -> Symbol -> Symbol
+cylindrifySymbol vars sym = remSymbolVars sym (Set.toList $ Set.difference (snd sym) (Set.fromList vars))
+
+cylindrifySymbols :: [Variable] -> Set.Set Symbol -> Set.Set Symbol
+cylindrifySymbols vars sym = Set.map (cylindrifySymbol vars) sym

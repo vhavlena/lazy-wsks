@@ -45,7 +45,19 @@ catAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.
    (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
       , (([0,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [1])
       , (([1,0], (pairSymbol '1' '1' v1 v2)), Set.fromList [1])
+--      , (([1,1], (pairSymbol '0' '0' v1 v2)), Set.fromList [1])
       , (([1,0], (pairSymbol '1' '0' v1 v2)), Set.fromList [0])])
+
+
+-- |Tree automaton for an atomic predicate x \in Y.
+inAut :: Lo.Var -> Lo.Var -> WS2STreeAut
+inAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [1])
+    (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
+       , (([0,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [0])
+       , (([1,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [1])
+       , (([0,1], (pairSymbol '0' '0' v1 v2)), Set.fromList [1])
+       , (([1,1], (pairSymbol '0' '0' v1 v2)), Set.fromList [1])
+       , (([0,0], (pairSymbol '1' '1' v1 v2)), Set.fromList [1])])
 
 
 -- |Tree automaton for atomic predicate X subseteq Y
