@@ -41,7 +41,8 @@ botInLazy (TIncrSet a b) = botInLazy a
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
 --botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n ... " ++ show (step term)) False = undefined
-botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if (isExpandedLight t) then False else (botInLazy (step term)))
+botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if isExpandedLight st then False else botInLazy st) where
+  st = step term
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
 
