@@ -1,5 +1,6 @@
 
 import System.Environment
+import Data.Time
 
 import qualified LazyDecisionProcedure as LDP
 import qualified StrictDecisionProcedure as SDP
@@ -43,8 +44,11 @@ main = do
    args <- getArgs
    if (length args) /= 1 then putStrLn "Bad input params, file with formula required"
    else do
+      start <- getCurrentTime
       file <- MoPa.parseFile $ head args
       let formulas = MoWr.getFormulas file
           hf = Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
           --formulaOperationsDebug $ hf
           showValidLazy $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+      stop <- getCurrentTime
+      putStrLn $ "Time: " ++ show (diffUTCTime stop start)

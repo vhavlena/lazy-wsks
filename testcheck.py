@@ -14,6 +14,10 @@ import os
 import os.path
 import resource
 
+VALIDLINE = -2
+TIMELINE = -1
+TIMEOUT=10 #in seconds
+
 def main():
     if len(sys.argv) != 3:
         sys.stderr.write("Bad input arguments. \nFormat: ./testcheck [program] [formula folder]\n")
@@ -28,15 +32,19 @@ def main():
 
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
-        program_output = subprocess.check_output([program, filename]).decode("utf-8")
-        time = resource.getrusage(resource.RUSAGE_CHILDREN).ru_utime
+        try:
+            program_output = subprocess.check_output([program, filename], timeout=TIMEOUT).decode("utf-8")
+            #time = resource.getrusage(resource.RUSAGE_CHILDREN).ru_utime
+        except subprocess.TimeoutExpired:
+            print("Timeout expired: {0}; Time: {1}s".format(monafile, TIMEOUT))
+            continue
         lines = program_output.split('\n')
         lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)
-        if (lines[-1] == "True" and valid) or (lines[-1] == "False" and not valid):
-            print("Correct: {0}; Time: {1}".format(monafile, time))
+        if (lines[VALIDLINE] == "True" and valid) or (lines[VALIDLINE] == "False" and not valid):
+            print("Correct: {0}; {1}".format(monafile, lines[TIMELINE]))
         else:
-            print("Fail: {0}; Time: {1}".format(monafile, time))
+            print("Fail: {0}; {1}".format(monafile, lines[TIMELINE]))
 
 
 def parse_validity(content):
@@ -60,7 +68,6 @@ def file_formula_valid(filename):
     content = handler.read()
     handler.close()
     return parse_validity(content)
-
 
 
 if __name__ == "__main__":
