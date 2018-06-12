@@ -16,6 +16,7 @@ module Alphabet (
    , cylindrifySymbol
    , cylindrifySymbols
    , showSymbolDbg
+   , zeroSymbol
 ) where
 
 
@@ -30,6 +31,9 @@ type Symbol = ([Char], Set.Set Variable)
 
 -- |Empty symbol = epsilon
 emptySymbol = ([], Set.empty)
+
+-- |Symbol with all variables assigned to 0.
+zeroSymbol vars = (replicate (length vars) '0', Set.fromList vars)
 
 
 -- |Show symbol in human readable debug format.

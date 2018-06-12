@@ -27,7 +27,8 @@ type WS2STreeAut = TA.BATreeAutomaton State Alp.Symbol
 --------------------------------------------------------------------------------------------------------------
 
 singSymbol s x = ([s], Set.fromList [x])
-pairSymbol v1 v2 x1 x2 = ([v1,v2], Set.fromList [x1, x2])
+pairSymbol v1 v2 x1 x2 = if x1 <= x2 then ([v1,v2], Set.fromList [x1, x2])
+                         else ([v2,v1], Set.fromList [x1, x2])
 
 
 -- |Tree automaton for an atomic predicate Sing(X).
