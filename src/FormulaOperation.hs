@@ -15,6 +15,7 @@ import Logic
 import Data.List
 import Data.Monoid
 import qualified Data.Foldable as Fd
+import qualified Data.Semigroup as S
 
 -- Chain of quantifiers
 data QuantifChain a =
@@ -43,7 +44,7 @@ instance Applicative QuantifChain where
 
 
 -- |Definition of Semigroup of QuantifChain
-instance (Monoid a) => Semigroup (QuantifChain a) where
+instance (Monoid a) => S.Semigroup (QuantifChain a) where
   (<>) = mappend
 
 
