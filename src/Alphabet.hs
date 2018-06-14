@@ -17,6 +17,7 @@ module Alphabet (
    , cylindrifySymbols
    , showSymbolDbg
    , zeroSymbol
+   , projZeroSymbol
 ) where
 
 
@@ -79,5 +80,11 @@ remSymbolVars s (x:xs) = remSymbolVars (remSymbol s x) xs
 cylindrifySymbol :: [Variable] -> Symbol -> Symbol
 cylindrifySymbol vars sym = remSymbolVars sym (Set.toList $ Set.difference (snd sym) (Set.fromList vars))
 
+
+-- |Cylindrify symbols (extension of cylindrifySymbol).
 cylindrifySymbols :: [Variable] -> Set.Set Symbol -> Set.Set Symbol
 cylindrifySymbols vars sym = Set.map (cylindrifySymbol vars) sym
+
+
+projZeroSymbol :: [Variable] -> Set.Set Symbol
+projZeroSymbol (var:vars) = projSymbolVars (Set.fromList [zeroSymbol vars]) [var]

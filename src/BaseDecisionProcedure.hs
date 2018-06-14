@@ -121,5 +121,5 @@ formula2TermsVars (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars f1 vars) (for
 formula2TermsVars (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars f1 vars) (formula2TermsVars f2 vars)
 formula2TermsVars (Lo.Neg f) vars = TCompl (formula2TermsVars f vars)
 formula2TermsVars (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) ((Alp.projSymbolVars (Set.fromList [Alp.emptySymbol]) ([var]))))
+   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
 formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"

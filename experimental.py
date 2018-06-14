@@ -106,7 +106,7 @@ def format_output(parse):
 
 
 def print_output(filename, lazy_parse, mona_parse):
-    print("{0}: {1}, {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
+    print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
 
 
 if __name__ == "__main__":

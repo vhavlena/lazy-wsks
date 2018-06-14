@@ -211,7 +211,7 @@ formula2TermsVarsLazy (Lo.Disj f1 f2) vars = TUnion (formula2TermsVarsLazy f1 va
 formula2TermsVarsLazy (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
 formula2TermsVarsLazy (Lo.Neg f) vars = TCompl (formula2TermsVarsLazy f vars)
 formula2TermsVarsLazy (Lo.Exists var f) vars =
-   TProj var (TMinusClosure innerTerm ((Alp.projSymbolVars (Set.fromList [Alp.zeroSymbol (vars)]) ([var])))) where
+   TProj var (TMinusClosure innerTerm (Alp.projZeroSymbol (var:vars))) where
       innerTerm = TSet (Set.fromList [formula2TermsVarsLazy f (var:vars)])
 formula2TermsVarsLazy (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
 

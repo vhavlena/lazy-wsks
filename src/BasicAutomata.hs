@@ -15,7 +15,6 @@ import qualified TreeAutomaton as TA
 import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified Alphabet as Alp
---import BaseDecisionProcedure
 
 import qualified Debug.Trace as Dbg
 
