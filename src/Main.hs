@@ -49,6 +49,6 @@ main = do
       let formulas = MoWr.getFormulas file
           hf = Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
           --formulaOperationsDebug $ hf
-          showValidLazy $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+          showValidLazy  $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
       stop <- getCurrentTime
       putStrLn $ "Time: " ++ show (diffUTCTime stop start)

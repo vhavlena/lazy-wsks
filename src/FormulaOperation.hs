@@ -9,6 +9,7 @@ module FormulaOperation (
   antiprenex
   , simplifyFormula
   , balanceFormula
+  , replaceSubformulas
 ) where
 
 import Logic
@@ -106,7 +107,7 @@ antiprenex f = antiprenexFreeVar f EmptyChain
 
 -- |Simplyfication of a given formula.
 simplifyFormula :: Formula -> Formula
-simplifyFormula =  simplifyNeg . moveNegToLeaves
+simplifyFormula = moveNegToLeaves . simplifyNeg . moveNegToLeaves
 
 
 -- |Simplification of double negation.
@@ -159,3 +160,19 @@ getConjList v = [v]
 getDisjList :: Formula -> [Formula]
 getDisjList (Disj f1 f2) = (getDisjList f1) ++ (getDisjList f2)
 getDisjList v = [v]
+
+
+replaceSubformulas :: Formula -> Formula
+replaceSubformulas (Disj f1 f2) = Disj (replaceSubformulas f1) (replaceSubformulas f2)
+replaceSubformulas (Conj f1 f2) =  Conj (replaceSubformulas f1) (replaceSubformulas f2)
+replaceSubformulas (Neg f) = replaceSubformula (Neg (replaceSubformulas f))
+replaceSubformulas (ForAll var f) = ForAll var (replaceSubformulas f)
+replaceSubformulas (Exists var f) = Exists var (replaceSubformulas f)
+replaceSubformulas f@(FormulaAtomic _) = f
+
+
+replaceSubformula :: Formula -> Formula
+--replaceSubformula (Conj (FormulaAtomic (Subseteq v1 v2)) (FormulaAtomic (Neq v3 v4)))
+--  | (v1 == v3) && (v2 == v4) = FormulaAtomic (Subset v1 v2)
+replaceSubformula (Neg (FormulaAtomic (Subseteq v1 v2))) = FormulaAtomic (Subset v2 v1)
+replaceSubformula t = t
