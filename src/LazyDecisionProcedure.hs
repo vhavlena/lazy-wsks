@@ -135,7 +135,7 @@ step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
-step (TSet tset) =  TSet $ Set.fromList [step t | t <- Set.toList tset]
+step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
 step (TIncrSet a b) = TIncrSet (step a) b
 
 
@@ -175,7 +175,7 @@ isSubsumed (x:xs) term@(TSet tset) = case x of
 isSubsumedLazy :: Term -> Term -> Bool
 isSubsumedLazy (TUnion t1 t2) (TUnion t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
 isSubsumedLazy (TIntersect t1 t2) (TIntersect t3 t4) = (isSubsumedLazy t1 t3) && (isSubsumedLazy t2 t4)
-isSubsumedLazy (TCompl t1) (TCompl t2) = isSubsumedLazy t1 t2
+isSubsumedLazy (TCompl t1) (TCompl t2) = isSubsumedLazy t2 t1
 isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
   | v1 == v2 = isSubsumedLazy t1 t2
   | otherwise = False
@@ -183,7 +183,8 @@ isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >
   where
     lst = Set.toList tset2
 isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
-isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (st1 == st2)
+isSubsumedLazy (TMinusClosure t1 sset1) t2@(TSet _) = isSubsumedLazy t1 t2
+isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
 isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
 isSubsumedLazy t1 t2 = False
 
