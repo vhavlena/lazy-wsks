@@ -33,8 +33,9 @@ convert2Base t@(MoPa.MonaFormulaAll2 var f) = unwindQuantif t
 convert2Base (MoPa.MonaFormulaAtomic atom) = MoPa.MonaFormulaAtomic atom
 convert2Base (MoPa.MonaFormulaImpl f1 f2) = MoPa.MonaFormulaDisj (MoPa.MonaFormulaNeg (convert2Base f1)) (convert2Base f2)
 convert2Base (MoPa.MonaFormulaConj f1 f2) = MoPa.MonaFormulaConj (convert2Base f1) (convert2Base f2)
+convert2Base (MoPa.MonaFormulaDisj f1 f2) = MoPa.MonaFormulaDisj (convert2Base f1) (convert2Base f2)
 convert2Base (MoPa.MonaFormulaNeg f) = MoPa.MonaFormulaNeg (convert2Base f)
-convert2Base t = error $ "Unimplemented: " ++ (show t) -- TODO: Complete
+convert2Base t = error $ "convert2Base: Unimplemented: " ++ (show t) -- TODO: Complete
 
 
 -- |Unwind several chained quatifiers to chain of quatifiers (i.e.
