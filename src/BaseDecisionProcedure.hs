@@ -33,6 +33,11 @@ data Term =
    | TSet (Set.Set Term)
    deriving (Eq, Ord)
 
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the term to string conversion.
+--------------------------------------------------------------------------------------------------------------
+
 instance Show Term where
    show = showTermDbg 0
 
@@ -62,6 +67,10 @@ showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
 showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg ind b)
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with the Minus symbol (pre on the terms)
+--------------------------------------------------------------------------------------------------------------
+
 -- |Term minus symbol -- defined only for the term-pairs.
 minusSymbol :: Term -> Alp.Symbol -> Term
 minusSymbol (TPair (TIntersect t1 t2) (TIntersect t3 t4)) sym = TIntersect (minusSymbol (TPair t1 t3) sym) (minusSymbol (TPair t2 t4) sym)
@@ -71,7 +80,6 @@ minusSymbol (TPair (TProj v1 t1) (TProj v2 t2)) sym
    | v1 == v2 = TProj v1 (TSet $ unionTerms [minusSymbol (TPair t1 t2) s | s <- Set.toList $ Alp.projSymbol sym v1])
    | otherwise = error "minusSymbol: Projection variables do not match"
 minusSymbol (TPair (TSet tset1) (TSet tset2)) sym = TSet (Set.fromList [minusSymbol (TPair t1 t2) sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
---minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym | Dbg.trace ("minus: " ++ show sym ++ " --- " ++ (show $ Alp.cylindrifySymbol var1 sym) ++"\n") False = undefined
 minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
    | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylindrifySymbol var1 sym))
    | otherwise = error "minusSymbol: Inconsistent basic automata"
@@ -96,6 +104,10 @@ unionTerms ((TIncrSet a _):xs) = unionTerms (a:xs)
 unionTSets :: [Term] -> Term
 unionTSets = TSet . unionTerms
 
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the functions providing conversions from a formuala to terms.
+--------------------------------------------------------------------------------------------------------------
 
 -- |Convert atomic formula to term.
 atom2Terms :: Lo.Atom -> Term

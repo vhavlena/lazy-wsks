@@ -116,29 +116,30 @@ simplifyNeg (Neg (Neg f)) = simplifyNeg f
 simplifyNeg f@(FormulaAtomic _) = f
 simplifyNeg (Disj f1 f2) = Disj (simplifyNeg f1) (simplifyNeg f2)
 simplifyNeg (Conj f1 f2) = Conj (simplifyNeg f1) (simplifyNeg f2)
-simplifyNeg (Neg f) = Neg (simplifyNeg f)
+simplifyNeg (Neg f) = Neg $ simplifyNeg f
 simplifyNeg (ForAll var f) = ForAll var (simplifyNeg f)
 simplifyNeg (Exists var f) = Exists var (simplifyNeg f)
 
 
 -- |Move negation to the formula leaves.
 moveNegToLeaves :: Formula -> Formula
-moveNegToLeaves (Neg (Conj f1 f2)) = moveNegToLeaves (Disj (Neg f1) (Neg f2))
-moveNegToLeaves (Neg (Disj f1 f2)) = moveNegToLeaves (Conj (Neg f1) (Neg f2))
+moveNegToLeaves (Neg (Conj f1 f2)) = moveNegToLeaves $ Disj (Neg f1) (Neg f2)
+moveNegToLeaves (Neg (Disj f1 f2)) = moveNegToLeaves $ Conj (Neg f1) (Neg f2)
 moveNegToLeaves (Disj f1 f2) = Disj (moveNegToLeaves f1) (moveNegToLeaves f2)
 moveNegToLeaves (Conj f1 f2) = Conj (moveNegToLeaves f1) (moveNegToLeaves f2)
-moveNegToLeaves (Neg f) = Neg (moveNegToLeaves f)
+moveNegToLeaves (Neg f) = Neg $ moveNegToLeaves f
 moveNegToLeaves (ForAll var f) = ForAll var (moveNegToLeaves f)
 moveNegToLeaves (Exists var f) = Exists var (moveNegToLeaves f)
 moveNegToLeaves f@(FormulaAtomic _) = f
+
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with conjunction and disjunction balancing
 --------------------------------------------------------------------------------------------------------------
 
 balanceFormula :: Formula -> Formula
-balanceFormula f@(Conj f1 f2) = rebuildFormula (Conj) $ map (balanceFormula) (getConjList f)
-balanceFormula f@(Disj f1 f2) = rebuildFormula (Disj) $ map (balanceFormula) (getDisjList f)
+balanceFormula f@(Conj _ _) = rebuildFormula (Conj) $ map (balanceFormula) (getConjList f)
+balanceFormula f@(Disj _ _) = rebuildFormula (Disj) $ map (balanceFormula) (getDisjList f)
 balanceFormula (Neg f) = Neg $ balanceFormula f
 balanceFormula (ForAll var f) = ForAll var (balanceFormula f)
 balanceFormula (Exists var f) = Exists var (balanceFormula f)
@@ -146,7 +147,7 @@ balanceFormula f@(FormulaAtomic _) = f
 
 
 rebuildFormula :: (Formula -> Formula -> Formula) -> [Formula] -> Formula
-rebuildFormula con [f] = f
+rebuildFormula _ [f] = f
 rebuildFormula con xs = con (rebuildFormula con h) (rebuildFormula con t) where
   m = (length xs) `div` 2
   h = take m xs
@@ -161,6 +162,11 @@ getDisjList :: Formula -> [Formula]
 getDisjList (Disj f1 f2) = (getDisjList f1) ++ (getDisjList f2)
 getDisjList v = [v]
 
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with formula replacing (according to propositional logic equivalences,
+-- first-, second-order logic equivalences)
+--------------------------------------------------------------------------------------------------------------
 
 replaceSubformulas :: Formula -> Formula
 replaceSubformulas (Disj f1 f2) = Disj (replaceSubformulas f1) (replaceSubformulas f2)

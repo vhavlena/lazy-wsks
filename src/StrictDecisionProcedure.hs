@@ -28,7 +28,7 @@ import qualified Debug.Trace as Dbg
 
 -- |Ominus for a set of symbols. Defined only for a term of the form (TSet a).
 ominusSymbols :: Term -> Set.Set Alp.Symbol -> Term
-ominusSymbols (TSet tset) sset = TSet (Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset])
+ominusSymbols (TSet tset) sset = TSet $ Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
 ominusSymbols _ _ = error "ominusSymbols: Ominus is defined only on a set of terms"
 
 
@@ -41,7 +41,7 @@ fixpointComp term@(TSet tset) sset =
          if Set.isSubsetOf modifset tset then term
          else fixpointComp (TSet $ Set.union modifset tset) sset
       _ -> error "fixpointComp: Ominus is defined only on a set of terms"
-fixpointComp term sset = fixpointComp (TSet (Set.fromList [term])) sset
+fixpointComp term sset = fixpointComp (TSet $ Set.fromList [term]) sset
 
 
 -- |Unwind fixpoints into sets of terms (corresponding to applying all fixpoints).
@@ -52,7 +52,7 @@ unwindFixpoints (TUnion t1 t2) = TUnion (unwindFixpoints t1) (unwindFixpoints t2
 unwindFixpoints (TIntersect t1 t2) = TIntersect (unwindFixpoints t1) (unwindFixpoints t2)
 unwindFixpoints (TCompl t) = TCompl (unwindFixpoints t)
 unwindFixpoints (TProj var t) = TProj var (TSet $ Set.fromList [unwindFixpoints t])
-unwindFixpoints (TSet tset) = TSet $ Set.fromList[unwindFixpoints t | t <- Set.toList tset]
+unwindFixpoints (TSet tset) = TSet $ Set.fromList [unwindFixpoints t | t <- Set.toList tset]
 unwindFixpoints t = error ("unwindFixpoints: Unwind is not defined for pair and minus terms" ++ (show t))
 
 
@@ -77,5 +77,5 @@ formula2Terms f = formula2TermsVars f []
 -- |Decide whether given ground formula is valid (strict approach).
 isValid :: Lo.Formula -> Either Bool String
 isValid f
-   | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms (Lo.removeForAll f)
+   | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms $ Lo.removeForAll f
    | otherwise = Right "isValid: Only ground formula is allowed"

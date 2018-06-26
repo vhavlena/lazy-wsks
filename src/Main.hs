@@ -1,3 +1,9 @@
+{-|
+Module      : Main
+Description : Main file for WSkS decision procedure.
+Author      : Vojtech Havlena, 2018
+License     : GPL-3
+-}
 
 import System.Environment
 import Data.Time
@@ -42,7 +48,9 @@ formulaOperationsDebug f = do
 -- |Main function
 main = do
    args <- getArgs
-   if (length args) /= 1 then putStrLn "Bad input params, file with formula required"
+   if (length args) /= 1 then do
+     prname <- getProgName
+     putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
    else do
       start <- getCurrentTime
       file <- MoPa.parseFile $ head args

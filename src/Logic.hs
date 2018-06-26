@@ -37,6 +37,10 @@ data Formula =
   | ForAll Var Formula
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with a formula print functions
+--------------------------------------------------------------------------------------------------------------
+
 -- prints the formula in human-readable format
 showFormula :: Formula -> String
 showFormula (FormulaAtomic phi) = show phi
@@ -67,25 +71,29 @@ instance Show Atom where
    show = showAtom
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with a conversion logic formula to basic form (without forall)
+--------------------------------------------------------------------------------------------------------------
+
 -- removes the universal quantifier
 removeForAll :: Formula -> Formula
-removeForAll (FormulaAtomic phi) = (FormulaAtomic phi)
-removeForAll (Disj f1 f2)        = (Disj (removeForAll f1) (removeForAll f2))
-removeForAll (Conj f1 f2)        = (Conj (removeForAll f1) (removeForAll f2))
-removeForAll (Neg f)             = (Neg (removeForAll f))
-removeForAll (Exists var f)      = (Exists var (removeForAll f))
-removeForAll (ForAll var f)      = (Neg $ Exists var $ Neg (removeForAll f))
+removeForAll (FormulaAtomic phi) = FormulaAtomic phi
+removeForAll (Disj f1 f2)        = Disj (removeForAll f1) (removeForAll f2)
+removeForAll (Conj f1 f2)        = Conj (removeForAll f1) (removeForAll f2)
+removeForAll (Neg f)             = Neg $ removeForAll f
+removeForAll (Exists var f)      = Exists var (removeForAll f)
+removeForAll (ForAll var f)      = Neg $ Exists var $ Neg (removeForAll f)
 
 
 -- |Replace atoms which are not basic.
 removeAtoms :: Formula -> Formula
-removeAtoms (FormulaAtomic (Neq v1 v2)) = Neg (FormulaAtomic (Eqn v1 v2))
-removeAtoms (FormulaAtomic phi) = (FormulaAtomic phi)
-removeAtoms (Disj f1 f2)        = (Disj (removeAtoms f1) (removeAtoms f2))
-removeAtoms (Conj f1 f2)        = (Conj (removeAtoms f1) (removeAtoms f2))
-removeAtoms (Neg f)             = (Neg (removeAtoms f))
-removeAtoms (Exists var f)      = (Exists var (removeAtoms f))
-removeAtoms (ForAll var f)      = (Neg $ Exists var $ Neg (removeAtoms f))
+removeAtoms (FormulaAtomic (Neq v1 v2)) = Neg $ FormulaAtomic (Eqn v1 v2)
+removeAtoms (FormulaAtomic phi) = FormulaAtomic phi
+removeAtoms (Disj f1 f2)        = Disj (removeAtoms f1) (removeAtoms f2)
+removeAtoms (Conj f1 f2)        = Conj (removeAtoms f1) (removeAtoms f2)
+removeAtoms (Neg f)             = Neg $ removeAtoms f
+removeAtoms (Exists var f)      = Exists var (removeAtoms f)
+removeAtoms (ForAll var f)      = Neg $ Exists var $ Neg (removeAtoms f)
 
 
 -- |Convert to base formula containing only basic atoms and quantifiers.

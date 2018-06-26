@@ -17,7 +17,6 @@ import Text.Parsec.Language
 import Text.Parsec.Prim
 import Text.Parsec.String
 import Text.Parsec.Token
-import Control.Applicative ((<*))
 
 import qualified MonaParser as MoPa
 import qualified Logic as Lo
@@ -26,15 +25,15 @@ import qualified Logic as Lo
 -- |Convert Mona formula to Base Mona formula (without Ext1 quatifiers, only
 -- basic logical connectives, ...).
 convert2Base :: MoPa.MonaFormula -> MoPa.MonaFormula
-convert2Base t@(MoPa.MonaFormulaEx1 var f) = unwindQuantif t
-convert2Base t@(MoPa.MonaFormulaEx2 var f) = unwindQuantif t
-convert2Base t@(MoPa.MonaFormulaAll1 var f) = unwindQuantif t
-convert2Base t@(MoPa.MonaFormulaAll2 var f) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaEx1 _ _) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaEx2 _ _) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaAll1 _ _) = unwindQuantif t
+convert2Base t@(MoPa.MonaFormulaAll2 _ _) = unwindQuantif t
 convert2Base (MoPa.MonaFormulaAtomic atom) = MoPa.MonaFormulaAtomic atom
-convert2Base (MoPa.MonaFormulaImpl f1 f2) = MoPa.MonaFormulaDisj (MoPa.MonaFormulaNeg (convert2Base f1)) (convert2Base f2)
+convert2Base (MoPa.MonaFormulaImpl f1 f2) = MoPa.MonaFormulaDisj (MoPa.MonaFormulaNeg $ convert2Base f1) (convert2Base f2)
 convert2Base (MoPa.MonaFormulaConj f1 f2) = MoPa.MonaFormulaConj (convert2Base f1) (convert2Base f2)
 convert2Base (MoPa.MonaFormulaDisj f1 f2) = MoPa.MonaFormulaDisj (convert2Base f1) (convert2Base f2)
-convert2Base (MoPa.MonaFormulaNeg f) = MoPa.MonaFormulaNeg (convert2Base f)
+convert2Base (MoPa.MonaFormulaNeg f) = MoPa.MonaFormulaNeg $ convert2Base f
 convert2Base t = error $ "convert2Base: Unimplemented: " ++ (show t) -- TODO: Complete
 
 
@@ -90,7 +89,7 @@ parseSimpleAtom arr =
 -- |Convert Mona string containing atom to Logic.Atom
 convertAtom :: String -> Lo.Atom
 convertAtom atom = case (parseAtom atom) of
-   Nothing   -> error $ "Parse error" ++ (show atom)
+   Nothing -> error $ "Parse error" ++ (show atom)
    Just res -> res
 
 
@@ -100,8 +99,8 @@ convertBase2Simple (MoPa.MonaFormulaAll2 [p] f) = Lo.ForAll (fst p) (convertBase
 convertBase2Simple (MoPa.MonaFormulaEx2 [p] f) = Lo.Exists (fst p) (convertBase2Simple f)
 convertBase2Simple (MoPa.MonaFormulaDisj f1 f2) = Lo.Disj (convertBase2Simple f1) (convertBase2Simple f2)
 convertBase2Simple (MoPa.MonaFormulaConj f1 f2) = Lo.Conj (convertBase2Simple f1) (convertBase2Simple f2)
-convertBase2Simple (MoPa.MonaFormulaNeg f) = Lo.Neg (convertBase2Simple f)
-convertBase2Simple (MoPa.MonaFormulaAtomic atom) = Lo.FormulaAtomic (convertAtom atom)
+convertBase2Simple (MoPa.MonaFormulaNeg f) = Lo.Neg $ convertBase2Simple f
+convertBase2Simple (MoPa.MonaFormulaAtomic atom) = Lo.FormulaAtomic $ convertAtom atom
 convertBase2Simple t = error $ "Unimplemented: " ++ (show t)  -- TODO: Complete
 
 
