@@ -1,7 +1,7 @@
 {-|
-Module      : MonaParser
-Description : Mona formulae parser
-Author      : Vojtech Havlena, June 2018
+Module      : MonaAutomataParser
+Description : Mona automata parser
+Author      : Vojtech Havlena, July 2018
 License     : GPL-3
 -}
 
@@ -21,6 +21,11 @@ import Text.Parsec.Token
 
 import qualified TreeAutomaton as TA
 import qualified BasicAutomata as BA
+import AuxFunctions
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the data types
+--------------------------------------------------------------------------------------------------------------
 
 type MonaState = Int
 type MonaSymbol = String
@@ -31,8 +36,7 @@ data MonaTransition =
 data MonaGuideRule =
   MonaGuideRule String MonaState [MonaState]
 
-
-data MonaGuide = MonaGuide [MonaGuideRule] deriving (Show)
+data MonaGuide = MonaGuide [MonaGuideRule]
 
 data MonaStateSpace = MonaStateSpace {
   iden :: MonaState
@@ -40,29 +44,50 @@ data MonaStateSpace = MonaStateSpace {
   , size :: Int
   , initial :: MonaState
   , transitions :: [MonaTransition]
-} deriving (Show)
-
+}
 
 data MonaGTAHeader = MonaGTAHeader {
   variables :: [String]
   , accept :: [MonaState]
   , reject :: [MonaState]
-} deriving (Show)
-
+}
 
 data MonaGTA = MonaGTA {
   header :: MonaGTAHeader
   , guide :: MonaGuide
   , spaces :: [MonaStateSpace]
-} deriving (Show)
+}
 
 
 instance Show MonaTransition where
-  show (MonaTransition sts sym st) = "(" ++ show sts ++ ","++ sym ++") -> " ++ show st
+  show (MonaTransition sts sym st) = "(" ++ (prArr "," sts) ++
+      ","++ sym ++") -> " ++ show st
 
 instance Show MonaGuideRule where
-  show (MonaGuideRule name src dest) = name ++ ": " ++ show src ++ " -> " ++ "(" ++ show dest ++ ")"
+  show (MonaGuideRule name src dest) = name ++ ": " ++ show src ++
+      " -> " ++ "(" ++ (prArr "," dest) ++ ")"
 
+instance Show MonaStateSpace where
+  show (MonaStateSpace iden name size initial trans) = "State space " ++
+      show iden ++ " " ++ name ++ " (size "++ show size ++")\nInitial state: " ++
+      show initial ++ "\nTransitions:\n" ++ (prArr "\n" trans) ++ "\n"
+
+instance Show MonaGTAHeader where
+  show (MonaGTAHeader var acc rej) = "GTA for formula with free variables: " ++
+      intercalate " " var ++ "\nAccepting states: " ++ (prArr " " acc) ++
+      "\nRejecting states: " ++ (prArr " " rej) ++ "\n"
+
+instance Show MonaGTA where
+  show (MonaGTA header guide spaces) = show guide ++ "\n" ++ show header ++
+      "\n" ++ (prArr "\n" spaces)
+
+instance Show MonaGuide where
+  show (MonaGuide rules) = "Guide:\n" ++ (prArr "\n" rules) ++ "\n"
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the definitions of lexemes
+--------------------------------------------------------------------------------------------------------------
 
 lexer = makeTokenParser emptyDef
 m_comma = lexeme lexer (char ',')
@@ -82,14 +107,7 @@ m_reject = lexeme lexer (string "Rejecting states:")
 m_white = whiteSpace lexer
 m_space = lexeme lexer ((oneOf " "))
 m_variable = many1 alphaNum
-
-
-m_eol :: Parser String
-m_eol = try (string "\n\r")
-  <|> string "\r\n"
-  <|> string "\n"
-  <|> string "\r"
-  <?> "end of line"
+m_identifier = lexeme lexer (many1 alphaNum)
 
 
 parseFile :: FilePath -> IO MonaGTA
@@ -104,25 +122,18 @@ parseString str = case (parse parseGTA "MonaAutomataParser" str) of
   Right res  -> res
 
 
-parseTuple :: Parser String
-parseTuple = lexeme lexer (many1 alphaNum)
-
-number :: Parser String
-number = many digit
-
-
 guideName :: Parser String
-guideName = lexeme lexer (many1 (noneOf " \t\n:()"))
+guideName = lexeme lexer (many1 (noneOf " \t\n:()\'"))
 
 
 parseTransition :: Parser MonaTransition
 parseTransition = do
   m_white
   m_lparen
-  s <- sepBy parseTuple m_comma
+  s <- sepBy m_identifier m_comma
   m_rparen
   m_to
-  dest <- parseTuple
+  dest <- m_identifier
   return $ makeTransition (init s) (last s) dest
 
 
@@ -131,10 +142,10 @@ parseGuideRule = do
   m_white
   name <- guideName
   m_ddot
-  src <- parseTuple
+  src <- m_identifier
   m_to
   m_lparen
-  dst <- sepBy parseTuple m_comma
+  dst <- sepBy m_identifier m_comma
   m_rparen
   return $ makeGuideRule name src dst
 
@@ -163,13 +174,13 @@ parseStateSpaceHeader :: Parser MonaStateSpace
 parseStateSpaceHeader = do
   m_white
   m_statespace
-  iden <- parseTuple
+  iden <- m_identifier
   m_quot
   name <- guideName
   m_quot
   m_lparen
   m_size
-  size <- parseTuple
+  size <- m_identifier
   m_rparen
   m_ddot
   return $ MonaStateSpace (read iden :: Int) name (read size :: Int) 0 [] --Dangerous, default 0 is for Int, not for general MonaState
@@ -179,7 +190,7 @@ parseStateSpace :: Parser MonaStateSpace
 parseStateSpace = do
   sp <- parseStateSpaceHeader
   m_initial
-  ini <- parseTuple
+  ini <- m_identifier
   m_trans
   trans <- parseTransitionSet
   return $ MonaStateSpace {iden = iden sp, name=name sp, size=size sp,
@@ -204,7 +215,8 @@ parseGTA :: Parser MonaGTA
 parseGTA = do
   guide <- parseGuide
   header <- parseGTAHeader
-  return $ MonaGTA header guide []
+  spaces <- many1 (try parseStateSpace)
+  return $ MonaGTA header guide spaces
 
 
 toInt :: [String] -> [Int]

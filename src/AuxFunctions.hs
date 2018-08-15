@@ -6,9 +6,13 @@ License     : GPL-3
 -}
 
 module AuxFunctions (
-   insertAt,
-   deleteAt
+   insertAt
+   , deleteAt
+   , prArr
 ) where
+
+
+import Data.List
 
 -- |Insert a value into list to a given position (indices start at 0).
 insertAt :: a -> [a] -> Int -> [a]
@@ -22,3 +26,7 @@ deleteAt [] _ = []
 deleteAt (x:xs) i
    | i == 0 = xs
    | otherwise = x : deleteAt xs (i-1)
+
+
+prArr :: (Show a) => String -> [a] -> String
+prArr delim arr = intercalate delim (map (show) arr)
