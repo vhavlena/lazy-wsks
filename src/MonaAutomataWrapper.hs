@@ -10,29 +10,41 @@ module MonaAutomataWrapper where
 import MonaAutomataParser
 import TreeAutomaton
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Alphabet as Alp
 
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState String
-monaGTAToTA (MonaGTA header guide spaces) =  where
+monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = BATreeAutomaton states roots leaves trans where
   guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
   sizes = getSizes spaces
-  trans = unifyTransitions guide' sizes spaces
-  states = [0..(last sizes)-1]
+  sizedict = getSizesDict spaces sizes
+  trans = unifyTransitions guide' sizedict spaces
+  states = Set.fromList [0..(last sizes)-1]
+  leaves = Set.fromList $ zipWith (+) sizes $ map (initial) spaces
+  roots = Set.fromList $ accept header
 
 
-getSizes :: [MonaStateSpace] -> Map.Map Int Int
-getSizes spaces = Map.fromList dict where
-  arr = init . scanl (+) 0 $ map (size) spaces
+getSizesDict :: [MonaStateSpace] -> [Int] -> Map.Map Int Int
+getSizesDict spaces arr = Map.fromList dict where
   dict = zipWith (\a b -> (iden a,b)) spaces arr
 
 
-unifyTransitions :: Map.Map MonaState [MonaState] -> Map.Map Int Int -> [MonaStateSpace] -> Map.Map ([a],b) (Set.Set a)
-unifyTransitions guide sizes spaces = Map.fromList $ foldr1 (++) $ map (unifyStateSpace guide sizes) spaces
+getSizes :: [MonaStateSpace] -> [Int]
+getSizes spaces = init . scanl (+) 0 $ map (size) spaces
 
 
-unifyStateSpace :: Map.Map MonaState [MonaState] -> Map.Map Int Int -> MonaStateSpace  -> [(([a],b),a)]
+unifyTransitions ::  Map.Map MonaState [MonaState] -> Map.Map Int Int -> [MonaStateSpace] -> Map.Map ([MonaState],MonaSymbol) (Set.Set MonaState)
+unifyTransitions guide sizes spaces = Map.fromListWith (Set.union) $ foldr1 (++) $ map (unifyStateSpace guide sizes) spaces
+
+
+unifyStateSpace :: Map.Map MonaState [MonaState] -> Map.Map Int Int -> MonaStateSpace  -> [(([MonaState],MonaSymbol), Set.Set MonaState)]
 unifyStateSpace guide sizes (MonaStateSpace iden _ _ initial trans) = map (conv) trans where
-  conv (MonaTransition src sym dest) = ((src',sym),dest) where
-    pl = Map.findWithDefault 0 dest guide
+  conv (MonaTransition src sym dest) = ((src',sym), Set.singleton dest) where
+    pl = Map.findWithDefault [] dest guide
     sizes' = map (\a -> Map.findWithDefault 0 a sizes) pl
     src' = zipWith (+) src sizes'
+
+
+convertGTA filename = do
+  monagta <- parseFile filename
+  putStrLn $ show $ monaGTAToTA monagta
