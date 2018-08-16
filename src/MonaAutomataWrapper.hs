@@ -16,11 +16,12 @@ import qualified Alphabet as Alp
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState String
 monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = BATreeAutomaton states roots leaves trans where
   guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
-  sizes = getSizes spaces
-  sizedict = getSizesDict spaces sizes
-  trans = unifyTransitions guide' sizedict spaces
+  expSpaces = expandTrans spaces
+  sizes = getSizes expSpaces
+  sizedict = getSizesDict expSpaces sizes
+  trans = unifyTransitions guide' sizedict expSpaces
   states = Set.fromList [0..(last sizes)-1]
-  leaves = Set.fromList $ zipWith (+) sizes $ map (initial) spaces
+  leaves = Set.fromList $ zipWith (+) sizes $ map (initial) expSpaces
   roots = Set.fromList $ accept header
 
 
@@ -43,6 +44,26 @@ unifyStateSpace guide sizes (MonaStateSpace iden _ _ initial trans) = map (conv)
     pl = Map.findWithDefault [] dest guide
     sizes' = map (\a -> Map.findWithDefault 0 a sizes) pl
     src' = zipWith (+) src sizes'
+
+
+expandTrans :: [MonaStateSpace] -> [Alp.Variable] -> [MonaStateSpace]
+expandTrans = map (conv) where
+  conv (MonaStateSpace i n s ini tr) = MonaStateSpace i n s ini (tr >>= expandSymbols)
+
+
+expandSymbols :: MonaTransition -> [MonaTransition]
+expandSymbols (MonaTransition src sym dest) = map (\s -> MonaTransition src s dest) expX where
+  expX = expandX sym
+
+
+expandX :: String -> [String]
+expandX str = listProd (reverse $ str >>= gen) [[]] where
+  gen a = if a == 'X' then return ['0','1']
+         else return [a]
+
+
+listProd [] a = a
+listProd (x:xs) a = listProd xs (x >>= \b -> map (b:) a)
 
 
 convertGTA filename = do
