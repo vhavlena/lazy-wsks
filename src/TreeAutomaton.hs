@@ -10,18 +10,34 @@ module TreeAutomaton (
    , pre
 ) where
 
+import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified AuxFunctions as Aux
 
+type Transitions a b = Map.Map ([a],b) (Set.Set a)
+type Transition a b = (([a],b), Set.Set a)
 
 -- |Bottom-up tree automaton
 data BATreeAutomaton a b = BATreeAutomaton {
    states :: Set.Set a
    , roots :: Set.Set a
    , leaves :: Set.Set a
-   , transitions :: Map.Map ([a],b) (Set.Set a)
-} deriving (Show)
+   , transitions :: Transitions a b
+}
 
+
+instance (Show a, Show b) => Show (BATreeAutomaton a b) where
+  show (BATreeAutomaton st rt lv tr) = "States: " ++ Aux.prArr "," (Set.toList st) ++
+    "\n" ++ "Roots: " ++ Aux.prArr "," (Set.toList rt) ++ "\n" ++ "Leaves: " ++
+    Aux.prArr "," (Set.toList lv) ++ "\n" ++ "Transitions: \n" ++
+    intercalate "\n" ( map (printTrans) (Map.toList tr))
+
+
+printTrans :: (Show a, Show b) => Transition a b -> String
+printTrans ((a,b),c) = "(" ++ (Aux.prArr "," a) ++ ";" ++ (show b) ++ ") -> " ++
+  "{" ++ (Aux.prArr "," (Set.toList c)) ++ "}"
+  
 
 -- |Syntax equivalence of two tree automata.
 instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
