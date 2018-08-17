@@ -5,7 +5,10 @@ Author      : Vojtech Havlena, August 2018
 License     : GPL-3
 -}
 
-module MonaAutomataWrapper where
+module MonaAutomataWrapper (
+  monaGTAToTA
+  , convertGTA -- For debugging purposes
+) where
 
 import MonaAutomataParser
 import TreeAutomaton
@@ -14,6 +17,19 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Alphabet as Alp
 
+
+-- |SizeMap: StateSpace ID -> size
+type SizeMap = Map.Map Int Int
+-- |GuideMap: MonaState -> [MonaState]
+type GuideMap = Map.Map MonaState [MonaState]
+
+
+-- |Convert Mona guided tree automaton into regular TA
+-- Steps: 1) According to state spaces sizes determine states of the TA
+--        2) Convert mona transitions according to guide
+--        2.a) Convert source states
+--        2.b) Convert mona symbols
+--        3) Convert leaf and root states (root state is considered in the first state space)
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState Alp.Symbol
 monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = BATreeAutomaton states roots leaves trans where
   guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
@@ -27,7 +43,7 @@ monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = BATreeAutomaton states r
   roots = Set.fromList $ accept header
 
 
-getSizesDict :: [MonaStateSpace] -> [Int] -> Map.Map Int Int
+getSizesDict :: [MonaStateSpace] -> [Int] -> SizeMap
 getSizesDict spaces arr = Map.fromList dict where
   dict = zipWith (\a b -> (iden a,b)) spaces arr
 
@@ -36,11 +52,11 @@ getSizes :: [MonaStateSpace] -> [Int]
 getSizes spaces = init . scanl (+) 0 $ map (size) spaces
 
 
-unifyTransitions :: [Alp.Variable] -> Map.Map MonaState [MonaState] -> Map.Map Int Int -> [MonaStateSpace] -> Map.Map ([MonaState],Alp.Symbol) (Set.Set MonaState)
+unifyTransitions :: [Alp.Variable] -> GuideMap -> SizeMap -> [MonaStateSpace] -> Transitions MonaState Alp.Symbol
 unifyTransitions vars guide sizes spaces = Map.fromListWith (Set.union) $ foldr1 (++) $ map (unifyStateSpace vars guide sizes) spaces
 
 
-unifyStateSpace :: [Alp.Variable] -> Map.Map MonaState [MonaState] -> Map.Map Int Int -> MonaStateSpace  -> [(([MonaState],Alp.Symbol), Set.Set MonaState)]
+unifyStateSpace :: [Alp.Variable] -> GuideMap -> SizeMap -> MonaStateSpace  -> [Transition MonaState Alp.Symbol]
 unifyStateSpace vars guide sizes (MonaStateSpace iden _ _ initial trans) = map (conv) trans where
   conv (MonaTransition src sym dest) = ((src', convToSymbol vars sym), Set.singleton dest) where
     pl = Map.findWithDefault [] dest guide

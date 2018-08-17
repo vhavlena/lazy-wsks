@@ -27,6 +27,7 @@ import qualified AuxFunctions as Aux
 
 
 type Variable = String
+-- |(assigment of values, variables) ("001",{X,Y,Z}) where X < Y < Z
 type Symbol = ([Char], Set.Set Variable)
 
 

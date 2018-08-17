@@ -7,6 +7,8 @@ License     : GPL-3
 
 module TreeAutomaton (
    BATreeAutomaton(..)
+   , Transition
+   , Transitions
    , pre
 ) where
 
@@ -14,7 +16,9 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified AuxFunctions as Aux
+import qualified Alphabet as Alp
 
+-- |Type for single transition and a transition function
 type Transitions a b = Map.Map ([a],b) (Set.Set a)
 type Transition a b = (([a],b), Set.Set a)
 
@@ -26,7 +30,7 @@ data BATreeAutomaton a b = BATreeAutomaton {
    , transitions :: Transitions a b
 }
 
-
+-- |Formatted output of BA
 instance (Show a, Show b) => Show (BATreeAutomaton a b) where
   show (BATreeAutomaton st rt lv tr) = "States: " ++ Aux.prArr "," (Set.toList st) ++
     "\n" ++ "Roots: " ++ Aux.prArr "," (Set.toList rt) ++ "\n" ++ "Leaves: " ++
@@ -34,10 +38,11 @@ instance (Show a, Show b) => Show (BATreeAutomaton a b) where
     intercalate "\n" ( map (printTrans) (Map.toList tr))
 
 
+-- |Print single transition (convert to String)
 printTrans :: (Show a, Show b) => Transition a b -> String
 printTrans ((a,b),c) = "(" ++ (Aux.prArr "," a) ++ ";" ++ (show b) ++ ") -> " ++
   "{" ++ (Aux.prArr "," (Set.toList c)) ++ "}"
-  
+
 
 -- |Syntax equivalence of two tree automata.
 instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
