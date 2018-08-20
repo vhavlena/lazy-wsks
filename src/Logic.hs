@@ -9,10 +9,13 @@ module Logic where
 
 import Data.List
 import Data.Monoid
+import Control.Monad.Writer
 
 
 -- second-order variable type
 type Var = String
+
+type MonaFormulaItem = (String, Formula)
 
 -- Atomic formula
 data Atom =
@@ -25,6 +28,7 @@ data Atom =
    | Eps Var
    | Neq Var Var
    | Eqn Var Var
+   | MonaAtom String [Var]
 
 
 -- formula type
@@ -61,6 +65,14 @@ showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
 
+
+showFormulaMona :: Formula -> String
+showFormulaMona _ = error "Not implemented"
+
+showAtomMona :: Atom -> String
+showAtomMona (Subseteq v1 v2) = v1 ++ " sub " ++ v2
+showAtomMona _ = error "Not implemented"
+
 -- instantiance of the data type as class Show
 instance Show Formula where
   show = showFormula
@@ -96,9 +108,23 @@ removeAtoms (Exists var f)      = Exists var (removeAtoms f)
 removeAtoms (ForAll var f)      = Neg $ Exists var $ Neg (removeAtoms f)
 
 
+removeMonaFormulas :: Formula -> Writer [(String, Formula)] Formula
+removeMonaFormulas (FormulaAtomic phi) = removeMonaAtom phi >>= (\x -> return $ FormulaAtomic x)
+removeMonaFormulas (Disj f1 f2) = removeMonaFormulas f1 >>= \x -> removeMonaFormulas f2 >>= \y -> return $ Disj x y
+removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>= \x -> removeMonaFormulas f2 >>= \y -> return $ Conj x y
+removeMonaFormulas (Neg f) = removeMonaFormulas f >>= \x -> return $ Neg x
+removeMonaFormulas (Exists var f) = removeMonaFormulas f >>= \x -> return $ Exists var x
+removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>= \x -> return $ ForAll var x
+
+
+removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
+removeMonaAtom t@(Subset v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+  iden = v1++"sub"++v2
+
+
 -- |Convert to base formula containing only basic atoms and quantifiers.
-convertToBaseFormula :: Formula -> Formula
-convertToBaseFormula = removeAtoms . removeForAll
+convertToBaseFormula :: Formula -> Writer [(String, Formula)] Formula
+convertToBaseFormula = removeMonaFormulas . removeAtoms . removeForAll
 
 
 -- retrieves free variables of a formula

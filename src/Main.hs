@@ -6,6 +6,7 @@ License     : GPL-3
 -}
 
 import System.Environment
+import Control.Monad.Writer
 import Data.Time
 
 import qualified LazyDecisionProcedure as LDP
@@ -55,7 +56,7 @@ main = do
       start <- getCurrentTime
       file <- MoPa.parseFile $ head args
       let formulas = MoWr.getFormulas file
-          hf = Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
+          (hf, dict) = runWriter $ Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
           --formulaOperationsDebug $ hf
           showValidLazy $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
       stop <- getCurrentTime

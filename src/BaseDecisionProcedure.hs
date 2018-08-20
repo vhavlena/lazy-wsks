@@ -66,7 +66,6 @@ showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ s
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
 showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg ind b)
 
-
 --------------------------------------------------------------------------------------------------------------
 -- Part with the Minus symbol (pre on the terms)
 --------------------------------------------------------------------------------------------------------------
@@ -137,3 +136,7 @@ formula2TermsVars (Lo.Neg f) vars = TCompl (formula2TermsVars f vars)
 formula2TermsVars (Lo.Exists var f) vars =
    TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
 formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
+
+
+--loadFromMona :: Lo.Atom -> WS2STreeAut
+--loadFromMona (Lo.Subset v1 v2) =
