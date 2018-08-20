@@ -101,13 +101,13 @@ m_size = lexeme lexer (string "size")
 m_initial = lexeme lexer (string "Initial state:")
 m_trans = lexeme lexer (string "Transitions:")
 m_guide = lexeme lexer (string "Guide:")
-m_gtaheader = lexeme lexer (string "GTA for formula with free variables:")
-m_accept = lexeme lexer (string "Accepting states:")
-m_reject = lexeme lexer (string "Rejecting states:")
+m_gtaheader = string "GTA for formula with free variables:"
+m_accept = string "Accepting states:"
+m_reject = string "Rejecting states:"
 m_white = whiteSpace lexer
-m_space = lexeme lexer ((oneOf " "))
+m_space = ((oneOf " "))
 m_variable = many1 alphaNum
-m_identifier = lexeme lexer (many1 alphaNum)
+m_identifier = lexeme lexer (many alphaNum)
 
 
 parseFile :: FilePath -> IO MonaGTA
@@ -188,6 +188,7 @@ parseStateSpaceHeader = do
 
 parseStateSpace :: Parser MonaStateSpace
 parseStateSpace = do
+  m_white
   sp <- parseStateSpaceHeader
   m_initial
   ini <- m_identifier
@@ -201,12 +202,15 @@ parseGTAHeader :: Parser MonaGTAHeader
 parseGTAHeader = do
   m_white
   m_gtaheader
+  optionMaybe m_space
   vars <- sepBy m_variable m_space
   newline
   m_accept
+  optionMaybe m_space
   acc <- sepBy m_variable m_space
   newline
   m_reject
+  optionMaybe m_space
   reject <- sepBy m_variable m_space
   return $ MonaGTAHeader vars (toInt acc) (toInt reject)
 
