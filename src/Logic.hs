@@ -67,6 +67,7 @@ showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
 
 
 showFormulaMona :: Formula -> String
+showFormulaMona (FormulaAtomic atom) = showAtomMona atom
 showFormulaMona _ = error "Not implemented"
 
 showAtomMona :: Atom -> String
@@ -120,6 +121,7 @@ removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>= \x -> return $ ForA
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
 removeMonaAtom t@(Subset v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
   iden = v1++"sub"++v2
+removeMonaAtom t = return t
 
 
 -- |Convert to base formula containing only basic atoms and quantifiers.

@@ -215,24 +215,26 @@ removeRedundantTerms t = t
 
 -- |Convert formula to lazy term representation (differs on using TIncrSet). Uses
 -- additional information about quantified variables reachable to a given term.
-formula2TermsVarsLazy :: Lo.Formula -> [Alp.Variable] -> Term
-formula2TermsVarsLazy (Lo.FormulaAtomic atom) vars = atom2Terms atom
-formula2TermsVarsLazy (Lo.Disj f1 f2) vars = TUnion (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
-formula2TermsVarsLazy (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVarsLazy f1 vars) (formula2TermsVarsLazy f2 vars)
-formula2TermsVarsLazy (Lo.Neg f) vars = TCompl $ formula2TermsVarsLazy f vars
-formula2TermsVarsLazy (Lo.Exists var f) vars =
+formula2TermsVarsLazy :: MonaAutDict -> Lo.Formula -> [Alp.Variable] -> Term
+formula2TermsVarsLazy autdict (Lo.FormulaAtomic atom) vars = atom2Terms autdict atom
+formula2TermsVarsLazy autdict (Lo.Disj f1 f2) vars = TUnion (formula2TermsVarsLazy autdict f1 vars)
+  (formula2TermsVarsLazy autdict f2 vars)
+formula2TermsVarsLazy autdict (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVarsLazy autdict f1 vars)
+  (formula2TermsVarsLazy autdict f2 vars)
+formula2TermsVarsLazy autdict (Lo.Neg f) vars = TCompl $ formula2TermsVarsLazy autdict f vars
+formula2TermsVarsLazy autdict (Lo.Exists var f) vars =
    TProj var (TMinusClosure innerTerm (Alp.projZeroSymbol (var:vars))) where
-      innerTerm = TSet $ Set.fromList [formula2TermsVarsLazy f (var:vars)]
-formula2TermsVarsLazy (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
+      innerTerm = TSet $ Set.fromList [formula2TermsVarsLazy autdict f (var:vars)]
+formula2TermsVarsLazy _ (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
 
 
 -- |Convert formula to term representation.
-formula2Terms :: Lo.Formula -> Term
-formula2Terms f = formula2TermsVarsLazy f []
+formula2Terms :: MonaAutDict -> Lo.Formula -> Term
+formula2Terms autdict f = formula2TermsVarsLazy autdict f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).
-isValid :: Lo.Formula -> Either Bool String
-isValid f
-   | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms f
+isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
+isValid autdict f
+   | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms autdict f
    | otherwise = Right "isValidLazy: Only ground formula is allowed"

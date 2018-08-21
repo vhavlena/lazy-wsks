@@ -20,6 +20,9 @@ import BasicAutomata
 import qualified Debug.Trace as Dbg
 
 
+type MonaAutDict = Map.Map String WS2STreeAut
+
+
 -- |WS2S Lazy terms.
 data Term =
    TStates WS2STreeAut [Alp.Variable] (Set.Set State)
@@ -109,33 +112,36 @@ unionTSets = TSet . unionTerms
 --------------------------------------------------------------------------------------------------------------
 
 -- |Convert atomic formula to term.
-atom2Terms :: Lo.Atom -> Term
-atom2Terms (Lo.Sing var) = TStates aut [var] (TA.leaves aut) where
+atom2Terms :: MonaAutDict -> Lo.Atom -> Term
+atom2Terms _ (Lo.Sing var) = TStates aut [var] (TA.leaves aut) where
    aut = singAut var
-atom2Terms (Lo.Cat1 v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms _ (Lo.Cat1 v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = catAut v1 v2
-atom2Terms (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms _ (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subseteqAut v1 v2
-atom2Terms (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where
+atom2Terms _ (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where
    aut = epsAut var
-atom2Terms (Lo.Eqn v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms _ (Lo.Eqn v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = eqAut v1 v2
-atom2Terms (Lo.In v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms _ (Lo.In v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = inAut v1 v2
-atom2Terms (Lo.Subset v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+atom2Terms _ (Lo.Subset v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subsetAut v1 v2
+atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
+  Just aut -> TStates aut vars (TA.leaves aut)
+  Nothing -> error "Internal error: cannot find corresponding mona automaton"
 
 
 -- |Convert formula to term representation. Uses additional information about
 -- quantified variables reachable to a given term.
-formula2TermsVars :: Lo.Formula -> [Alp.Variable] -> Term
-formula2TermsVars (Lo.FormulaAtomic atom) vars = atom2Terms atom
-formula2TermsVars (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars f1 vars) (formula2TermsVars f2 vars)
-formula2TermsVars (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars f1 vars) (formula2TermsVars f2 vars)
-formula2TermsVars (Lo.Neg f) vars = TCompl (formula2TermsVars f vars)
-formula2TermsVars (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
-formula2TermsVars (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
+formula2TermsVars :: MonaAutDict -> Lo.Formula -> [Alp.Variable] -> Term
+formula2TermsVars autdict (Lo.FormulaAtomic atom) vars = atom2Terms autdict atom
+formula2TermsVars autdict (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars autdict f1 vars) (formula2TermsVars autdict f2 vars)
+formula2TermsVars autdict (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars autdict f1 vars) (formula2TermsVars autdict f2 vars)
+formula2TermsVars autdict (Lo.Neg f) vars = TCompl (formula2TermsVars autdict f vars)
+formula2TermsVars autdict (Lo.Exists var f) vars =
+   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars autdict f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
+formula2TermsVars _ (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
 
 
 --loadFromMona :: Lo.Atom -> WS2STreeAut

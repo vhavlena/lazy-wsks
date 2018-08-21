@@ -71,7 +71,7 @@ botIn _ = error "botIn: Bottom membership is not defined"
 
 -- |Convert formula to term representation.
 formula2Terms :: Lo.Formula -> Term
-formula2Terms f = formula2TermsVars f []
+formula2Terms f = formula2TermsVars Map.empty f []
 
 
 -- |Decide whether given ground formula is valid (strict approach).

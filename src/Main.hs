@@ -9,6 +9,7 @@ import System.Environment
 import Control.Monad.Writer
 import Data.Time
 
+import qualified Data.Map as Map
 import qualified LazyDecisionProcedure as LDP
 import qualified StrictDecisionProcedure as SDP
 import qualified Logic as Lo
@@ -16,6 +17,8 @@ import qualified FormulaOperation as FO
 import qualified Examples as Ex
 import qualified MonaWrapper as MoWr
 import qualified MonaParser as MoPa
+import qualified BasicAutomata as BA
+import qualified MonaSocket as MS
 
 
 -- |Show formula and its validity (strict approach)
@@ -27,9 +30,13 @@ showValid f = do
 
 -- |Show formula and its validity (lazy approach)
 showValidLazy :: Lo.Formula -> IO ()
-showValidLazy f = do
+showValidLazy f = showValidMonaLazy [] f
+
+
+showValidMonaLazy :: [(String, BA.WS2STreeAut)] -> Lo.Formula -> IO ()
+showValidMonaLazy aut f = do
    putStrLn $ show f
-   putStrLn $ formatAnswer $ LDP.isValid f
+   putStrLn $ formatAnswer $ LDP.isValid (Map.fromList aut) f
 
 
 -- |Format validity answer
@@ -56,8 +63,9 @@ main = do
       start <- getCurrentTime
       file <- MoPa.parseFile $ head args
       let formulas = MoWr.getFormulas file
-          (hf, dict) = runWriter $ Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
-          --formulaOperationsDebug $ hf
-          showValidLazy $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+          (hf, monareq) = runWriter $ Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
+          do
+            auts <- MS.getMonaAutomata monareq
+            showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
       stop <- getCurrentTime
       putStrLn $ "Time: " ++ show (diffUTCTime stop start)
