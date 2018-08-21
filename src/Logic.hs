@@ -64,6 +64,7 @@ showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
+showAtom (MonaAtom iden var) = "MA: " ++ iden
 
 
 showFormulaMona :: Formula -> String
@@ -119,7 +120,7 @@ removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>= \x -> return $ ForA
 
 
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
-removeMonaAtom t@(Subset v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
   iden = v1++"sub"++v2
 removeMonaAtom t = return t
 
@@ -149,3 +150,4 @@ freeVarsAtom (Eps x) = [x]
 freeVarsAtom (Neq x y) = [x,y]
 freeVarsAtom (Eqn x y) = [x,y]
 freeVarsAtom (In x y) = [x,y]
+freeVarsAtom (MonaAtom _ vars) = vars

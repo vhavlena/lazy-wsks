@@ -58,10 +58,11 @@ unifyTransitions vars guide sizes spaces = Map.fromListWith (Set.union) $ foldr1
 
 unifyStateSpace :: [Alp.Variable] -> GuideMap -> SizeMap -> MonaStateSpace  -> [Transition MonaState Alp.Symbol]
 unifyStateSpace vars guide sizes (MonaStateSpace iden _ _ initial trans) = map (conv) trans where
-  conv (MonaTransition src sym dest) = ((src', convToSymbol vars sym), Set.singleton dest) where
-    pl = Map.findWithDefault [] dest guide
+  conv (MonaTransition src sym dest) = ((src', convToSymbol vars sym), Set.singleton dest') where
+    pl = Map.findWithDefault [] iden guide
     sizes' = map (\a -> Map.findWithDefault 0 a sizes) pl
     src' = zipWith (+) src sizes'
+    dest' = (Map.findWithDefault 0 iden sizes) + dest
 
 
 expandTrans :: [Alp.Variable] -> [MonaStateSpace] -> [MonaStateSpace]

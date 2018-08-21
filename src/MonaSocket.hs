@@ -22,7 +22,7 @@ writeTmpMonaFile dir name str = do
 
 getAutFormulaMona :: [Lo.Var] -> Lo.Formula -> IO WS2STreeAut
 getAutFormulaMona vars fle = writeTmpMonaFile "" "tmp-mona-34F53DSW4.mona" monafle where
-  monafle = "ws2s;\nvar2 " ++ (intercalate "," vars) ++ ";\n" ++ Lo.showFormulaMona fle
+  monafle = "ws2s;\nvar2 " ++ (intercalate "," vars) ++ ";\n" ++ Lo.showFormulaMona fle ++ ";"
 
 
 getMonaAutomata :: [(String, Lo.Formula)] -> IO [(String, WS2STreeAut)]

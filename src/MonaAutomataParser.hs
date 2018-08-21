@@ -203,15 +203,15 @@ parseGTAHeader = do
   m_white
   m_gtaheader
   optionMaybe m_space
-  vars <- sepBy m_variable m_space
+  vars <- sepEndBy m_variable m_space
   newline
   m_accept
   optionMaybe m_space
-  acc <- sepBy m_variable m_space
+  acc <- sepEndBy m_variable m_space
   newline
   m_reject
   optionMaybe m_space
-  reject <- sepBy m_variable m_space
+  reject <- sepEndBy m_variable m_space
   return $ MonaGTAHeader vars (toInt acc) (toInt reject)
 
 
