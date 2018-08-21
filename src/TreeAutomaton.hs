@@ -10,6 +10,10 @@ module TreeAutomaton (
    , Transition
    , Transitions
    , pre
+   , simplifyTrans
+   , reverseSimplified
+   , backReach
+   , toSingleton
 ) where
 
 import Data.List
@@ -21,6 +25,8 @@ import qualified Alphabet as Alp
 -- |Type for single transition and a transition function
 type Transitions a b = Map.Map ([a],b) (Set.Set a)
 type Transition a b = (([a],b), Set.Set a)
+type SimplTransition a = (a,a)
+--type SimplTransitionRev a = (a,a)
 
 -- |Bottom-up tree automaton
 data BATreeAutomaton a b = BATreeAutomaton {
@@ -58,6 +64,26 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
 -- |Pre (Up) of a set of states wrt given symbol.
 pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
 pre (BATreeAutomaton _ _ _ tr) st sym = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
+
+
+simplifyTrans :: [Transition a b] -> [SimplTransition a]
+simplifyTrans trans = trans >>= \((x,_),y) -> Set.toList y >>= \z -> x >>= \b -> return (b,z)
+
+
+reverseSimplified :: [SimplTransition a] -> [SimplTransition a]
+reverseSimplified = map (\(x,y) -> (y,x))
+
+backReachStep :: (Ord a) => Set.Set a -> Map.Map a (Set.Set a) -> Set.Set a
+backReachStep states trans = Set.fromList $ ((Set.toList states) >>= \x -> (Set.toList $ Map.findWithDefault Set.empty x trans) )
+
+
+backReach :: (Ord a) => Set.Set a -> Map.Map a (Set.Set a) -> Set.Set a
+backReach states trans = if Set.isSubsetOf states' states then states else backReach (Set.union states states') trans where
+  states' = backReachStep states trans
+
+
+toSingleton :: [(a,b)] -> [(a,Set.Set b)]
+toSingleton = map (\(x,y) -> (x, Set.singleton y))
 
 
 -- |Cross product of a given sets.

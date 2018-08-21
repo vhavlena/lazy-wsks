@@ -97,4 +97,10 @@ listProd (x:xs) a = listProd xs (x >>= \b -> map (b:) a)
 
 convertGTA filename = do
   monagta <- parseFile filename
-  putStrLn $ show $ monaGTAToTA monagta
+  let aut = monaGTAToTA monagta
+      tr = (Map.fromListWith (Set.union) (toSingleton $ reverseSimplified $ simplifyTrans $ Map.toList $ TreeAutomaton.transitions aut))
+    in do
+    putStrLn $ show $ aut
+    putStrLn $ show $ simplifyTrans $ Map.toList $ TreeAutomaton.transitions aut
+    putStrLn $ show $ tr
+    putStrLn $ show $ backReach (TreeAutomaton.roots aut) tr
