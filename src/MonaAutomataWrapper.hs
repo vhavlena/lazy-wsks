@@ -31,7 +31,7 @@ type GuideMap = Map.Map MonaState [MonaState]
 --        2.b) Convert mona symbols
 --        3) Convert leaf and root states (root state is considered in the first state space)
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState Alp.Symbol
-monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = BATreeAutomaton states roots leaves trans where
+monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = removeUnreachable $ BATreeAutomaton states roots leaves trans where
   guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
   vars = variables header
   expSpaces = expandTrans vars spaces
@@ -98,9 +98,6 @@ listProd (x:xs) a = listProd xs (x >>= \b -> map (b:) a)
 convertGTA filename = do
   monagta <- parseFile filename
   let aut = monaGTAToTA monagta
-      tr = (Map.fromListWith (Set.union) (toSingleton $ reverseSimplified $ simplifyTrans $ Map.toList $ TreeAutomaton.transitions aut))
     in do
     putStrLn $ show $ aut
-    putStrLn $ show $ simplifyTrans $ Map.toList $ TreeAutomaton.transitions aut
-    putStrLn $ show $ tr
-    putStrLn $ show $ backReach (TreeAutomaton.roots aut) tr
+    putStrLn $ show $ removeUnreachable aut
