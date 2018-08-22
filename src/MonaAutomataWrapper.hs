@@ -31,7 +31,7 @@ type GuideMap = Map.Map MonaState [MonaState]
 --        2.b) Convert mona symbols
 --        3) Convert leaf and root states (root state is considered in the first state space)
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState Alp.Symbol
-monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = removeUnreachable $ BATreeAutomaton states roots leaves trans where
+monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = (autRestriction (Set.fromList univstates) $ removeUnreachable $ BATreeAutomaton states roots leaves trans) { roots = Set.singleton univroot } where
   guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
   vars = variables header
   expSpaces = expandTrans vars spaces
@@ -41,6 +41,15 @@ monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = removeUnreachable $ BATr
   states = Set.fromList [0..(last sizes)-1]
   leaves = Set.fromList $ zipWith (+) sizes $ map (initial) expSpaces
   roots = Set.fromList $ accept header
+  univspace = head $ filter (\t@(MonaStateSpace _ name _ _ _) -> name == "<univ>") spaces
+  univstates = getSpaceTAStates sizedict univspace
+  univroot = head univstates
+
+
+getSpaceTAStates :: SizeMap -> MonaStateSpace -> [Int]
+getSpaceTAStates sizedict (MonaStateSpace iden _ size _ _) = [start..start+size] where
+  start = Map.findWithDefault 0 iden sizedict
+
 
 
 getSizesDict :: [MonaStateSpace] -> [Int] -> SizeMap

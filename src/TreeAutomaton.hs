@@ -11,6 +11,7 @@ module TreeAutomaton (
    , Transitions
    , pre
    , removeUnreachable
+   , autRestriction
 ) where
 
 import Data.List
@@ -95,14 +96,18 @@ transProj :: (Ord a) => Set.Set a -> [Transition a b] -> [Transition a b]
 transProj states trans = trans >>= \t@((x,_),y) -> if (Set.isSubsetOf (Set.fromList x) states) && (Set.isSubsetOf y states) then return t else []
 
 
+autRestriction :: (Ord a, Ord b) => Set.Set a -> BATreeAutomaton a b -> BATreeAutomaton a b
+autRestriction states (BATreeAutomaton st rt lv tr) = BATreeAutomaton states newrt newlv newtr where
+  newrt = Set.intersection states rt
+  newlv = Set.intersection states lv
+  newtr = Map.fromList $ transProj states (Map.toList tr)
+
+
 removeUnreachable :: (Ord a, Ord b) => BATreeAutomaton a b -> BATreeAutomaton a b
-removeUnreachable (BATreeAutomaton st rt lv tr) = BATreeAutomaton newst newrt newlv newtr where
+removeUnreachable aut@(BATreeAutomaton st rt lv tr) = autRestriction newst aut where
   simple = simplifyTrans $ Map.toList $ tr
   simple' = Map.fromListWith (Set.union) (toSingleton $ reverseSimplified $ simple)
   newst = Set.intersection (upReach lv simple) (downReach rt simple')
-  newrt = Set.intersection newst rt
-  newlv = Set.intersection newst lv
-  newtr = Map.fromList $ transProj newst (Map.toList tr)
 
 
 -- |Cross product of a given sets.
