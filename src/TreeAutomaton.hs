@@ -64,45 +64,69 @@ pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
 pre (BATreeAutomaton _ _ _ tr) st sym = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
 
 
+-- |Simplify TA transitions (remove symbol, break a set of the destination
+-- states into transitions with a single destination state).
 simplifyTrans :: (Ord a) => [Transition a b] -> [SimplTransition a]
-simplifyTrans trans = Set.toList $ Set.fromList (trans >>= \((x,_),y) -> Set.toList y >>= \z -> return (x,z))
+simplifyTrans trans = Set.toList $ Set.fromList (trans >>= transform) where
+  transform ((x,_),y) = Set.toList y >>= \z -> return (x,z)
 
 
+-- |Reverse the direction of simplified transitions.
 reverseSimplified :: [SimplTransition a] -> [SimplTransitionRev a]
 reverseSimplified tr = tr >>= \(x,y) -> x >>= \z -> return (y,z)
 
+
+-- |Downward reachability step (in the reverse direction of TA transitions). The
+-- function uses simplified transitions (without symbols).
 downReachStep :: (Ord a) => Set.Set a -> Map.Map a (Set.Set a) -> Set.Set a
-downReachStep states trans = Set.fromList $ ((Set.toList states) >>= \x -> (Set.toList $ Map.findWithDefault Set.empty x trans) )
+downReachStep states trans = Set.fromList $ ((Set.toList states) >>= choose) where
+  choose x = Set.toList $ Map.findWithDefault Set.empty x trans
 
 
+-- |Downward reachability (reachability from the root states, in the reverse
+-- direction of TA transtions). Graph reachability is performed (i.e, regardless
+-- the transition symbols). The function uses simplified transitions (without symbols).
 downReach :: (Ord a) => Set.Set a -> Map.Map a (Set.Set a) -> Set.Set a
-downReach states trans = if Set.isSubsetOf states' states then states else downReach (Set.union states states') trans where
-  states' = downReachStep states trans
+downReach states trans =
+  if Set.isSubsetOf states' states then states
+  else downReach (Set.union states states') trans where
+    states' = downReachStep states trans
 
 
-toSingleton :: [(a,b)] -> [(a,Set.Set b)]
-toSingleton = map (\(x,y) -> (x, Set.singleton y))
+-- |Upward reachability step (in the direction of TA transitions). The function
+-- uses simplified transitions (without symbols).
+upReachStep :: (Ord a) => Set.Set a -> [SimplTransition a] -> Set.Set a
+upReachStep states trans = Set.fromList $ (trans >>= choose) where
+  choose (x,y) = if Set.isSubsetOf (Set.fromList x) states then return y else []
 
 
-upReachStep :: (Ord a) => Set.Set a -> [([a],a)] -> Set.Set a
-upReachStep states trans = Set.fromList $ (trans >>= \(x,y) -> if Set.isSubsetOf (Set.fromList x) states then return y else [])
-
+-- |Upward reachability (reachability from the leaf states, in the direction of
+-- TA transtions). Graph reachability is performed (i.e, regardless the transition
+-- symbols). The function uses simplified transitions (without symbols).
 upReach :: (Ord a) => Set.Set a -> [SimplTransition a] -> Set.Set a
-upReach states trans = if Set.isSubsetOf states' states then states else upReach (Set.union states states') trans where
-  states' = upReachStep states trans
+upReach states trans =
+  if Set.isSubsetOf states' states then states
+  else upReach (Set.union states states') trans where
+    states' = upReachStep states trans
 
 
+-- |Remove transitions whose corresponding states are not in a given set of states.
 transProj :: (Ord a) => Set.Set a -> [Transition a b] -> [Transition a b]
-transProj states trans = trans >>= \t@((x,_),y) -> if (Set.isSubsetOf (Set.fromList x) states) && (Set.isSubsetOf y states) then return t else []
+transProj states trans = filter (proj) trans where
+  proj t@((x,_),y) = (Set.isSubsetOf (Set.fromList x) states) && (Set.isSubsetOf y states)
 
 
+-- |Restriction of a given automaton to a given set of states
 autRestriction :: (Ord a, Ord b) => Set.Set a -> BATreeAutomaton a b -> BATreeAutomaton a b
-autRestriction states (BATreeAutomaton st rt lv tr) = BATreeAutomaton states newrt newlv newtr where
+autRestriction states (BATreeAutomaton st rt lv tr) = BATreeAutomaton newst newrt newlv newtr where
   newrt = Set.intersection states rt
   newlv = Set.intersection states lv
+  newst = Set.intersection states st
   newtr = Map.fromList $ transProj states (Map.toList tr)
 
 
+-- |Remove nonaccessible and noncoaccessible states from automaton (states that
+-- are not reachable from the root states and from the leaf states).
 removeUnreachable :: (Ord a, Ord b) => BATreeAutomaton a b -> BATreeAutomaton a b
 removeUnreachable aut@(BATreeAutomaton st rt lv tr) = autRestriction newst aut where
   simple = simplifyTrans $ Map.toList $ tr
@@ -120,3 +144,9 @@ crossProd (y:ys) = mergeLists y (crossProd ys)
 mergeLists :: Set.Set a -> [[a]] -> [[a]]
 mergeLists a [] = [[x] | x <- Set.toList a]
 mergeLists a b = [x:y | x <- Set.toList a, y <- b ]
+
+
+-- |Convert a list of pairs to a list of pairs whose second item
+-- is a singleton set.
+toSingleton :: [(a,b)] -> [(a,Set.Set b)]
+toSingleton = map (\(x,y) -> (x, Set.singleton y))
