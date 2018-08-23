@@ -140,3 +140,4 @@ convertGTA filename = do
     putStrLn $ show $ accept $ header monagta
     putStrLn $ show $ aut
     putStrLn $ show $ removeUnreachable aut
+    putStrLn $ show $ pre aut [Set.fromList [2], Set.fromList [2]] ("00", Set.fromList ["X", "Y"])

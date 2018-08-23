@@ -30,7 +30,7 @@ import qualified Alphabet as Alp
 writeTmpMonaFile :: FilePath -> String -> String -> IO WS2STreeAut
 writeTmpMonaFile dir name str = do
    res <- withTempFile dir name (monaActionAut str)
-   return $ monaGTAToTA $ parseString res
+   return $ removeUnreachable $ monaGTAToTA $ parseString res
 
 
 -- |Get Mona tree automaton corresponding to a given formula with a given

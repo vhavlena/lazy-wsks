@@ -188,7 +188,7 @@ isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >
 isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
 isSubsumedLazy (TMinusClosure t1 _) t2@(TSet _) = isSubsumedLazy t1 t2
 -- TODO: Check if this is correct!!
-isSubsumedLazy t1@(TSet _) (TMinusClosure t2 _) = isSubsumedLazy t1 t2
+--isSubsumedLazy t1@(TSet _) (TMinusClosure t2 _) = isSubsumedLazy t1 t2
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
 isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
 isSubsumedLazy _ _ = False
