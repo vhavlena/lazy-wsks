@@ -1,7 +1,7 @@
 {-|
 Module      : MonaSocket
 Description : Module for communication with Mona.
-Author      : Vojtech Havlena, august 2018
+Author      : Vojtech Havlena, August 2018
 License     : GPL-3
 -}
 

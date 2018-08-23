@@ -1,7 +1,7 @@
 {-|
 Module      : MonaAutomataParser
 Description : Mona automata parser
-Author      : Vojtech Havlena, July 2018
+Author      : Vojtech Havlena, August 2018
 License     : GPL-3
 -}
 
@@ -104,10 +104,12 @@ m_guide = lexeme lexer (string "Guide:")
 m_gtaheader = string "GTA for formula with free variables:"
 m_accept = string "Accepting states:"
 m_reject = string "Rejecting states:"
+m_dontcare = string "Don't-care states:"
 m_white = whiteSpace lexer
 m_space = ((oneOf " "))
 m_variable = many1 alphaNum
 m_identifier = lexeme lexer (many alphaNum)
+m_guideName = lexeme lexer (many1 (noneOf " \t\n:()\'"))
 
 
 parseFile :: FilePath -> IO MonaGTA
@@ -122,9 +124,9 @@ parseString str = case (parse parseGTA "MonaAutomataParser" str) of
   Right res  -> res
 
 
-guideName :: Parser String
-guideName = lexeme lexer (many1 (noneOf " \t\n:()\'"))
-
+--------------------------------------------------------------------------------------------------------------
+-- Part with the definitions of parsing rules
+--------------------------------------------------------------------------------------------------------------
 
 parseTransition :: Parser MonaTransition
 parseTransition = do
@@ -140,7 +142,7 @@ parseTransition = do
 parseGuideRule :: Parser MonaGuideRule
 parseGuideRule = do
   m_white
-  name <- guideName
+  name <- m_guideName
   m_ddot
   src <- m_identifier
   m_to
@@ -176,7 +178,7 @@ parseStateSpaceHeader = do
   m_statespace
   iden <- m_identifier
   m_quot
-  name <- guideName
+  name <- m_guideName
   m_quot
   m_lparen
   m_size
@@ -201,18 +203,22 @@ parseStateSpace = do
 parseGTAHeader :: Parser MonaGTAHeader
 parseGTAHeader = do
   m_white
-  m_gtaheader
+  vars <- parseVarList m_gtaheader
+  newline
+  acc <- parseVarList m_accept
+  newline
+  reject <- parseVarList m_reject
+  newline
+  optional $ parseVarList m_dontcare
+  return $ MonaGTAHeader vars (toInt acc) (toInt reject)
+
+
+parseVarList :: Parser String -> Parser [String]
+parseVarList str = do
+  str
   optionMaybe m_space
   vars <- sepEndBy m_variable m_space
-  newline
-  m_accept
-  optionMaybe m_space
-  acc <- sepEndBy m_variable m_space
-  newline
-  m_reject
-  optionMaybe m_space
-  reject <- sepEndBy m_variable m_space
-  return $ MonaGTAHeader vars (toInt acc) (toInt reject)
+  return vars
 
 
 parseGTA :: Parser MonaGTA
