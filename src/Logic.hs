@@ -71,12 +71,18 @@ showAtom (MonaAtom iden var) = "MA: " ++ iden
 -- |Show formula in Mona format.
 showFormulaMona :: Formula -> String
 showFormulaMona (FormulaAtomic atom) = showAtomMona atom
-showFormulaMona _ = error "Not implemented"
+showFormulaMona (Conj f1 f2) = "(" ++ (showFormulaMona f1) ++ ") & (" ++ (showFormulaMona f2) ++ ")"
+showFormulaMona (Disj f1 f2) = "(" ++ (showFormulaMona f1) ++ ") | (" ++ (showFormulaMona f2) ++ ")"
+showFormulaMona (Neg f)             = "~(" ++ (showFormulaMona f) ++ ")"
+showFormulaMona (Exists var f)      = "ex2 " ++ var ++ ": (" ++ (showFormulaMona f) ++ ")"
+showFormulaMona (ForAll var f)      = "all2 " ++ var ++ ": (" ++ (showFormulaMona f) ++ ")"
 
 
 -- |Show atom in Mona format.
 showAtomMona :: Atom -> String
 showAtomMona (Subseteq v1 v2) = v1 ++ " sub " ++ v2
+showAtomMona (Eqn v1 v2) = v1 ++ " = " ++ v2
+showAtomMona (Neq v1 v2) = v1 ++ " ~= " ++ v2
 showAtomMona _ = error "Not implemented"
 
 
@@ -123,14 +129,22 @@ removeMonaFormulas (FormulaAtomic phi) = removeMonaAtom phi >>=
 removeMonaFormulas (Disj f1 f2) = removeMonaFormulas f1 >>=
   \x -> removeMonaFormulas f2 >>=
   \y -> return $ Disj x y
-removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>=
-  \x -> removeMonaFormulas f2 >>=
+--removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>=
+--  \x -> removeMonaFormulas f2 >>=
+--  \y -> return $ Conj x y
+removeMonaFormulas (Conj f1 f2) = removeMonaStop f1 >>=
+  \x -> removeMonaStop f2 >>=
   \y -> return $ Conj x y
 removeMonaFormulas (Neg f) = removeMonaFormulas f >>= \x -> return $ Neg x
 removeMonaFormulas (Exists var f) = removeMonaFormulas f >>=
   \x -> return $ Exists var x
 removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>=
   \x -> return $ ForAll var x
+
+
+removeMonaStop :: Formula -> Writer [(String, Formula)] Formula
+removeMonaStop fle = writer (FormulaAtomic $ MonaAtom iden (freeVars fle), [(iden, fle)]) where
+  iden = showFormulaMona fle
 
 
 -- |Replace certain atoms with a special atom denoting that this part is
