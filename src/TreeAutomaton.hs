@@ -112,8 +112,9 @@ upReach states trans =
 
 -- |Remove transitions whose corresponding states are not in a given set of states.
 transProj :: (Ord a) => Set.Set a -> [Transition a b] -> [Transition a b]
-transProj states trans = filter (proj) trans where
-  proj t@((x,_),y) = (Set.isSubsetOf (Set.fromList x) states) && (Set.isSubsetOf y states)
+transProj states trans = filter (proj) $ map (select) trans where
+  proj ((x,_),y) = (Set.isSubsetOf (Set.fromList x) states) && (not $ Set.null y)
+  select t@((x,s),y) = ((x,s),Set.intersection y states)
 
 
 -- |Restriction of a given automaton to a given set of states

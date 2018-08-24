@@ -28,5 +28,6 @@ deleteAt (x:xs) i
    | otherwise = x : deleteAt xs (i-1)
 
 
+-- |Print list (items are separated by delim).
 prArr :: (Show a) => String -> [a] -> String
 prArr delim arr = intercalate delim (map (show) arr)

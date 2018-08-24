@@ -21,6 +21,11 @@ import qualified BasicAutomata as BA
 import qualified MonaSocket as MS
 
 
+-- |Use Mona for translating formulas (so far only support for atoms)
+-- to tree automata.
+useMona = False
+
+
 -- |Show formula and its validity (strict approach)
 showValid :: Lo.Formula -> IO ()
 showValid f = do
@@ -63,7 +68,7 @@ main = do
       start <- getCurrentTime
       file <- MoPa.parseFile $ head args
       let formulas = MoWr.getFormulas file
-          (hf, monareq) = runWriter $ Lo.convertToBaseFormula $ MoWr.getLogicFormula $ head formulas in
+          (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
           do
             auts <- MS.getMonaAutomata monareq
             showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf

@@ -54,6 +54,7 @@ showFormula (Neg f)             = "¬(" ++ (showFormula f) ++ ")"
 showFormula (Exists var f)      = "∃" ++ var ++ ". (" ++ (showFormula f) ++ ")"
 showFormula (ForAll var f)      = "∀" ++ var ++ ". (" ++ (showFormula f) ++ ")"
 
+
 -- |Print atom in human-readable format
 showAtom :: Atom -> String
 showAtom (Sing v) = "Sing(" ++ v ++ ")"
@@ -67,13 +68,17 @@ showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
 showAtom (MonaAtom iden var) = "MA: " ++ iden
 
 
+-- |Show formula in Mona format.
 showFormulaMona :: Formula -> String
 showFormulaMona (FormulaAtomic atom) = showAtomMona atom
 showFormulaMona _ = error "Not implemented"
 
+
+-- |Show atom in Mona format.
 showAtomMona :: Atom -> String
 showAtomMona (Subseteq v1 v2) = v1 ++ " sub " ++ v2
 showAtomMona _ = error "Not implemented"
+
 
 -- instantiance of the data type as class Show
 instance Show Formula where
@@ -110,15 +115,26 @@ removeAtoms (Exists var f)      = Exists var (removeAtoms f)
 removeAtoms (ForAll var f)      = Neg $ Exists var $ Neg (removeAtoms f)
 
 
+-- |Replace parts of formula with a special atom denoting that this part is
+-- directly converted to TA via Mona.
 removeMonaFormulas :: Formula -> Writer [(String, Formula)] Formula
-removeMonaFormulas (FormulaAtomic phi) = removeMonaAtom phi >>= (\x -> return $ FormulaAtomic x)
-removeMonaFormulas (Disj f1 f2) = removeMonaFormulas f1 >>= \x -> removeMonaFormulas f2 >>= \y -> return $ Disj x y
-removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>= \x -> removeMonaFormulas f2 >>= \y -> return $ Conj x y
+removeMonaFormulas (FormulaAtomic phi) = removeMonaAtom phi >>=
+  (\x -> return $ FormulaAtomic x)
+removeMonaFormulas (Disj f1 f2) = removeMonaFormulas f1 >>=
+  \x -> removeMonaFormulas f2 >>=
+  \y -> return $ Disj x y
+removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>=
+  \x -> removeMonaFormulas f2 >>=
+  \y -> return $ Conj x y
 removeMonaFormulas (Neg f) = removeMonaFormulas f >>= \x -> return $ Neg x
-removeMonaFormulas (Exists var f) = removeMonaFormulas f >>= \x -> return $ Exists var x
-removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>= \x -> return $ ForAll var x
+removeMonaFormulas (Exists var f) = removeMonaFormulas f >>=
+  \x -> return $ Exists var x
+removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>=
+  \x -> return $ ForAll var x
 
 
+-- |Replace certain atoms with a special atom denoting that this part is
+-- directly converted to TA via Mona.
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
 removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
   iden = v1++"sub"++v2
@@ -126,8 +142,11 @@ removeMonaAtom t = return t
 
 
 -- |Convert to base formula containing only basic atoms and quantifiers.
-convertToBaseFormula :: Formula -> Writer [(String, Formula)] Formula
-convertToBaseFormula = removeMonaFormulas . removeAtoms . removeForAll
+-- useMona: Use Mona for translating atoms (formulas) to tree automata (atoms
+-- are replaced with a special atom representing that Mona is used to obtain TA)
+convertToBaseFormula :: Bool -> Formula -> Writer [(String, Formula)] Formula
+convertToBaseFormula useMona = preproc . removeAtoms . removeForAll where
+  preproc = if useMona then removeMonaFormulas else return
 
 
 -- retrieves free variables of a formula

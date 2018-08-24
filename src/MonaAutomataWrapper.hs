@@ -34,7 +34,7 @@ type GuideMap = Map.Map MonaState [MonaState]
 monaGTAToTA :: MonaGTA -> BATreeAutomaton MonaState Alp.Symbol
 monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = (autRestriction (Set.fromList univstates) $
    BATreeAutomaton states rts leaves trans)
-  { roots = Set.singleton univroot }
+  { roots = Set.fromList univroot }
   where
     guide' = Map.fromList $ map (\(MonaGuideRule _ fr dest) -> (fr, dest)) guide
     vars = variables header
@@ -42,7 +42,8 @@ monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = (autRestriction (Set.fro
     sizes = getSizes expSpaces
     sizedict = getSizesDict expSpaces sizes
     trans = unifyTransitions vars guide' sizedict expSpaces
-    states = Set.fromList [0..(foldr (+) 0 (map (size) spaces))-1]
+    totalStates = foldr (+) 0 (map (size) spaces)
+    states = Set.fromList [0..totalStates-1]
     leaves = Set.fromList $ zipWith (+) sizes $ map (initial) expSpaces
     rts = Set.fromList $ accept header
     -- Projection to states which are in the state space <univ>
@@ -50,7 +51,7 @@ monaGTAToTA (MonaGTA header (MonaGuide guide) spaces) = (autRestriction (Set.fro
     hatspace = head $ filter (\t@(MonaStateSpace _ name _ _ _) -> name == "<hat>") spaces
     univstates = getSpaceTAStates sizedict univspace
     hatstates = getSpaceTAStates sizedict univspace
-    univroot = head univstates --(Map.toList trans) >>= \((a,_),c) -> if not $ Set.disjoint roots c then intersect univstates a else []
+    univroot = (Map.toList trans) >>= \((a,_),c) -> if not $ Set.disjoint rts c then intersect univstates a else []
 
 
 -- |Get states corresponding to a given mona state space.
@@ -140,4 +141,3 @@ convertGTA filename = do
     putStrLn $ show $ accept $ header monagta
     putStrLn $ show $ aut
     putStrLn $ show $ removeUnreachable aut
-    putStrLn $ show $ pre aut [Set.fromList [2], Set.fromList [2]] ("00", Set.fromList ["X", "Y"])

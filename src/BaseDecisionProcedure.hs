@@ -142,7 +142,3 @@ formula2TermsVars autdict (Lo.Neg f) vars = TCompl (formula2TermsVars autdict f 
 formula2TermsVars autdict (Lo.Exists var f) vars =
    TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars autdict f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
 formula2TermsVars _ (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
-
-
---loadFromMona :: Lo.Atom -> WS2STreeAut
---loadFromMona (Lo.Subset v1 v2) =
