@@ -79,11 +79,13 @@ parseSimpleAtom arr =
    else case arr !! 1 of
       "sing" -> Just $ Lo.Sing $ arr !! 2
       "sub" -> Just $ Lo.Subseteq (arr !! 0) (arr !! 2)
-      "cat1" -> Just $ Lo.Cat1 (arr !! 0) (arr !! 2)
+      --"cat1" -> Just $ Lo.Cat1 (arr !! 0) (arr !! 2)
       "eps" -> Just $ Lo.Eps $ arr !! 2
       "in" -> Just $ Lo.In (arr !! 0) (arr !! 2)
       "~=" -> Just $ Lo.Neq (arr !! 0) (arr !! 2)
       "=" -> Just $ Lo.Eqn (arr !! 0) (arr !! 2)
+      "=.1" -> Just $ Lo.Cat2 (arr !! 0) (arr !! 2)
+      "=.0" -> Just $ Lo.Cat1 (arr !! 0) (arr !! 2)
 
 
 -- |Convert Mona string containing atom to Logic.Atom

@@ -42,8 +42,8 @@ def = emptyDef{ commentStart = "/*"
               , caseSensitive = True
               , identStart = letter <|> char '_' <|> char '$' <|> char '\''
               , identLetter = alphaNum <|> char '_' <|> char '$' <|> char '\''
-              , opStart = oneOf "~&:|<=>+-,\"\\^"
-              , opLetter = oneOf "~&:|<=>+-,\"\\^"
+              , opStart = oneOf "~&:|.01<=>+-,\"\\^"
+              , opLetter = oneOf "~&:|.01<=>+-,\"\\^"
               , reservedOpNames =
                 [ "~"     -- NOT
                 , "&"     -- AND
@@ -60,6 +60,8 @@ def = emptyDef{ commentStart = "/*"
                 , "-"     -- MINUS
                 , ":"     --
                 , ","     --
+                , ".1"    -- Right successor
+                , ".0"    -- Right successor
                 ]
               , reservedNames =
                 [ "ex0"
@@ -221,9 +223,21 @@ binAtomParser op = do { lhs <- termParser
                       ; return (MonaFormulaAtomic ((show lhs) ++ " " ++ op ++ " " ++ (show rhs)))
                       }
 
+
+binAtomParserSuff :: String -> String -> Parser MonaFormula
+binAtomParserSuff op suff = do { lhs <- termParser
+                               ; m_reservedOp op
+                               ; rhs <- termParser
+                               ; m_reservedOp suff
+                               ; return (MonaFormulaAtomic ((show lhs) ++ " " ++ op ++ suff ++ " " ++ (show rhs)))
+                             }
+
+
 -- parses atomic formulae
 atomicFormulaParser :: Parser MonaFormula
-atomicFormulaParser = try (binAtomParser "=")
+atomicFormulaParser = try (binAtomParserSuff "=" ".1")
+                  <|> try (binAtomParserSuff "=" ".0")
+                  <|> try (binAtomParser "=")
                   <|> try (binAtomParser "~=")
                   <|> try (binAtomParser "<")
                   <|> try (binAtomParser "<=")
@@ -232,7 +246,6 @@ atomicFormulaParser = try (binAtomParser "=")
                   <|> try (binAtomParser "in")
                   <|> try (binAtomParser "notin")
                   <|> try (binAtomParser "sub")
-                  <|> try (binAtomParser "cat1")
                   <?> "atomic formula"
 
 

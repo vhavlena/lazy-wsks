@@ -58,14 +58,15 @@ showFormula (ForAll var f)      = "∀" ++ var ++ ". (" ++ (showFormula f) ++ ")
 -- |Print atom in human-readable format
 showAtom :: Atom -> String
 showAtom (Sing v) = "Sing(" ++ v ++ ")"
-showAtom (Cat1 v1 v2) = v1 ++ "=" ++ v2 ++ ".L"
+showAtom (Cat1 v1 v2) = v1 ++ "=" ++ v2 ++ ".0"
+showAtom (Cat2 v1 v2) = v1 ++ "=" ++ v2 ++ ".1"
 showAtom (Subseteq v1 v2) = v1 ++ "⊆" ++ v2
 showAtom (Eps v) = v ++ "=ε"
 showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
-showAtom (MonaAtom iden var) = "MA: " ++ iden
+showAtom (MonaAtom iden var) = "MA: " -- ++ iden
 
 
 -- |Show formula in Mona format.
@@ -129,11 +130,8 @@ removeMonaFormulas (FormulaAtomic phi) = removeMonaAtom phi >>=
 removeMonaFormulas (Disj f1 f2) = removeMonaFormulas f1 >>=
   \x -> removeMonaFormulas f2 >>=
   \y -> return $ Disj x y
---removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>=
---  \x -> removeMonaFormulas f2 >>=
---  \y -> return $ Conj x y
-removeMonaFormulas (Conj f1 f2) = removeMonaStop f1 >>=
-  \x -> removeMonaStop f2 >>=
+removeMonaFormulas (Conj f1 f2) = removeMonaFormulas f1 >>=
+  \x -> removeMonaFormulas f2 >>=
   \y -> return $ Conj x y
 removeMonaFormulas (Neg f) = removeMonaFormulas f >>= \x -> return $ Neg x
 removeMonaFormulas (Exists var f) = removeMonaFormulas f >>=
@@ -150,8 +148,8 @@ removeMonaStop fle = writer (FormulaAtomic $ MonaAtom iden (freeVars fle), [(ide
 -- |Replace certain atoms with a special atom denoting that this part is
 -- directly converted to TA via Mona.
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
-removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
-  iden = v1++"sub"++v2
+--removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+--  iden = v1++"sub"++v2
 removeMonaAtom t = return t
 
 
@@ -177,6 +175,7 @@ freeVars (ForAll var f) = freeVars (Exists var f)
 freeVarsAtom :: Atom -> [Var]
 freeVarsAtom (Sing x) = [x]
 freeVarsAtom (Cat1 x y) = [x,y]
+freeVarsAtom (Cat2 x y) = [x,y]
 freeVarsAtom (Subseteq x y) = [x,y]
 freeVarsAtom (Subset x y) = [x,y]
 freeVarsAtom (Eps x) = [x]
