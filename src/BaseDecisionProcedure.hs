@@ -116,7 +116,9 @@ atom2Terms :: MonaAutDict -> Lo.Atom -> Term
 atom2Terms _ (Lo.Sing var) = TStates aut [var] (TA.leaves aut) where
    aut = singAut var
 atom2Terms _ (Lo.Cat1 v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
-   aut = catAut v1 v2
+   aut = cat1Aut v1 v2
+atom2Terms _ (Lo.Cat2 v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
+   aut = cat2Aut v1 v2
 atom2Terms _ (Lo.Subseteq v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subseteqAut v1 v2
 atom2Terms _ (Lo.Eps var) = TStates aut [var] (TA.leaves aut) where

@@ -66,7 +66,7 @@ showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
-showAtom (MonaAtom iden var) = "MA: " -- ++ iden
+showAtom (MonaAtom iden var) = "MA: {" ++ iden ++ "}"
 
 
 -- |Show formula in Mona format.
@@ -153,7 +153,7 @@ removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
 --removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
 --  iden = v1++"sub"++v2
 removeMonaAtom t@(Cat1 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
-  iden = v1++"cat2"++v2
+  iden = v1++"cat1"++v2
 removeMonaAtom t@(Cat2 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
   iden = v1++"cat2"++v2
 removeMonaAtom t = return t

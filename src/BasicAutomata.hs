@@ -39,14 +39,22 @@ singAut var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.f
       , (([1,1], (singSymbol '0' var)), Set.fromList [1])])
 
 
--- |Tree automaton for an atomic predicate X=Y.L.
-catAut :: Lo.Var -> Lo.Var -> WS2STreeAut
-catAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [0])
+-- |Tree automaton for an atomic predicate X=Y.0.
+cat1Aut :: Lo.Var -> Lo.Var -> WS2STreeAut
+cat1Aut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [0])
    (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
-      , (([0,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [1])
+      , (([0,0], (pairSymbol '1' '0' v1 v2)), Set.fromList [1])
       , (([1,0], (pairSymbol '1' '1' v1 v2)), Set.fromList [1])
---      , (([1,1], (pairSymbol '0' '0' v1 v2)), Set.fromList [1])
-      , (([1,0], (pairSymbol '1' '0' v1 v2)), Set.fromList [0])])
+      , (([1,0], (pairSymbol '0' '1' v1 v2)), Set.fromList [0])])
+
+
+-- |Tree automaton for an atomic predicate X=Y.1.
+cat2Aut :: Lo.Var -> Lo.Var -> WS2STreeAut
+cat2Aut v1 v2 = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [0])
+   (Map.fromList[ (([0,0], (pairSymbol '0' '0' v1 v2)), Set.fromList [0])
+      , (([0,0], (pairSymbol '1' '0' v1 v2)), Set.fromList [1])
+      , (([0,1], (pairSymbol '1' '1' v1 v2)), Set.fromList [1])
+      , (([0,1], (pairSymbol '0' '1' v1 v2)), Set.fromList [0])])
 
 
 -- |Tree automaton for an atomic predicate x \in Y.
