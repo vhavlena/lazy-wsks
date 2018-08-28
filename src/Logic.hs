@@ -84,6 +84,8 @@ showAtomMona :: Atom -> String
 showAtomMona (Subseteq v1 v2) = v1 ++ " sub " ++ v2
 showAtomMona (Eqn v1 v2) = v1 ++ " = " ++ v2
 showAtomMona (Neq v1 v2) = v1 ++ " ~= " ++ v2
+showAtomMona (Cat1 v1 v2) = v1 ++ " = " ++ v2 ++ ".0"
+showAtomMona (Cat2 v1 v2) = v1 ++ " = " ++ v2 ++ ".1"
 showAtomMona _ = error "Not implemented"
 
 
@@ -150,6 +152,10 @@ removeMonaStop fle = writer (FormulaAtomic $ MonaAtom iden (freeVars fle), [(ide
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
 --removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
 --  iden = v1++"sub"++v2
+removeMonaAtom t@(Cat1 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+  iden = v1++"cat2"++v2
+removeMonaAtom t@(Cat2 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+  iden = v1++"cat2"++v2
 removeMonaAtom t = return t
 
 
