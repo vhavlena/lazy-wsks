@@ -26,7 +26,7 @@ def main():
         delim = "&"
         if i == num-2:
             delim = ";"
-        sys.stdout.write("(X{0} sub X => (X{1} sub X & X{1}=X.0)) {5}".format(i, i+1, i+1, i, i+1, delim))
+        sys.stdout.write("(X{0} sub X => X{1}=X.0) {5}".format(i, i+1, i+1, i, i+1, delim))
     sys.stdout.write("\n")
 
 
