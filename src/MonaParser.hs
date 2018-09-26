@@ -42,8 +42,8 @@ def = emptyDef{ commentStart = "/*"
               , caseSensitive = True
               , identStart = letter <|> char '_' <|> char '$' <|> char '\''
               , identLetter = alphaNum <|> char '_' <|> char '$' <|> char '\''
-              , opStart = oneOf "~&:|.01<=>+-,\"\\^"
-              , opLetter = oneOf "~&:|.01<=>+-,\"\\^"
+              , opStart = oneOf "~&:|.<=>+-,\"\\^"
+              , opLetter = oneOf "~&:|.<=>+-,\"\\^"
               , reservedOpNames =
                 [ "~"     -- NOT
                 , "&"     -- AND
@@ -60,8 +60,10 @@ def = emptyDef{ commentStart = "/*"
                 , "-"     -- MINUS
                 , ":"     --
                 , ","     --
-                , ".1"    -- Right successor
-                , ".0"    -- Right successor
+                , "."
+                , "^"
+                --, ".1"    -- Right successor
+                --, ".0"    -- Right successor
                 ]
               , reservedNames =
                 [ "ex0"
@@ -95,7 +97,7 @@ def = emptyDef{ commentStart = "/*"
                 , "restrict"
                 , "empty"
                 , "prefix"
-                , "root"
+                --, "root"
                 , "variant"
                 , "type"
                 , "in_state_space"
@@ -140,13 +142,17 @@ data MonaTerm
   = MonaTermVar String
   | MonaTermConst Integer
   | MonaTermPlus MonaTerm MonaTerm
+  | MonaTermCat MonaTerm MonaTerm
+  | MonaTermUp MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
 
 instance Show MonaTerm where
   show (MonaTermVar str) = str
   show (MonaTermConst n) = show n
   show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (pars $ show t2)
+  show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (pars $ show t2)
   show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (pars $ show t2)
+  show (MonaTermUp t) = (pars $ show t) ++ "^"
 
 
 -- put something inside parenthesis
@@ -160,6 +166,8 @@ termParser = buildExpressionParser termOpTable termP <?> "term"
 
 -- term operator table
 termOpTable = [ [ Infix (m_reservedOp "+" >> return MonaTermPlus) AssocLeft
+                , Infix (m_reservedOp "." >> return MonaTermCat) AssocLeft
+                , Postfix (m_reservedOp "^" >> return MonaTermUp)
                 , Infix (m_reservedOp "-" >> return MonaTermMinus) AssocLeft
                 ]
               ]
@@ -235,9 +243,7 @@ binAtomParserSuff op suff = do { lhs <- termParser
 
 -- parses atomic formulae
 atomicFormulaParser :: Parser MonaFormula
-atomicFormulaParser = try (binAtomParserSuff "=" ".1")
-                  <|> try (binAtomParserSuff "=" ".0")
-                  <|> try (binAtomParser "=")
+atomicFormulaParser = try (binAtomParser "=")
                   <|> try (binAtomParser "~=")
                   <|> try (binAtomParser "<")
                   <|> try (binAtomParser "<=")
@@ -334,6 +340,7 @@ data MonaDeclaration
   | MonaDeclDefWhere1 String MonaFormula
   | MonaDeclDefWhere2 String MonaFormula
   | MonaDeclMacro String [MonaMacroParam] MonaFormula
+  | MonaDeclPred String [MonaMacroParam] MonaFormula
   | MonaDeclExport String MonaFormula
 
 instance Show MonaDeclaration where
@@ -345,6 +352,7 @@ instance Show MonaDeclaration where
   show (MonaDeclDefWhere1 var phi) = "defaultwhere1(" ++ var ++ ") = " ++ (show phi)
   show (MonaDeclDefWhere2 var phi) = "defaultwhere2(" ++ var ++ ") = " ++ (show phi)
   show (MonaDeclMacro name params phi) = "macro " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
+  show (MonaDeclPred name params phi) = "pred " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
   show (MonaDeclExport name phi) = "export(\"" ++ name ++ "\", " ++ (show phi) ++ ")"
 
 
@@ -402,6 +410,17 @@ declarationParser = do { m_reserved "var0"
                        ; return (MonaDeclDefWhere2 varname phi)
                        }
                 <|> do { m_reserved "macro"
+                       ; name <- m_identifier
+                       ; args <- optionMaybe (m_parens $ m_commaSep paramParser)
+                       ; let sanArgs = (case args of
+                                          Nothing -> []
+                                          Just ls -> ls
+                                       )
+                       ; m_reservedOp "="
+                       ; phi <- formulaParser
+                       ; return (MonaDeclMacro name sanArgs phi)
+                       }
+                <|> do { m_reserved "pred"
                        ; name <- m_identifier
                        ; args <- optionMaybe (m_parens $ m_commaSep paramParser)
                        ; let sanArgs = (case args of
