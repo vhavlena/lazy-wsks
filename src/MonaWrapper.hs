@@ -18,7 +18,9 @@ import Text.Parsec.Prim
 import Text.Parsec.String
 import Text.Parsec.Token
 
-import qualified MonaParser as MoPa
+import MonaParser
+
+--import qualified MonaParser as MoPa
 import qualified Logic as Lo
 
 
@@ -108,6 +110,64 @@ convertBase2Simple t = error $ "Unimplemented: " ++ (show t)  -- TODO: Complete
 
 getLogicFormula :: MoPa.MonaFormula -> Lo.Formula
 getLogicFormula = convertBase2Simple . convert2Base
+
+
+replaceCalls :: MoPa.MonaFile -> MoPa.MonaFile
+replaceCalls (MonaFile dom decls) =
+
+replaceDecl [] = []
+replaceDecl (x:xs) = (case x of
+  MonaDeclPred name pars fle = MonaDeclPred name pars (replaceFormulas xs fle))
+    :(replaceDecl xs)
+
+
+replaceFormulas decls f@(MonaFormulaAtomic _) = f
+replaceFormulas decls f@(MonaFormulaVar _) = f
+replaceFormulas decls (MonaFormulaNeg f) = MonaFormulaNeg (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaDisj f1 f2) = MonaFormulaDisj (replaceFormulas decls f1) (replaceFormulas decls f2)
+replaceFormulas decls (MonaFormulaConj f1 f2) = MonaFormulaConj (replaceFormulas decls f1) (replaceFormulas decls f2)
+replaceFormulas decls (MonaFormulaImpl f1 f2) = MonaFormulaImpl (replaceFormulas decls f1) (replaceFormulas decls f2)
+replaceFormulas decls (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (replaceFormulas decls f1) (replaceFormulas decls f2)
+replaceFormulas decls (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaEx1 vardecl f) = MonaFormulaEx1 (applyVarDecl (replaceFormulas decls) vardecl) (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaEx2 vardecl f) = MonaFormulaEx2 (applyVarDecl (replaceFormulas decls) vardecl) (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaAll1 vardecl f) = MonaFormulaAll1 (applyVarDecl (replaceFormulas decls) vardecl) (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaAll2 vardecl f) = MonaFormulaAll2 (applyVarDecl (replaceFormulas decls) vardecl) (replaceFormulas decls f)
+replaceFormulas decls (MonaFormulaPredCall name params) =
+
+
+filterMacro :: String -> MonaDeclaration -> Bool
+filterMacro name f@(MonaDeclPred nm _ _) = nm == name
+
+
+substituteVars repl f@(MonaFormulaAtomic _) = f
+substituteVars repl (MonaFormulaVar var) = case (find (\a -> (fst a == var)) repl) of
+  (Maybe val) -> MonaFormulaVar $ snd val
+  Nothing -> MonaFormulaVar var
+substituteVars repl (MonaFormulaNeg f) = MonaFormulaNeg (substituteVars repl f)
+substituteVars repl (MonaFormulaDisj f1 f2) = MonaFormulaDisj (substituteVars repl f1) (substituteVars repl f2)
+substituteVars repl (MonaFormulaConj f1 f2) = MonaFormulaConj (substituteVars repl f1) (substituteVars repl f2)
+substituteVars repl (MonaFormulaImpl f1 f2) = MonaFormulaImpl (substituteVars repl f1) (substituteVars repl f2)
+substituteVars repl (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (substituteVars repl f1) (substituteVars repl f2)
+substituteVars repl (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl (MonaFormulaEx1 vardecl f) = MonaFormulaEx1 (applyVarDecl (substituteVars repl') vardecl) (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl (MonaFormulaEx2 vardecl f) = MonaFormulaEx2 (applyVarDecl (substituteVars repl') vardecl) (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl (MonaFormulaAll1 vardecl f) = MonaFormulaAll1 (applyVarDecl (substituteVars repl') vardecl) (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl (MonaFormulaAll2 vardecl f) = MonaFormulaAll2 (applyVarDecl (substituteVars repl') vardecl) (substituteVars repl' f) where
+  repl' = filter (\(a,_) -> not $ elem a vars) repl
+substituteVars repl _ = error "Cyclic dependecy between macros"
+
+
+
+applyVarDecl :: (MonaFormula -> MonaFormula) -> [[(String, Maybe MonaFormula)] -> [[(String, Maybe MonaFormula)]
+applyVarDecl f = map (\(a,b) -> (a,b >>= f)
 
 loadFormulas p = do
    file <- MoPa.parseFile p
