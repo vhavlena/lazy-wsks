@@ -429,7 +429,7 @@ declarationParser = do { m_reserved "var0"
                                        )
                        ; m_reservedOp "="
                        ; phi <- formulaParser
-                       ; return (MonaDeclMacro name sanArgs phi)
+                       ; return (MonaDeclPred name sanArgs phi)
                        }
                 <|> do { m_reserved "export"
                        ; (filename, phi) <- m_parens
