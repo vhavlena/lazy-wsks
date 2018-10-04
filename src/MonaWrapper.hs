@@ -61,6 +61,47 @@ unwindQuantif (MonaFormulaAll2 [x] f) = MonaFormulaAll2 [(handleWhere x)] (conve
 unwindQuantif (MonaFormulaAll2 (x:xs) f) = MonaFormulaAll2 [(handleWhere x)] (unwindQuantif (MonaFormulaAll2 xs f))
 unwindQuantif t = error $ "Unimplemented: " ++ (show t) -- TODO: Complete
 
+
+-- |Unwind quantifiers of a formula, i.e, ex1 x,y --> ex1 x: ex1 y
+unwindQuantifFormula :: MonaFormula -> MonaFormula
+unwindQuantifFormula (MonaFormulaEx0 xs f) = foldr (\a g -> MonaFormulaEx0 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaEx1 xs f) = foldr (\a g -> MonaFormulaEx1 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaEx2 xs f) = foldr (\a g -> MonaFormulaEx2 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaAll0 xs f) = foldr (\a g -> MonaFormulaAll0 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaAll1 xs f) = foldr (\a g -> MonaFormulaAll1 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaAll2 xs f) = foldr (\a g -> MonaFormulaAll2 [a] g) (unwindQuantifFormula f) xs
+unwindQuantifFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+unwindQuantifFormula (MonaFormulaVar var) = MonaFormulaVar var
+unwindQuantifFormula (MonaFormulaNeg f) = MonaFormulaNeg (unwindQuantifFormula f)
+unwindQuantifFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (unwindQuantifFormula f1) (unwindQuantifFormula f2)
+unwindQuantifFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (unwindQuantifFormula f1) (unwindQuantifFormula f2)
+unwindQuantifFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (unwindQuantifFormula f1) (unwindQuantifFormula f2)
+unwindQuantifFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (unwindQuantifFormula f1) (unwindQuantifFormula f2)
+
+
+-- |Unwind quantifiers of a macro parameter, i.e, ex1 x,y --> ex1 x: ex1 y
+unwindQuantifMacroParam :: MonaMacroParam -> [MonaMacroParam]
+unwindQuantifMacroParam (MonaMacroParamVar0 vars) = map (\a -> MonaMacroParamVar0 [a]) vars
+unwindQuantifMacroParam (MonaMacroParamVar1 vars) = map (\a -> MonaMacroParamVar1 [a]) vars
+unwindQuantifMacroParam (MonaMacroParamVar2 vars) = map (\a -> MonaMacroParamVar2 [a]) vars
+unwindQuantifMacroParam a = return a
+
+
+-- |Unwind quantifiers of a declaration, i.e, ex1 x,y --> ex1 x: ex1 y
+unwindQuantifDecl :: MonaDeclaration -> [MonaDeclaration]
+unwindQuantifDecl (MonaDeclFormula f) = [MonaDeclFormula $ unwindQuantifFormula f]
+unwindQuantifDecl (MonaDeclVar0 vars) = map (\a -> MonaDeclVar0 [a]) vars
+unwindQuantifDecl (MonaDeclVar1 vars) = map (\a -> MonaDeclVar1 [a]) vars
+unwindQuantifDecl (MonaDeclVar2 vars) = map (\a -> MonaDeclVar2 [a]) vars
+unwindQuantifDecl (MonaDeclPred name params f) = [MonaDeclPred name (params >>= unwindQuantifMacroParam) (unwindQuantifFormula f)]
+unwindQuantifDecl a = return a                                           -- TODO: need to be refined
+
+
+-- |Unwind quantifiers of a mona file, i.e, ex1 x,y --> ex1 x: ex1 y
+unwindQuantifFile :: MonaFile -> MonaFile
+unwindQuantifFile (MonaFile dom decls) = MonaFile dom (decls >>= unwindQuantifDecl)
+
+
 -- |Hanle Mona variables declarations.
 handleWhere :: (String, Maybe MonaFormula) -> (String, Maybe MonaFormula)
 handleWhere = id
@@ -263,6 +304,38 @@ varFromMacroParam ((MonaMacroParamVar2 vars),_) = fst $ head vars
 applyVarDecl :: (MonaFormula -> MonaFormula) -> [(String, Maybe MonaFormula)] -> [(String, Maybe MonaFormula)]
 applyVarDecl f = map (\(a,b) -> (a,b >>= \a -> return $ f a))
 
+
+-- |Assumes singleton quatified variables (i.e. after unwindQuantif function).
+removeWhereFormula :: MonaFormula -> MonaFormula
+removeWhereFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+removeWhereFormula (MonaFormulaVar var) = MonaFormulaVar var
+removeWhereFormula (MonaFormulaNeg f) = MonaFormulaNeg (removeWhereFormula f)
+removeWhereFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (removeWhereFormula f1) (removeWhereFormula f2)
+removeWhereFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (removeWhereFormula f1) (removeWhereFormula f2)
+removeWhereFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (removeWhereFormula f1) (removeWhereFormula f2)
+removeWhereFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (removeWhereFormula f1) (removeWhereFormula f2)
+removeWhereFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (removeWhereFormula f)
+removeWhereFormula (MonaFormulaEx1 decl f) = expandWhereQuantif (MonaFormulaEx1) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaEx2 decl f) = expandWhereQuantif (MonaFormulaEx2) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (removeWhereFormula f)
+removeWhereFormula (MonaFormulaAll1 decl f) = expandWhereQuantif (MonaFormulaAll1) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaAll2 decl f) = expandWhereQuantif (MonaFormulaAll2) decl (removeWhereFormula f)
+
+expandWhereQuantif cons [(var, fwh)] f = cons [(var, Nothing)] (expand fwh f) where
+  expand (Just f1) f2 = MonaFormulaConj f1 f2
+  expand Nothing f2 = f2
+
+
+removeWhereFile :: MonaFile -> MonaFile
+removeWhereFile (MonaFile dom decls) = MonaFile dom (map (removeWhereDecl) decls)
+
+
+removeWhereDecl :: MonaDeclaration -> MonaDeclaration
+removeWhereDecl (MonaDeclFormula f) = MonaDeclFormula $ removeWhereFormula f
+removeWhereDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeWhereFormula f)
+removeWhereDecl a = a                                           -- TODO: need to be refined
+
+
 loadFormulas p = do
    file <- parseFile p
    let formulas = getFormulas file in
@@ -272,4 +345,4 @@ loadFormulas p = do
 flatTest file = do
   mona <- parseFile file
   putStrLn $ show mona
-  putStrLn $ show $ replaceCalls mona
+  putStrLn $ show $ removeWhereFile $ unwindQuantifFile $ replaceCalls mona
