@@ -183,9 +183,43 @@ sanitizeTerm :: MonaTerm -> MonaTerm
 sanitizeTerm = error "Unimplemented"
 
 
+-- atomic formulae (atom) in MONA
+data MonaAtom
+  = MonaAtomLe MonaTerm MonaTerm
+  | MonaAtomEq MonaTerm MonaTerm
+  | MonaAtomNeq MonaTerm MonaTerm
+  | MonaAtomLeq MonaTerm MonaTerm
+  | MonaAtomGe MonaTerm MonaTerm
+  | MonaAtomGeq MonaTerm MonaTerm
+  | MonaAtomIn MonaTerm MonaTerm
+  | MonaAtomNotIn MonaTerm MonaTerm
+  | MonaAtomSub MonaTerm MonaTerm
+  | MonaAtomSing MonaTerm
+  | MonaAtomEps MonaTerm
+  | MonaAtomTerm MonaTerm
+  | MonaAtomTrue
+  | MonaAtomFalse
+
+instance Show MonaAtom where
+  show (MonaAtomLe t1 t2) = (show t1) ++ " < " ++ (show t2)
+  show (MonaAtomLeq t1 t2) = (show t1) ++ " <= " ++ (show t2)
+  show (MonaAtomEq t1 t2) = (show t1) ++ " = " ++ (show t2)
+  show (MonaAtomNeq t1 t2) = (show t1) ++ " ~= " ++ (show t2)
+  show (MonaAtomGe t1 t2) = (show t1) ++ " > " ++ (show t2)
+  show (MonaAtomGeq t1 t2) = (show t1) ++ " >= " ++ (show t2)
+  show (MonaAtomIn t1 t2) = (show t1) ++ " in " ++ (show t2)
+  show (MonaAtomNotIn t1 t2) = (show t1) ++ " notin " ++ (show t2)
+  show (MonaAtomSub t1 t2) = (show t1) ++ " sub " ++ (show t2)
+  show (MonaAtomTerm t) = show t
+  show (MonaAtomSing t) = "sing( " ++ (show t) ++ " )"
+  show (MonaAtomEps t) = "eps( " ++ (show t) ++ " )"
+  show MonaAtomTrue = "true"
+  show MonaAtomFalse = "false"
+
+
 -- formulae in MONA
 data MonaFormula
-  = MonaFormulaAtomic String           -- TODO: needs to be refined
+  = MonaFormulaAtomic MonaAtom
   | MonaFormulaVar String
   | MonaFormulaNeg MonaFormula
   | MonaFormulaDisj MonaFormula MonaFormula
@@ -201,7 +235,7 @@ data MonaFormula
   | MonaFormulaPredCall String [MonaTerm]
 
 instance Show MonaFormula where
-  show (MonaFormulaAtomic str) = str
+  show (MonaFormulaAtomic atom) = "[" ++ show atom ++ "]"
   show (MonaFormulaVar str) = str
   show (MonaFormulaNeg phi) = "~" ++ (show phi)
   show (MonaFormulaDisj f1 f2) = (show f1) ++ " | " ++ (show f2)
@@ -224,34 +258,34 @@ instance Show MonaFormula where
 
 
 -- parses a binary atom
-binAtomParser :: String -> Parser MonaFormula
-binAtomParser op = do { lhs <- termParser
+binAtomParser :: String -> (MonaTerm -> MonaTerm -> MonaAtom) -> Parser MonaFormula
+binAtomParser op f = do { lhs <- termParser
                       ; m_reservedOp op
                       ; rhs <- termParser
-                      ; return (MonaFormulaAtomic ((show lhs) ++ " " ++ op ++ " " ++ (show rhs)))
+                      ; return (MonaFormulaAtomic $ f lhs rhs) ---((show lhs) ++ " " ++ op ++ " " ++ (show rhs)))
                       }
 
 
-binAtomParserSuff :: String -> String -> Parser MonaFormula
-binAtomParserSuff op suff = do { lhs <- termParser
-                               ; m_reservedOp op
-                               ; rhs <- termParser
-                               ; m_reservedOp suff
-                               ; return (MonaFormulaAtomic ((show lhs) ++ " " ++ op ++ suff ++ " " ++ (show rhs)))
-                             }
+-- binAtomParserSuff :: String -> String -> Parser MonaFormula
+-- binAtomParserSuff op suff = do { lhs <- termParser
+--                                ; m_reservedOp op
+--                                ; rhs <- termParser
+--                                ; m_reservedOp suff
+--                                ; return (MonaFormulaAtomic ((show lhs) ++ " " ++ op ++ suff ++ " " ++ (show rhs)))
+--                              }
 
 
 -- parses atomic formulae
 atomicFormulaParser :: Parser MonaFormula
-atomicFormulaParser = try (binAtomParser "=")
-                  <|> try (binAtomParser "~=")
-                  <|> try (binAtomParser "<")
-                  <|> try (binAtomParser "<=")
-                  <|> try (binAtomParser ">")
-                  <|> try (binAtomParser ">=")
-                  <|> try (binAtomParser "in")
-                  <|> try (binAtomParser "notin")
-                  <|> try (binAtomParser "sub")
+atomicFormulaParser = try (binAtomParser "=" (MonaAtomEq))
+                  <|> try (binAtomParser "~=" (MonaAtomNeq))
+                  <|> try (binAtomParser "<" (MonaAtomLe))
+                  <|> try (binAtomParser "<=" (MonaAtomLeq))
+                  <|> try (binAtomParser ">" (MonaAtomGe))
+                  <|> try (binAtomParser ">=" (MonaAtomGeq))
+                  <|> try (binAtomParser "in" (MonaAtomIn))
+                  <|> try (binAtomParser "notin" (MonaAtomNotIn))
+                  <|> try (binAtomParser "sub" (MonaAtomSub))
                   <?> "atomic formula"
 
 
@@ -277,15 +311,15 @@ formulaOpTable = [ [ Prefix (m_reservedOp "~"   >> return MonaFormulaNeg) ]
 formulaTerm :: Parser MonaFormula
 formulaTerm = m_parens formulaParser
           <|> atomicFormulaParser
-          <|> (m_reserved "true" >> return (MonaFormulaAtomic "true"))
-          <|> (m_reserved "false" >> return (MonaFormulaAtomic "false"))
+          <|> (m_reserved "true" >> return (MonaFormulaAtomic $ MonaAtomTrue))
+          <|> (m_reserved "false" >> return (MonaFormulaAtomic $ MonaAtomFalse))
           <|> do { m_reserved "sing"
                  ; var <- m_identifier
-                 ; return (MonaFormulaAtomic $ "term sing " ++ var )
+                 ; return (MonaFormulaAtomic $ MonaAtomSing $ MonaTermVar var )
                  }
           <|> do { m_reserved "eps"
                 ; var <- m_identifier
-                ; return (MonaFormulaAtomic $ "term eps " ++ var )
+                ; return (MonaFormulaAtomic $ MonaAtomEps $ MonaTermVar var )
                 }
           <|> do { m_reserved "ex0"
                  ; (varWhereList, phi) <- parseQuantSuffix

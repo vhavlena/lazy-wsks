@@ -24,6 +24,8 @@ import MonaParser
 
 --import qualified MonaParser as MoPa
 import qualified Logic as Lo
+import qualified Data.Map as Map
+import qualified Debug.Trace as Dbg
 
 
 -- |Convert Mona formula to Base Mona formula (without Ext1 quatifiers, only
@@ -93,10 +95,11 @@ parseSimpleAtom arr =
 
 
 -- |Convert Mona string containing atom to Logic.Atom
-convertAtom :: String -> Lo.Atom
-convertAtom atom = case (parseAtom atom) of
-   Nothing -> error $ "Parse error" ++ (show atom)
-   Just res -> res
+convertAtom :: MonaAtom -> Lo.Atom
+convertAtom _ = Lo.Sing "X"
+-- convertAtom atom = case (parseAtom atom) of
+--    Nothing -> error $ "Parse error" ++ (show atom)
+--    Just res -> res
 
 
 -- |Convert Mona base formula to Logic.Formula
@@ -152,6 +155,10 @@ replaceFormulas decls (MonaFormulaPredCall name params) = fromJust $ find (filte
 
 -- |Replace a predicate call (given arguments) with predicate body.
 replacePred :: [MonaTerm] -> MonaDeclaration -> Maybe MonaFormula
+-- replacePred args (MonaDeclPred _ params formula) | Dbg.trace ("\n" ++ show (map (mappred) (zip (expandPredParams params) args))) False = undefined  where
+--     mappred ((MonaMacroParamVar0 vars),_) = head vars
+--     mappred ((MonaMacroParamVar1 vars),_) = fst $ head vars
+--     mappred ((MonaMacroParamVar2 vars),_) = fst $ head vars
 replacePred args (MonaDeclPred _ params formula) = return $ substituteVars (zip (expandPredParams params) args) formula
 
 
@@ -174,14 +181,8 @@ filterMacro name _ = False
 -- arg1: MonaMacroParam (parameter of a predicate), MonaTerm (term that should
 -- replaced the macro parameter)
 substituteVars :: [(MonaMacroParam, MonaTerm)] -> MonaFormula -> MonaFormula
-substituteVars repl f@(MonaFormulaAtomic _) = f
-substituteVars repl (MonaFormulaVar var) = case find (==var) (map (mappred) repl) of
-  (Just val) -> MonaFormulaVar val
-  Nothing -> MonaFormulaVar var
-  where
-    mappred ((MonaMacroParamVar0 vars),_) = head vars
-    mappred ((MonaMacroParamVar1 vars),_) = fst $ head vars
-    mappred ((MonaMacroParamVar2 vars),_) = fst $ head vars
+substituteVars repl (MonaFormulaAtomic atom) = MonaFormulaAtomic $ substituteAtoms repl atom
+substituteVars repl (MonaFormulaVar var) = MonaFormulaAtomic $  MonaAtomTerm $ substituteVar repl var
 substituteVars repl (MonaFormulaNeg f) = MonaFormulaNeg (substituteVars repl f)
 substituteVars repl (MonaFormulaDisj f1 f2) = MonaFormulaDisj (substituteVars repl f1) (substituteVars repl f2)
 substituteVars repl (MonaFormulaConj f1 f2) = MonaFormulaConj (substituteVars repl f1) (substituteVars repl f2)
@@ -204,6 +205,42 @@ substituteVars repl (MonaFormulaAll2 vardecl f) = MonaFormulaAll2 vardecl' (subs
   vardecl' = applyVarDecl (substituteVars repl') vardecl
   repl' = filterSubst vardecl repl
 substituteVars repl _ = error "Cyclic dependecy between predicates"
+
+
+-- |Subtitute variable (given by its name) with a corresponding substitution term.
+substituteVar :: [(MonaMacroParam, MonaTerm)] -> String -> MonaTerm
+substituteVar repl var = Map.findWithDefault (MonaTermVar var) var sub
+  where
+    sub = Map.fromList $ map (mappred) repl
+    mappred ((MonaMacroParamVar0 vars),b) = (head vars, b)
+    mappred ((MonaMacroParamVar1 vars),b) = (fst $ head vars, b)
+    mappred ((MonaMacroParamVar2 vars),b) = (fst $ head vars, b)
+
+
+-- |Subtitute variables in atoms with corresponding substitutions (terms).
+substituteAtoms :: [(MonaMacroParam, MonaTerm)] -> MonaAtom -> MonaAtom
+substituteAtoms repl (MonaAtomLe t1 t2) = MonaAtomLe (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomLeq t1 t2) = MonaAtomLeq (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomGe t1 t2) = MonaAtomGe (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomGeq t1 t2) = MonaAtomGeq (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomEq t1 t2) = MonaAtomEq (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomNeq t1 t2) = MonaAtomNeq (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomIn t1 t2) = MonaAtomIn (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomNotIn t1 t2) = MonaAtomNotIn (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomSub t1 t2) = MonaAtomSub (substituteTerms repl t1) (substituteTerms repl t2)
+substituteAtoms repl (MonaAtomSing t) = MonaAtomSing $ substituteTerms repl t
+substituteAtoms repl (MonaAtomEps t) = MonaAtomEps $ substituteTerms repl t
+substituteAtoms repl t = t
+
+
+-- |Subtitute variables in terms with corresponding substitutions (terms).
+substituteTerms :: [(MonaMacroParam, MonaTerm)] -> MonaTerm -> MonaTerm
+substituteTerms repl (MonaTermVar var) = substituteVar repl var
+substituteTerms repl (MonaTermPlus t1 t2) = MonaTermPlus (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermMinus t1 t2) = MonaTermMinus (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermCat t1 t2) = MonaTermCat (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermUp t) = MonaTermUp (substituteTerms repl t)
+substituteTerms repl t = t
 
 
 -- |Filter substitutions (remove substitutions that are in var list).
