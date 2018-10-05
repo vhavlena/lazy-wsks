@@ -145,6 +145,7 @@ data MonaTerm
   | MonaTermCat MonaTerm MonaTerm
   | MonaTermUp MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
+  deriving (Eq)
 
 instance Show MonaTerm where
   show (MonaTermVar str) = str
@@ -199,6 +200,7 @@ data MonaAtom
   | MonaAtomTerm MonaTerm
   | MonaAtomTrue
   | MonaAtomFalse
+  deriving (Eq)
 
 instance Show MonaAtom where
   show (MonaAtomLe t1 t2) = (show t1) ++ " < " ++ (show t2)
@@ -233,6 +235,7 @@ data MonaFormula
   | MonaFormulaAll1 [(String, Maybe MonaFormula)] MonaFormula
   | MonaFormulaAll2 [(String, Maybe MonaFormula)] MonaFormula
   | MonaFormulaPredCall String [MonaTerm]
+  deriving (Eq)
 
 instance Show MonaFormula where
   show (MonaFormulaAtomic atom) = "[" ++ show atom ++ "]"

@@ -24,6 +24,7 @@ import MonaParser
 
 --import qualified MonaParser as MoPa
 import qualified Logic as Lo
+import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
 import qualified Debug.Trace as Dbg
 
@@ -333,7 +334,216 @@ removeWhereFile (MonaFile dom decls) = MonaFile dom (map (removeWhereDecl) decls
 removeWhereDecl :: MonaDeclaration -> MonaDeclaration
 removeWhereDecl (MonaDeclFormula f) = MonaDeclFormula $ removeWhereFormula f
 removeWhereDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeWhereFormula f)
-removeWhereDecl a = a                                           -- TODO: need to be refined
+removeWhereDecl a = a  -- TODO: need to be refined
+
+
+
+removeForAllFormula :: MonaFormula -> MonaFormula
+removeForAllFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+removeForAllFormula (MonaFormulaVar var) = MonaFormulaVar var
+removeForAllFormula (MonaFormulaNeg f) = MonaFormulaNeg (removeForAllFormula f)
+removeForAllFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (removeForAllFormula f1) (removeForAllFormula f2)
+removeForAllFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (removeForAllFormula f1) (removeForAllFormula f2)
+removeForAllFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (removeForAllFormula f1) (removeForAllFormula f2)
+removeForAllFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (removeForAllFormula f1) (removeForAllFormula f2)
+removeForAllFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (removeForAllFormula f)
+removeForAllFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (removeForAllFormula f)
+removeForAllFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (removeForAllFormula f)
+removeForAllFormula (MonaFormulaAll0 vars f) = MonaFormulaNeg $ MonaFormulaEx0 vars (MonaFormulaNeg $ removeForAllFormula f)
+removeForAllFormula (MonaFormulaAll1 decl f) = MonaFormulaNeg $ MonaFormulaEx1 decl (MonaFormulaNeg $ removeForAllFormula f)
+removeForAllFormula (MonaFormulaAll2 decl f) = MonaFormulaNeg $ MonaFormulaEx2 decl (MonaFormulaNeg $ removeForAllFormula f)
+
+
+removeForAllDecl :: MonaDeclaration -> MonaDeclaration
+removeForAllDecl (MonaDeclFormula f) = MonaDeclFormula $ removeForAllFormula f
+removeForAllDecl (MonaDeclVar0 [var]) = MonaDeclVar0 [var]
+removeForAllDecl (MonaDeclVar1 [(var,f)]) = MonaDeclVar1 [(var, f >>= return . removeForAllFormula)]
+removeForAllDecl (MonaDeclVar2 [(var,f)]) = MonaDeclVar2 [(var, f >>= return . removeForAllFormula)]
+removeForAllDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeForAllFormula f)  -- TODO: not considering complex declarations of parameters
+removeForAllDecl a = a -- TODO: incomplete
+
+
+removeForAllFile :: MonaFile -> MonaFile
+removeForAllFile (MonaFile dom decls) = MonaFile dom (map (removeForAllDecl) decls)
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with antiprenexing
+--------------------------------------------------------------------------------------------------------------
+
+
+-- Chain of quantifiers
+data QuantifChain a =
+  ForAll0Chain a
+  | ForAll1Chain a
+  | ForAll2Chain a
+  | Exists0Chain a
+  | Exists1Chain a
+  | Exists2Chain a
+  deriving (Eq)
+
+
+-- Chain of quantifiers with variables
+type QuantifVarChain = QuantifChain (String, Maybe MonaFormula)
+
+
+-- |Definition of functor of QuantifChain
+-- instance Functor QuantifChain where
+--   fmap f EmptyChain = EmptyChain
+--   fmap f (Exists0Chain val) = Exists0Chain (f val)
+--   fmap f (Exists1Chain val) = Exists1Chain (f val)
+--   fmap f (Exists2Chain val) = Exists2Chain (f val)
+--   fmap f (ForAll0Chain val) = ForAll0Chain (f val)
+--   fmap f (ForAll1Chain val) = ForAll1Chain (f val)
+--   fmap f (ForAll2Chain val) = ForAll2Chain (f val)
+--
+--
+-- -- |Definition of applicative functor of QuantifChain
+-- instance Applicative QuantifChain where
+--   pure = ExistsChain
+--   EmptyChain <*> _ = EmptyChain
+--   (Exists0Chain f) <*> st = fmap f st
+--   (Exists1Chain f) <*> st = fmap f st
+--   (ForAll0Chain f) <*> st = fmap f st
+--   (ForAll1Chain f) <*> st = fmap f st
+--   (ForAll2Chain f) <*> st = fmap f st
+--
+--
+-- -- |Definition of Semigroup of QuantifChain
+-- instance (Monoid a) => S.Semigroup (QuantifChain a) where
+--   (<>) = mappend
+--
+--
+-- -- |Definition of monoid of QuantifChain
+-- instance (Monoid a) => Monoid (QuantifChain a) where
+--   mempty = EmptyChain
+--   mappend EmptyChain s = s
+--   mappend s EmptyChain = s
+--   mappend (ForAllChain v1) (ForAllChain v2) = ForAllChain (mappend v1 v2)
+--   mappend (ExistsChain v1) (ExistsChain v2) = ExistsChain (mappend v1 v2)
+
+
+freeVarsTerm :: MonaTerm -> [Lo.Var]
+freeVarsTerm (MonaTermVar var) = [var]
+freeVarsTerm (MonaTermConst num) = []
+freeVarsTerm (MonaTermPlus t1 t2) = (freeVarsTerm t1) ++ (freeVarsTerm t2)
+freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
+freeVarsTerm (MonaTermMinus t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
+freeVarsTerm (MonaTermUp t) = freeVarsTerm t
+
+
+freeVarsAtom :: MonaAtom -> [Lo.Var]
+freeVarsAtom (MonaAtomLe t1 t2) = (freeVarsTerm t1) ++ (freeVarsTerm t2)
+freeVarsAtom (MonaAtomLeq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomEq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomNeq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomGe t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomGeq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomIn t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomNotIn t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomSub t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
+freeVarsAtom (MonaAtomEps t) = freeVarsTerm t
+freeVarsAtom (MonaAtomSing t) = freeVarsTerm t
+freeVarsAtom (MonaAtomTerm t) = freeVarsTerm t
+freeVarsAtom MonaAtomTrue = []
+freeVarsAtom MonaAtomFalse = []
+
+
+freeVarsFormula :: MonaFormula -> [Lo.Var]
+freeVarsFormula (MonaFormulaAtomic atom) = freeVarsAtom atom
+freeVarsFormula (MonaFormulaVar var) = [var]
+freeVarsFormula (MonaFormulaNeg f) = freeVarsFormula f
+freeVarsFormula (MonaFormulaConj f1 f2) = nub $ (freeVarsFormula f1) ++ (freeVarsFormula f2)
+freeVarsFormula (MonaFormulaDisj f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
+freeVarsFormula (MonaFormulaImpl f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
+freeVarsFormula (MonaFormulaEquiv f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
+freeVarsFormula (MonaFormulaEx0 [var] f) = delete var $ freeVarsFormula f
+freeVarsFormula (MonaFormulaEx1 [var] f) = delete (fst var) $ freeVarsFormula f
+freeVarsFormula (MonaFormulaEx2 [var] f) = delete (fst var) $ freeVarsFormula f
+freeVarsFormula (MonaFormulaAll0 v f) = freeVarsFormula (MonaFormulaEx0 v f)
+freeVarsFormula (MonaFormulaAll1 v f) = freeVarsFormula (MonaFormulaEx1 v f)
+freeVarsFormula (MonaFormulaAll2 v f) = freeVarsFormula (MonaFormulaEx2 v f)
+freeVarsFormula _ = error "freeVarsFormula: unimplemented" -- TODO: incomplete
+
+
+
+-- |Flush (unfold) a chain of existential quantifiers. Given list of variables,
+-- it expands to a chain of existential quatifiers, on the most nested level with
+-- formula f.
+flushQuantifChain :: [QuantifVarChain] -> MonaFormula -> MonaFormula
+flushQuantifChain [] f = f
+flushQuantifChain ((ForAll0Chain x):xs) f = MonaFormulaAll0 [fst x] (flushQuantifChain xs f)
+flushQuantifChain ((ForAll1Chain x):xs) f = MonaFormulaAll1 [x] (flushQuantifChain xs f)
+flushQuantifChain ((ForAll2Chain x):xs) f = MonaFormulaAll2 [x] (flushQuantifChain xs f)
+flushQuantifChain ((Exists0Chain x):xs) f = MonaFormulaEx0 [fst x] (flushQuantifChain xs f)
+flushQuantifChain ((Exists1Chain x):xs) f = MonaFormulaEx1 [x] (flushQuantifChain xs f)
+flushQuantifChain ((Exists2Chain x):xs) f = MonaFormulaEx2 [x] (flushQuantifChain xs f)
+
+
+getChainVarName :: QuantifVarChain -> String
+getChainVarName (ForAll0Chain a) = fst a
+getChainVarName (ForAll1Chain a) = fst a
+getChainVarName (ForAll2Chain a) = fst a
+getChainVarName (Exists0Chain a) = fst a
+getChainVarName (Exists1Chain a) = fst a
+getChainVarName (Exists2Chain a) = fst a
+
+
+-- |Propagate quantifiers to binary formula operator (conjunction, disjunction).
+propagateTo :: (MonaFormula -> MonaFormula -> MonaFormula) -> MonaFormula -> MonaFormula -> [QuantifVarChain] -> MonaFormula
+propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where
+  vars1 = freeVarsFormula f1
+  vars2 = freeVarsFormula f2
+  fv1 = filter (\a -> elem (getChainVarName a) vars1) chain
+  fv2 = filter (\a -> elem (getChainVarName a) vars2) chain
+  remChain = intersect fv1 fv2
+  rem1 = fv1 \\ remChain
+  rem2 = fv2 \\ remChain
+
+
+-- |Antiprenexing  with quantifiers distribution and permutation. Given starting
+-- chain of quantifiers.
+antiprenexFreeVar :: MonaFormula -> [QuantifVarChain] -> MonaFormula
+antiprenexFreeVar (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar f [])
+antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
+antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = propagateTo (MonaFormulaDisj) f1 f2 chain
+antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
+antiprenexFreeVar (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar f ((Exists1Chain var):chain)
+antiprenexFreeVar (MonaFormulaEx2 [var] f) chain = antiprenexFreeVar f ((Exists2Chain var):chain)
+antiprenexFreeVar (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar f ((ForAll0Chain (var, Nothing)):chain)
+antiprenexFreeVar (MonaFormulaAll1 [var] f) chain = antiprenexFreeVar f ((ForAll1Chain var):chain)
+antiprenexFreeVar (MonaFormulaAll2 [var] f) chain = antiprenexFreeVar f ((ForAll2Chain var):chain)
+antiprenexFreeVar atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
+antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported" ++ (show a)
+
+
+antiprenexFormula :: MonaFormula -> MonaFormula
+antiprenexFormula f =  antiprenexFreeVar (convertToBaseFormula f) []
+
+
+antiprenexDecl :: MonaDeclaration -> MonaDeclaration
+antiprenexDecl (MonaDeclFormula f) = MonaDeclFormula $ antiprenexFormula f
+antiprenexDecl (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . antiprenexFormula)]
+antiprenexDecl (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . antiprenexFormula)]
+antiprenexDecl (MonaDeclPred name params f) = MonaDeclPred name params (antiprenexFormula f) -- TODO: params are not antiprenexed
+antiprenexDecl a = a -- TODO: incomplete
+
+
+antiprenexFile :: MonaFile -> MonaFile
+antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (antiprenexDecl) decls
+
+
+convertToBaseFormula :: MonaFormula -> MonaFormula
+convertToBaseFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+convertToBaseFormula (MonaFormulaVar var) = MonaFormulaVar var
+convertToBaseFormula (MonaFormulaNeg f) = MonaFormulaNeg (convertToBaseFormula f)
+convertToBaseFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (convertToBaseFormula f1) (convertToBaseFormula f2)
+convertToBaseFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (convertToBaseFormula f1) (convertToBaseFormula f2)
+convertToBaseFormula (MonaFormulaImpl f1 f2) = MonaFormulaDisj (MonaFormulaNeg $ convertToBaseFormula f1) (convertToBaseFormula f2)
+convertToBaseFormula (MonaFormulaEquiv f1 f2) = MonaFormulaConj (MonaFormulaDisj (MonaFormulaNeg $ convertToBaseFormula f1) (convertToBaseFormula f2)) (MonaFormulaDisj (MonaFormulaNeg $ convertToBaseFormula f2) (convertToBaseFormula f1))
+convertToBaseFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (convertToBaseFormula f)
+convertToBaseFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (convertToBaseFormula f)
+convertToBaseFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (convertToBaseFormula f)
 
 
 loadFormulas p = do
@@ -345,4 +555,4 @@ loadFormulas p = do
 flatTest file = do
   mona <- parseFile file
   putStrLn $ show mona
-  putStrLn $ show $ removeWhereFile $ unwindQuantifFile $ replaceCalls mona
+  putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCalls mona
