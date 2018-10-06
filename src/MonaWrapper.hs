@@ -518,7 +518,7 @@ antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported" ++ (show a)
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula f =  antiprenexFreeVar (convertToBaseFormula f) []
+antiprenexFormula f =  antiprenexFreeVar (moveNegToLeavesFormula $ convertToBaseFormula f) []
 
 
 antiprenexDecl :: MonaDeclaration -> MonaDeclaration
@@ -544,6 +544,19 @@ convertToBaseFormula (MonaFormulaEquiv f1 f2) = MonaFormulaConj (MonaFormulaDisj
 convertToBaseFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (convertToBaseFormula f)
 convertToBaseFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (convertToBaseFormula f)
 convertToBaseFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (convertToBaseFormula f)
+
+
+moveNegToLeavesFormula :: MonaFormula -> MonaFormula
+moveNegToLeavesFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+moveNegToLeavesFormula (MonaFormulaVar var) = MonaFormulaVar var
+moveNegToLeavesFormula (MonaFormulaNeg (MonaFormulaConj f1 f2)) = moveNegToLeavesFormula $ MonaFormulaDisj (MonaFormulaNeg f1) (MonaFormulaNeg f2)
+moveNegToLeavesFormula (MonaFormulaNeg (MonaFormulaDisj f1 f2)) = moveNegToLeavesFormula $ MonaFormulaConj (MonaFormulaNeg f1) (MonaFormulaNeg f2)
+moveNegToLeavesFormula (MonaFormulaNeg f) = MonaFormulaNeg (moveNegToLeavesFormula f)
+moveNegToLeavesFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (moveNegToLeavesFormula f1) (moveNegToLeavesFormula f2)
+moveNegToLeavesFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (moveNegToLeavesFormula f1) (moveNegToLeavesFormula f2)
+moveNegToLeavesFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (moveNegToLeavesFormula f)
+moveNegToLeavesFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (moveNegToLeavesFormula f)
+moveNegToLeavesFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (moveNegToLeavesFormula f)
 
 
 loadFormulas p = do
