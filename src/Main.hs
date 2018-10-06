@@ -9,6 +9,9 @@ import System.Environment
 import Control.Monad.Writer
 import Data.Time
 
+import MonaFormulaOperation
+import MonaFormulaAntiprenex
+
 import qualified Data.Map as Map
 import qualified LazyDecisionProcedure as LDP
 import qualified StrictDecisionProcedure as SDP
@@ -61,16 +64,19 @@ formulaOperationsDebug f = do
 -- |Main function
 main = do
    args <- getArgs
-   if (length args) /= 1 then do
+   if not $ elem (length args) [1,2] then do
      prname <- getProgName
      putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
    else do
       start <- getCurrentTime
       file <- MoPa.parseFile $ head args
-      let formulas = MoWr.getFormulas file
-          (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
-          do
-            auts <- MS.getMonaAutomata monareq
-            showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+      if ((length args) == 2) && ((last args) == "-p") then
+          putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile file
+      else
+        let formulas = MoWr.getFormulas file
+            (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
+            do
+              auts <- MS.getMonaAutomata monareq
+              showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
       stop <- getCurrentTime
       putStrLn $ "Time: " ++ show (diffUTCTime stop start)

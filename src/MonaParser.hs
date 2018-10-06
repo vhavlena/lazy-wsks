@@ -238,10 +238,10 @@ data MonaFormula
   deriving (Eq)
 
 instance Show MonaFormula where
-  show (MonaFormulaAtomic atom) = "[" ++ show atom ++ "]"
+  show (MonaFormulaAtomic atom) = show atom
   show (MonaFormulaVar str) = str
-  show (MonaFormulaNeg phi) = "~" ++ (show phi)
-  show (MonaFormulaDisj f1 f2) = (show f1) ++ " | " ++ (show f2)
+  show (MonaFormulaNeg phi) = "~(" ++ (show phi) ++ ")"
+  show (MonaFormulaDisj f1 f2) = "(" ++ (show f1) ++ ") | (" ++ (show f2) ++ ")"
   show (MonaFormulaConj f1 f2) = (show f1) ++ " & " ++ (show f2)
   show (MonaFormulaImpl f1 f2) = (show f1) ++ " => " ++ (show f2)
   show (MonaFormulaEquiv f1 f2) = (show f1) ++ " <=> " ++ (show f2)
