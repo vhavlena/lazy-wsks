@@ -28,6 +28,20 @@ import qualified MonaSocket as MS
 -- to tree automata.
 useMona = False
 
+-- |Program arguments.
+data ProgArgs =
+  Validity FilePath
+  | Antiprenex FilePath
+  | Error
+
+
+-- |Parse program arguments.
+parseArgs :: [String] -> ProgArgs
+parseArgs args
+  | (length args) == 1 = Validity $ head args
+  | (length args) == 2 && (last args) == "-p" = Antiprenex $ head args
+  | otherwise = Error
+
 
 -- |Show formula and its validity (strict approach)
 showValid :: Lo.Formula -> IO ()
@@ -41,6 +55,7 @@ showValidLazy :: Lo.Formula -> IO ()
 showValidLazy f = showValidMonaLazy [] f
 
 
+-- |Show formula and its validity using MONA
 showValidMonaLazy :: [(String, BA.WS2STreeAut)] -> Lo.Formula -> IO ()
 showValidMonaLazy aut f = do
    putStrLn $ show f
@@ -64,19 +79,20 @@ formulaOperationsDebug f = do
 -- |Main function
 main = do
    args <- getArgs
-   if not $ elem (length args) [1,2] then do
-     prname <- getProgName
-     putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
-   else do
-      start <- getCurrentTime
-      file <- MoPa.parseFile $ head args
-      if ((length args) == 2) && ((last args) == "-p") then
-          putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile file
-      else
-        let formulas = MoWr.getFormulas file
-            (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
-            do
-              auts <- MS.getMonaAutomata monareq
-              showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
-      stop <- getCurrentTime
-      putStrLn $ "Time: " ++ show (diffUTCTime stop start)
+   start <- getCurrentTime
+   case (parseArgs args) of
+     (Antiprenex file) -> do
+       mona <- MoPa.parseFile file
+       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
+     (Validity file) -> do
+       mona <- MoPa.parseFile file
+       let formulas = MoWr.getFormulas mona
+           (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
+           do
+             auts <- MS.getMonaAutomata monareq
+             showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+     Error -> do
+       prname <- getProgName
+       putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
+   stop <- getCurrentTime
+   putStrLn $ "Time: " ++ show (diffUTCTime stop start)
