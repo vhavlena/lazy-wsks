@@ -242,7 +242,7 @@ instance Show MonaFormula where
   show (MonaFormulaVar str) = str
   show (MonaFormulaNeg phi) = "~(" ++ (show phi) ++ ")"
   show (MonaFormulaDisj f1 f2) = "(" ++ (show f1) ++ ") | (" ++ (show f2) ++ ")"
-  show (MonaFormulaConj f1 f2) = (show f1) ++ " & " ++ (show f2)
+  show (MonaFormulaConj f1 f2) = "(" ++ (show f1) ++ ") & (" ++ (show f2) ++ ")"
   show (MonaFormulaImpl f1 f2) = (show f1) ++ " => " ++ (show f2)
   show (MonaFormulaEquiv f1 f2) = (show f1) ++ " <=> " ++ (show f2)
   show (MonaFormulaEx0 varList phi) =

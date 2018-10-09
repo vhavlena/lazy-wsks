@@ -87,7 +87,8 @@ antiprenexFreeVar (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar f ((ForAll
 antiprenexFreeVar (MonaFormulaAll1 [var] f) chain = antiprenexFreeVar f ((ForAll1Chain var):chain)
 antiprenexFreeVar (MonaFormulaAll2 [var] f) chain = antiprenexFreeVar f ((ForAll2Chain var):chain)
 antiprenexFreeVar atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
-antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported" ++ (show a)
+antiprenexFreeVar atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
+antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
