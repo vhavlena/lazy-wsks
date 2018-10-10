@@ -106,6 +106,9 @@ antiprenexDecl a = a -- TODO: incomplete
 antiprenexFile :: MonaFile -> MonaFile
 antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (antiprenexDecl) decls
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with a conversion to formula without implications and equivalences.
+--------------------------------------------------------------------------------------------------------------
 
 convertToBaseFormula :: MonaFormula -> MonaFormula
 convertToBaseFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
@@ -119,6 +122,9 @@ convertToBaseFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (convertToBas
 convertToBaseFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (convertToBaseFormula f)
 convertToBaseFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (convertToBaseFormula f)
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with negation simplifying.
+--------------------------------------------------------------------------------------------------------------
 
 moveNegToLeavesFormula :: MonaFormula -> MonaFormula
 moveNegToLeavesFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom

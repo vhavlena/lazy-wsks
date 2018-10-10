@@ -86,11 +86,11 @@ main = do
        putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
      (Validity file) -> do
        mona <- MoPa.parseFile file
-       let formulas = MoWr.getFormulas mona
-           (hf, monareq) = runWriter $ Lo.convertToBaseFormula useMona $ MoWr.getLogicFormula $ head formulas in
+       let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
+           (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ MoWr.getBaseFormula prenexFile in
            do
              auts <- MS.getMonaAutomata monareq
-             showValidMonaLazy auts $ FO.simplifyFormula $ FO.antiprenex $ FO.balanceFormula $ FO.simplifyFormula $ hf
+             showValidMonaLazy auts hf
      Error -> do
        prname <- getProgName
        putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"

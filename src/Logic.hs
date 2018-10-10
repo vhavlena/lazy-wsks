@@ -162,8 +162,8 @@ removeMonaAtom t = return t
 -- |Convert to base formula containing only basic atoms and quantifiers.
 -- useMona: Use Mona for translating atoms (formulas) to tree automata (atoms
 -- are replaced with a special atom representing that Mona is used to obtain TA)
-convertToBaseFormula :: Bool -> Formula -> Writer [(String, Formula)] Formula
-convertToBaseFormula useMona = preproc . removeAtoms . removeForAll where
+convertMonaSub :: Bool -> Formula -> Writer [(String, Formula)] Formula
+convertMonaSub useMona = preproc where
   preproc = if useMona then removeMonaFormulas else return
 
 
