@@ -32,7 +32,7 @@ data QuantifChain a =
   | Exists0Chain a
   | Exists1Chain a
   | Exists2Chain a
-  deriving (Eq)
+  deriving (Eq, Show)
 
 
 -- Chain of quantifiers with variables
@@ -92,7 +92,7 @@ antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula f = simplifyNegFormula $ antiprenexFreeVar ( moveNegToLeavesFormula $ convertToBaseFormula f) []
+antiprenexFormula f = simplifyNegFormula $ moveNegToLeavesFormula $ antiprenexFreeVar (balanceFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ convertToBaseFormula f) []
 
 
 antiprenexDecl :: MonaDeclaration -> MonaDeclaration
@@ -143,3 +143,38 @@ simplifyNegFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (simplifyNegFormula
 simplifyNegFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (simplifyNegFormula f)
 simplifyNegFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (simplifyNegFormula f)
 simplifyNegFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (simplifyNegFormula f)
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with conjunction and disjunction balancing
+--------------------------------------------------------------------------------------------------------------
+
+balanceFormula :: MonaFormula -> MonaFormula
+balanceFormula f@(MonaFormulaConj _ _) = rebuildFormula (MonaFormulaConj) $ map (balanceFormula) (getConjList f)
+balanceFormula f@(MonaFormulaDisj _ _) = rebuildFormula (MonaFormulaDisj) $ map (balanceFormula) (getDisjList f)
+balanceFormula (MonaFormulaNeg f) = MonaFormulaNeg $ balanceFormula f
+balanceFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (balanceFormula f)
+balanceFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (balanceFormula f)
+balanceFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (balanceFormula f)
+balanceFormula (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (balanceFormula f)
+balanceFormula (MonaFormulaAll1 decl f) = MonaFormulaAll1 decl (balanceFormula f)
+balanceFormula (MonaFormulaAll2 decl f) = MonaFormulaAll2 decl (balanceFormula f)
+balanceFormula (MonaFormulaVar var) = MonaFormulaVar var
+balanceFormula f@(MonaFormulaAtomic _) = f
+
+
+rebuildFormula :: (MonaFormula -> MonaFormula -> MonaFormula) -> [MonaFormula] -> MonaFormula
+rebuildFormula _ [f] = f
+rebuildFormula con xs = con (rebuildFormula con h) (rebuildFormula con t) where
+  m = (length xs) `div` 2
+  h = take m xs
+  t = drop m xs
+
+
+getConjList :: MonaFormula -> [MonaFormula]
+getConjList (MonaFormulaConj f1 f2) = (getConjList f1) ++ (getConjList f2)
+getConjList v = [v]
+
+getDisjList :: MonaFormula -> [MonaFormula]
+getDisjList (MonaFormulaDisj f1 f2) = (getDisjList f1) ++ (getDisjList f2)
+getDisjList v = [v]

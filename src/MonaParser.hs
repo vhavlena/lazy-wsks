@@ -151,7 +151,7 @@ instance Show MonaTerm where
   show (MonaTermVar str) = str
   show (MonaTermConst n) = show n
   show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (pars $ show t2)
-  show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (pars $ show t2)
+  show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (show t2)
   show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (pars $ show t2)
   show (MonaTermUp t) = (pars $ show t) ++ "^"
 
