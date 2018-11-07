@@ -12,6 +12,9 @@ module TreeAutomaton (
    , pre
    , removeUnreachable
    , autRestriction
+   , preCom
+   , ComState(..)
+   , ComTA(..)
 ) where
 
 import Data.List
@@ -26,6 +29,21 @@ type Transitions a b = Map.Map ([a],b) (Set.Set a)
 type Transition a b = (([a],b), Set.Set a)
 type SimplTransition a = ([a],a)
 type SimplTransitionRev a = (a,a)
+
+
+data ComState a =
+  Sink
+  | State a
+  | ConjSt (ComState a) (ComState a)
+  | DisjSt (ComState a) (ComState a)
+  deriving (Eq, Ord)
+
+
+data ComTA a b =
+  Base (BATreeAutomaton a b)
+  | ConjTA (ComTA a b) (ComTA a b)
+  | DisjTA (ComTA a b) (ComTA a b)
+  deriving (Eq, Ord)
 
 
 -- |Bottom-up tree automaton
@@ -61,13 +79,39 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
       (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
 
 
+-- -- |Pre (Up) of a set of states wrt given symbol.
+-- pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
+-- pre (BATreeAutomaton _ _ _ tr) st sym =
+--   if Set.null cons then cons
+--   else cons
+--   where
+--    cons = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
+
+
 -- |Pre (Up) of a set of states wrt given symbol.
-pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
-pre (BATreeAutomaton _ _ _ tr) st sym =
-  if Set.null cons then cons
-  else cons
+pre :: (Ord a, Ord b) => ComTA a b -> [Set.Set (ComState a)] -> b -> Set.Set (ComState a)
+pre aut st sym =
+  foldr (Set.union) Set.empty [preCom aut s1 s2 sym | [s1, s2] <- crossProd st ]
+
+
+
+-- |Pre (Up) of a set of states wrt given symbol.
+preCom :: (Ord a, Ord b) => ComTA a b -> ComState a -> ComState a -> b -> Set.Set (ComState a)
+preCom (ConjTA aut1 aut2) (ConjSt s1 s2) (ConjSt u1 u2) sym = Set.fromList [ConjSt a b | a <- a1, b <- a2]
   where
-   cons = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
+    a1 = Set.toList $ preCom aut1 s1 u1 sym
+    a2 = Set.toList $ preCom aut2 s2 u2 sym
+preCom (DisjTA aut1 aut2) (DisjSt s1 s2) (DisjSt u1 u2) sym = Set.fromList [DisjSt a b | a <- a1, b <- a2]
+  where
+    a1 = Set.toList $ preCom aut1 s1 u1 sym
+    a2 = Set.toList $ preCom aut2 s2 u2 sym
+preCom _ (State q) Sink _ = Set.singleton Sink
+preCom _ Sink (State q) _ = Set.singleton Sink
+preCom (Base (BATreeAutomaton _ _ _ tr)) (State q) (State r) sym =
+    if null step then Set.singleton Sink
+    else Set.map (State) step where
+      step = Map.findWithDefault (Set.empty) ([q,r], sym) tr
+
 
 
 -- |Simplify TA transitions (remove symbol, break a set of the destination

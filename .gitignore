@@ -1,3 +1,5 @@
 src/obj/*
 src/Main
+automata/*
+results/*
 .DS_Store
