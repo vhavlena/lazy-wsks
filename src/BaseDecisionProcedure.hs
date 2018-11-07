@@ -75,27 +75,25 @@ showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg i
 --------------------------------------------------------------------------------------------------------------
 
 -- |Term minus symbol -- defined only for the term-pairs.
-minusSymbol :: Term -> Alp.Symbol -> Term
-minusSymbol (TPair t1 (TSet t2)) sym
+minusSymbol :: Term -> Term -> Alp.Symbol -> Term
+minusSymbol t1 (TSet t2) sym
    | t2 == Set.empty = sinkTerm
-minusSymbol (TPair (TSet t1) t2) sym
+minusSymbol (TSet t1) t2 sym
    | t1 == Set.empty = sinkTerm
-minusSymbol (TPair (TIntersect t1 t2) (TIntersect t3 t4)) sym = TIntersect (minusSymbol (TPair t1 t3) sym) (minusSymbol (TPair t2 t4) sym)
-minusSymbol (TPair (TUnion t1 t2) (TUnion t3 t4)) sym = TUnion (minusSymbol (TPair t1 t3) sym) (minusSymbol (TPair t2 t4) sym)
-minusSymbol (TPair (TCompl t1) (TCompl t2)) sym = TCompl (minusSymbol (TPair t1 t2) sym)
-minusSymbol (TPair (TProj v1 t1) (TProj v2 t2)) sym
-   | v1 == v2 = TProj v1 (TSet $ unionTerms [minusSymbol (TPair t1 t2) s | s <- Set.toList $ Alp.projSymbol sym v1])
+minusSymbol (TIntersect t1 t2) (TIntersect t3 t4) sym = TIntersect (minusSymbol t1 t3 sym) (minusSymbol t2 t4 sym)
+minusSymbol (TUnion t1 t2) (TUnion t3 t4) sym = TUnion (minusSymbol t1 t3 sym) (minusSymbol t2 t4 sym)
+minusSymbol (TCompl t1) (TCompl t2) sym = TCompl (minusSymbol t1 t2 sym)
+minusSymbol (TProj v1 t1) (TProj v2 t2) sym
+   | v1 == v2 = TProj v1 (TSet $ unionTerms [minusSymbol t1 t2 s | s <- Set.toList $ Alp.projSymbol sym v1])
    | otherwise = error "minusSymbol: Projection variables do not match"
-minusSymbol (TPair (TSet tset1) (TSet tset2)) sym = TSet (Set.fromList [minusSymbol (TPair t1 t2) sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
-minusSymbol (TPair (TStates aut1 var1 st1) (TStates aut2  var2 st2)) sym
+minusSymbol (TSet tset1) (TSet tset2) sym = TSet (Set.fromList [minusSymbol t1 t2 sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
+minusSymbol (TStates aut1 var1 st1) (TStates aut2  var2 st2) sym
    | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylindrifySymbol var1 sym))
    | otherwise = error "minusSymbol: Inconsistent basic automata"
-minusSymbol (TPair term1@(TMinusClosure t1 _) term2@(TMinusClosure t2 _)) sym = minusSymbol (TPair t1 t2) sym
-minusSymbol (TPair (TMinusClosure t1 _) term2@(TSet t2)) sym = minusSymbol (TPair t1 term2) sym
-minusSymbol (TPair term2@(TSet t2) (TMinusClosure t1 _)) sym = minusSymbol (TPair t1 term2) sym
-minusSymbol (TPair (TIncrSet a _) b) sym = minusSymbol (TPair a b) sym
-minusSymbol (TPair a (TIncrSet b _)) sym = minusSymbol (TPair a b) sym
-minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
+--minusSymbol (TMinusClosure t1 _) (TMinusClosure t2 _) sym = minusSymbol t1 t2 sym
+--minusSymbol (TMinusClosure t1 _) term2@(TSet t2) sym = minusSymbol t1 term2 sym
+--minusSymbol term2@(TSet t2) (TMinusClosure t1 _) sym = minusSymbol t1 term2 sym
+minusSymbol t _ _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
 -- |Union set of terms -- defined only for a list of the form

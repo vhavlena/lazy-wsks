@@ -28,7 +28,7 @@ import qualified Debug.Trace as Dbg
 
 -- |Ominus for a set of symbols. Defined only for a term of the form (TSet a).
 ominusSymbols :: Term -> Set.Set Alp.Symbol -> Term
-ominusSymbols (TSet tset) sset = TSet $ Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
+ominusSymbols (TSet tset) sset = TSet $ Set.fromList [minusSymbol t1 t2 s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
 ominusSymbols _ _ = error "ominusSymbols: Ominus is defined only on a set of terms"
 
 

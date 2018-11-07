@@ -46,44 +46,9 @@ botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if isExpandedLight st 
   st = step term
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
 
-
--- |Fixpoint termination condition.
-terminationCond :: Term -> Term -> Bool
-terminationCond (TSet modif) (TSet term) = if modif == Set.empty then False else Set.isSubsetOf modif term
-terminationCond t1 t2 = error $ "terminationCond: Not defined" ++ (show t1) ++ (show t2)
-
-
 --------------------------------------------------------------------------------------------------------------
 -- Part with a checking whether term is expanded (plus removing fixpoints from terms).
 --------------------------------------------------------------------------------------------------------------
-
--- |Test whether a given term is fully expanded (i.e., all fixpoints are expanded).
-isExpanded :: Term -> Bool
-isExpanded (TStates _ _ _) = True
-isExpanded (TMinusClosure t sset) = (isExpanded t) && (terminationCond (ominusSymbolsLazy t sset) t)
-isExpanded (TUnion t1 t2) = (isExpanded t1) && (isExpanded t2)
-isExpanded (TIntersect t1 t2) = (isExpanded t1) && (isExpanded t2)
-isExpanded (TCompl t) = isExpanded t
-isExpanded (TProj _ t) = isExpanded t
-isExpanded (TSet tset) =
-   foldr gather True (Set.toList tset) where
-      gather t b = (isExpanded t) && b
-isExpanded (TIncrSet a _) = isExpanded a
-
-
--- |Recursively remove incremental terms. Necessary for checking term inclusion
--- (bottom check).
-removeIncrTerm :: Term -> Term
-removeIncrTerm (TUnion t1 t2) = TUnion (removeIncrTerm t1) (removeIncrTerm t2)
-removeIncrTerm (TIntersect t1 t2) = TIntersect (removeIncrTerm t1) (removeIncrTerm t2)
-removeIncrTerm (TCompl t) = TCompl $ removeIncrTerm t
-removeIncrTerm (TProj var t) = TProj var (removeIncrTerm t)
-removeIncrTerm (TMinusClosure t sset) = TMinusClosure (removeIncrTerm t) sset
-removeIncrTerm (TPair t1 t2) = TPair (removeIncrTerm t1) (removeIncrTerm t2)
-removeIncrTerm (TSet tset) = TSet $ Set.map (removeIncrTerm) tset
-removeIncrTerm (TIncrSet t _) = removeIncrTerm t
-removeIncrTerm t = t
-
 
 -- |Remove subterms representing fixpoint computation, i.e., TIncrSet and TMinusClosure.
 removeFixpoints :: Term -> Term
@@ -136,43 +101,17 @@ step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
 step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
---step (TIncrSet a b) = TIncrSet (step a) b
 
 
 -- |Term ominus set of symbols for a lazy approach.
 ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
-ominusSymbolsLazy (TSet tset) sset =  TSet $ Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
+ominusSymbolsLazy (TSet tset) sset =  TSet $ Set.fromList [minusSymbol t1 t2 s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
 ominusSymbolsLazy (TMinusClosure t _) sset = ominusSymbolsLazy t sset
---ominusSymbolsLazy (TIncrSet a _) sset = ominusSymbolsLazy a sset
 ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
-
-
--- |Fixpoint computation for a lazy approach. Simultaneously with every step
--- check bottom membership.
-fixpointCompLazy :: Term -> Set.Set Alp.Symbol -> Bool
-fixpointCompLazy term@(TSet tset) sset =
-   case ominusSymbolsLazy term sset of
-      TSet modifset ->
-         if Set.isSubsetOf modifset tset then False
-         else (botInLazy $ TSet modifset) || (fixpointCompLazy (TSet $ Set.fromList $ filter (isSubsumed slist) slist) sset)
-            where
-               slist = Set.toList $ Set.union modifset tset
-      _ -> error "fixpointComp: Ominus is defined only on a set of terms"
-fixpointCompLazy term sset = fixpointCompLazy (TSet $ Set.fromList [term]) sset
-
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with a term subsumption
 --------------------------------------------------------------------------------------------------------------
-
--- |Very basic term subsumption based only on one-level subset.
-isSubsumed :: [Term] -> Term -> Bool
-isSubsumed [] _ = False
-isSubsumed (x:xs) term@(TSet tset) = case x of
-   (TSet sbset) -> if Set.isSubsetOf tset sbset then True
-                   else isSubsumed xs term
-   _ -> False
-
 
 -- |Structural term subsumption. Test whether the first term is subsumed by
 -- the second term. Now it is implemented on the structural level.
@@ -186,13 +125,7 @@ isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
 isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedLazy a) lst))
   where
     lst = Set.toList tset2
---isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
---isSubsumedLazy (TMinusClosure t1 _) t2@(TSet _) = True -- isSubsumedLazy t1 t2
--- TODO: Check if this is correct!!
---isSubsumedLazy t1@(TSet _) (TMinusClosure t2 _) = False
---isSubsumedLazy (TMinusClosure t2 _) t1@(TSet _) = isSubsumedLazy t2 t1
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
---isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
 isSubsumedLazy _ _ = False
 
 
@@ -200,15 +133,13 @@ isSubsumedLazy _ _ = False
 -- partial order (we can have a<=b and b<=a and a!=b). Therefore, we may not remove
 -- all terms from a set.
 removeRedundantTerms :: Term -> Term
-removeRedundantTerms (TSet tset) = TSet $ Set.fromList reduced -- $ if (not $ Set.null tset) && (null reduced) then [head lst] else reduced
+removeRedundantTerms (TSet tset) = TSet $ Set.fromList reduced
     where
       lst = Set.toList $ Set.map (removeRedundantTerms) tset
       reduced = removeSubSet lst lst
---      reduced = lst >>= (\a -> if any (isSubsumedLazy a) (List.delete a lst) then [] else [a])
 removeRedundantTerms (TProj v t) = TProj v (removeRedundantTerms t)
 removeRedundantTerms (TCompl t) = TCompl $ removeRedundantTerms t
 removeRedundantTerms (TMinusClosure t sset) = TMinusClosure (removeRedundantTerms t) sset
---removeRedundantTerms (TIncrSet t1 t2) = TIncrSet (removeRedundantTerms t1) (removeRedundantTerms t2)
 removeRedundantTerms t = t
 
 
@@ -219,7 +150,6 @@ removeSubSet (a:lst) pat =
   else a:(removeSubSet lst pat)
   where
     del = List.delete a pat
-
 
 
 --------------------------------------------------------------------------------------------------------------
