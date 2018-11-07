@@ -36,6 +36,7 @@ data Term =
    | TSet (Set.Set Term)
    deriving (Eq, Ord)
 
+sinkTerm = TSet $ Set.empty
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the term to string conversion.
@@ -75,6 +76,10 @@ showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg i
 
 -- |Term minus symbol -- defined only for the term-pairs.
 minusSymbol :: Term -> Alp.Symbol -> Term
+minusSymbol (TPair t1 (TSet t2)) sym
+   | t2 == Set.empty = sinkTerm
+minusSymbol (TPair (TSet t1) t2) sym
+   | t1 == Set.empty = sinkTerm
 minusSymbol (TPair (TIntersect t1 t2) (TIntersect t3 t4)) sym = TIntersect (minusSymbol (TPair t1 t3) sym) (minusSymbol (TPair t2 t4) sym)
 minusSymbol (TPair (TUnion t1 t2) (TUnion t3 t4)) sym = TUnion (minusSymbol (TPair t1 t3) sym) (minusSymbol (TPair t2 t4) sym)
 minusSymbol (TPair (TCompl t1) (TCompl t2)) sym = TCompl (minusSymbol (TPair t1 t2) sym)
@@ -98,7 +103,7 @@ minusSymbol t _ = error $ "minusSymbol: Minus symbol is defined only on term-pai
 unionTerms :: [Term] -> Set.Set Term
 unionTerms [] = Set.empty
 unionTerms ((TSet a):xs) = Set.union a (unionTerms xs)
-unionTerms ((TIncrSet a _):xs) = unionTerms (a:xs)
+--unionTerms ((TIncrSet a _):xs) = unionTerms (a:xs)
 
 
 -- |Union set of terms -- defined only for a list of the form
@@ -129,6 +134,8 @@ atom2Terms _ (Lo.In v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = inAut v1 v2
 atom2Terms _ (Lo.Subset v1 v2) = TStates aut [v1, v2] (TA.leaves aut) where
    aut = subsetAut v1 v2
+atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates aut [v1, v2] (TA.leaves aut) where
+   aut = eqAut v1 v2
 atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
   Just aut -> TStates aut vars (TA.leaves aut)
   Nothing -> error "Internal error: cannot find corresponding mona automaton"

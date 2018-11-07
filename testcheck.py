@@ -16,7 +16,7 @@ import resource
 
 VALIDLINE = -2
 TIMELINE = -1
-TIMEOUT=10 #in seconds
+TIMEOUT=50 #in seconds
 
 def main():
     if len(sys.argv) != 3:

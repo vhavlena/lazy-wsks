@@ -30,6 +30,8 @@ convertAtom (MonaAtomEq (MonaTermVar v1) (MonaTermVar v2)) = Lo.Eqn v1 v2
 convertAtom (MonaAtomNeq (MonaTermVar v1) (MonaTermVar v2)) = Lo.Neq v1 v2
 convertAtom (MonaAtomIn (MonaTermVar v1) (MonaTermVar v2)) = Lo.Subseteq v1 v2
 convertAtom (MonaAtomSub (MonaTermVar v1) (MonaTermVar v2)) = Lo.Subseteq v1 v2
+convertAtom (MonaAtomSing (MonaTermVar v)) = Lo.Sing v
+convertAtom (MonaAtomEps (MonaTermVar v)) = Lo.Eps v
 convertAtom a = error $ "convertAtom: Unsupported behaviour: " ++ (show a)
 
 

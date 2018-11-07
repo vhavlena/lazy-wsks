@@ -123,11 +123,12 @@ isExpandedIncr t = isSubsumedLazy (removeFixpoints $ step t) (removeFixpoints t)
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
 step :: Term -> Term --if (isExpandedIncr term) then (TMinusClosure t sset) else
-step term@(TMinusClosure t sset) =
-  if isSubsumedLazy incr st then complete
+step (TMinusClosure t sset) =
+  if isSubsumedLazy incr strem then complete
   else TMinusClosure complete sset where
     st = step t
-    incr = removeRedundantTerms $ ominusSymbolsLazy st sset
+    strem = removeFixpoints st
+    incr = removeRedundantTerms $ ominusSymbolsLazy strem sset
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
@@ -135,14 +136,14 @@ step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
 step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
-step (TIncrSet a b) = TIncrSet (step a) b
+--step (TIncrSet a b) = TIncrSet (step a) b
 
 
 -- |Term ominus set of symbols for a lazy approach.
 ominusSymbolsLazy :: Term -> Set.Set Alp.Symbol -> Term
 ominusSymbolsLazy (TSet tset) sset =  TSet $ Set.fromList [minusSymbol (TPair t1 t2) s | s <- Set.toList sset, t1 <- Set.toList tset, t2 <- Set.toList tset]
 ominusSymbolsLazy (TMinusClosure t _) sset = ominusSymbolsLazy t sset
-ominusSymbolsLazy (TIncrSet a _) sset = ominusSymbolsLazy a sset
+--ominusSymbolsLazy (TIncrSet a _) sset = ominusSymbolsLazy a sset
 ominusSymbolsLazy t _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
 
 
@@ -185,13 +186,13 @@ isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
 isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedLazy a) lst))
   where
     lst = Set.toList tset2
-isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
-isSubsumedLazy (TMinusClosure t1 _) t2@(TSet _) = True -- isSubsumedLazy t1 t2
+--isSubsumedLazy (TMinusClosure t1 sset1) (TMinusClosure t2 sset2) = (isSubsumedLazy t1 t2) && ((length sset1) <= (length sset2))
+--isSubsumedLazy (TMinusClosure t1 _) t2@(TSet _) = True -- isSubsumedLazy t1 t2
 -- TODO: Check if this is correct!!
-isSubsumedLazy t1@(TSet _) (TMinusClosure t2 _) = False
+--isSubsumedLazy t1@(TSet _) (TMinusClosure t2 _) = False
 --isSubsumedLazy (TMinusClosure t2 _) t1@(TSet _) = isSubsumedLazy t2 t1
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
-isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
+--isSubsumedLazy (TIncrSet t1 in1) (TIncrSet t2 in2) = (isSubsumedLazy t1 t2) && (isSubsumedLazy in1 in2)
 isSubsumedLazy _ _ = False
 
 
@@ -199,15 +200,26 @@ isSubsumedLazy _ _ = False
 -- partial order (we can have a<=b and b<=a and a!=b). Therefore, we may not remove
 -- all terms from a set.
 removeRedundantTerms :: Term -> Term
-removeRedundantTerms (TSet tset) = TSet $ Set.fromList $ if (not $ Set.null tset) && (null reduced) then [head lst] else reduced
+removeRedundantTerms (TSet tset) = TSet $ Set.fromList reduced -- $ if (not $ Set.null tset) && (null reduced) then [head lst] else reduced
     where
       lst = Set.toList $ Set.map (removeRedundantTerms) tset
-      reduced = lst >>= (\a -> if any (isSubsumedLazy a) (List.delete a lst) then [] else [a])
+      reduced = removeSubSet lst lst
+--      reduced = lst >>= (\a -> if any (isSubsumedLazy a) (List.delete a lst) then [] else [a])
 removeRedundantTerms (TProj v t) = TProj v (removeRedundantTerms t)
 removeRedundantTerms (TCompl t) = TCompl $ removeRedundantTerms t
 removeRedundantTerms (TMinusClosure t sset) = TMinusClosure (removeRedundantTerms t) sset
-removeRedundantTerms (TIncrSet t1 t2) = TIncrSet (removeRedundantTerms t1) (removeRedundantTerms t2)
+--removeRedundantTerms (TIncrSet t1 t2) = TIncrSet (removeRedundantTerms t1) (removeRedundantTerms t2)
 removeRedundantTerms t = t
+
+
+removeSubSet :: [Term] -> [Term] -> [Term]
+removeSubSet [] _ = []
+removeSubSet (a:lst) pat =
+  if List.any (isSubsumedLazy a) del then removeSubSet lst del
+  else a:(removeSubSet lst pat)
+  where
+    del = List.delete a pat
+
 
 
 --------------------------------------------------------------------------------------------------------------

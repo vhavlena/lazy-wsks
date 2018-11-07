@@ -20,11 +20,13 @@ import qualified Data.Map as Map
 import qualified AuxFunctions as Aux
 import qualified Alphabet as Alp
 
+
 -- |Type for single transition and a transition function
 type Transitions a b = Map.Map ([a],b) (Set.Set a)
 type Transition a b = (([a],b), Set.Set a)
 type SimplTransition a = ([a],a)
 type SimplTransitionRev a = (a,a)
+
 
 -- |Bottom-up tree automaton
 data BATreeAutomaton a b = BATreeAutomaton {
@@ -61,7 +63,11 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
 
 -- |Pre (Up) of a set of states wrt given symbol.
 pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
-pre (BATreeAutomaton _ _ _ tr) st sym = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
+pre (BATreeAutomaton _ _ _ tr) st sym =
+  if Set.null cons then cons
+  else cons
+  where
+   cons = foldr (Set.union) Set.empty [Map.findWithDefault Set.empty (s,sym) tr | s <- crossProd st ]
 
 
 -- |Simplify TA transitions (remove symbol, break a set of the destination
