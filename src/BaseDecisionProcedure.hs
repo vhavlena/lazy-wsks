@@ -90,7 +90,7 @@ minusSymbol (TProj v1 t1) (TProj v2 t2) sym
    | otherwise = error "minusSymbol: Projection variables do not match"
 minusSymbol (TSet tset1) (TSet tset2) sym = TSet (Set.fromList [minusSymbol t1 t2 sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
 minusSymbol (TStates aut1 var1 st1) (TStates aut2  var2 st2) sym
-   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre aut1 [st1, st2] (Alp.cylindrifySymbol var1 sym))
+   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre (Alp.cylindrifySymbol) aut1 [st1, st2] sym)
    | otherwise = error "minusSymbol: Inconsistent basic automata"
 --minusSymbol (TMinusClosure t1 _) (TMinusClosure t2 _) sym = minusSymbol t1 t2 sym
 --minusSymbol (TMinusClosure t1 _) term2@(TSet t2) sym = minusSymbol t1 term2 sym
@@ -103,6 +103,7 @@ minusSymbol t _ _ = error $ "minusSymbol: Minus symbol is defined only on term-p
 unionTerms :: [Term] -> Set.Set Term
 unionTerms [] = Set.empty
 unionTerms ((TSet a):xs) = Set.union a (unionTerms xs)
+unionTerms (t:xs) = Set.union (Set.singleton t) (unionTerms xs)
 
 
 -- |Union set of terms -- defined only for a list of the form
@@ -111,32 +112,65 @@ unionTSets :: [Term] -> Term
 unionTSets = TSet . unionTerms
 
 
+flattenStates :: [Term] -> Term
+flattenStates terms = foldr1 (fun) terms where
+    fun (TStates aut1 var1 st1) (TStates aut2 var2 st2)
+      | (aut1 == aut2) && (var1 == var2) = TStates aut1 var1 (Set.union st1 st2)
+      | otherwise = error "flattenStates: incompatible states"
+    fun _ _ = error "flattenStates: incompatible states"
+
+
+flattenList :: [Term] -> Maybe [Term]
+flattenList lst =
+  if null fil then Nothing
+  else Just [flattenStates fil] where
+    fil = filter (fun) lst
+    fun (TStates _ _ _) = True
+    fun _ = False
+
+--flattenSet :: Term -> Term
+--flattenSet (TSet set) = TSet $ Set.fromList $ flattenList $ Set.toList set
+
+removeSet :: Term -> Term
+removeSet (TSet set) =
+  case flattenList lst of
+    Just r -> TSet $ Set.fromList r
+    Nothing -> TSet $ Set.fromList [removeSet t | t <- lst]
+  where
+    lst = Set.toList $ unionTerms $ Set.toList set
+removeSet (TIntersect t1 t2) = TIntersect (removeSet t1) (removeSet t2)
+removeSet (TUnion t1 t2) = TUnion (removeSet t1) (removeSet t2)
+removeSet (TCompl t) = TCompl $ removeSet t
+removeSet (TProj v1 t1) = TProj v1 (removeSet t1)
+removeSet t = t
+
+
 --------------------------------------------------------------------------------------------------------------
 -- Part with the functions providing conversions from a formuala to terms.
 --------------------------------------------------------------------------------------------------------------
 
 -- |Convert atomic formula to term.
 atom2Terms :: MonaAutDict -> Lo.Atom -> Term
-atom2Terms _ (Lo.Sing var) = TStates (TA.Base aut) [var] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Sing var) = TStates (TA.Base aut [var]) [var] (Set.map (TA.State) (TA.leaves aut)) where
    aut = singAut var
-atom2Terms _ (Lo.Cat1 v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Cat1 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = cat1Aut v1 v2
-atom2Terms _ (Lo.Cat2 v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Cat2 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = cat2Aut v1 v2
-atom2Terms _ (Lo.Subseteq v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Subseteq v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = subseteqAut v1 v2
-atom2Terms _ (Lo.Eps var) = TStates (TA.Base aut) [var] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Eps var) = TStates (TA.Base aut [var]) [var] (Set.map (TA.State) (TA.leaves aut)) where
    aut = epsAut var
-atom2Terms _ (Lo.Eqn v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Eqn v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = eqAut v1 v2
-atom2Terms _ (Lo.In v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.In v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = inAut v1 v2
-atom2Terms _ (Lo.Subset v1 v2) = TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Subset v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = subsetAut v1 v2
-atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates (TA.Base aut) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
    aut = eqAut v1 v2
 atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
-  Just aut -> TStates aut vars (TA.leaves aut)
+  Just aut -> TStates (TA.Base aut vars) vars (Set.map (TA.State) (TA.leaves aut))
   Nothing -> error "Internal error: cannot find corresponding mona automaton"
 
 
@@ -155,10 +189,15 @@ joinSetTerm t = t
 
 joinStatesTerm :: Term -> Term
 joinStatesTerm (TIntersect (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
-    TStates (TA.ConjTA aut1 aut2) (nub $ vars1 ++ vars2) (expand (TA.ConjSt) st1 st2)
+    TStates (TA.ConjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (TA.ConjSt) st1 st2)
 joinStatesTerm (TUnion (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
-    TStates (TA.DisjTA aut1 aut2) (nub $ vars1 ++ vars2) (expand (TA.DisjSt) st1 st2)
+    TStates (TA.DisjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (TA.DisjSt) st1 st2)
 joinStatesTerm t = t
+
+
+expand :: (WS2SComState -> WS2SComState -> WS2SComState) -> Set.Set WS2SComState
+  -> Set.Set WS2SComState -> Set.Set WS2SComState
+expand f s1 s2 = Set.fromList $ [f a b | a <- Set.toList s1, b <- Set.toList s2]
 
 
 -- |Convert formula to term representation. Uses additional information about

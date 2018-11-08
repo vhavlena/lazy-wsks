@@ -38,10 +38,11 @@ botInLazy (TCompl t) = not $ botInLazy t
 botInLazy (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botInLazy t) || b
-botInLazy (TIncrSet a _) = botInLazy a
+--botInLazy (TIncrSet a _) = botInLazy a
 botInLazy (TProj _ t) = botInLazy t
-botInLazy (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
---botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show term ++ "\n ... " ++ show (sset)) False = undefined
+--botInLazy (TStates aut _ st) | Dbg.trace ("botInLazy: " ++ show (TA.containsRoot aut st) ++ "\n ... " ++ (show st) ++ (show aut)++ "\n\n") False = undefined
+botInLazy (TStates aut _ st) = TA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
+--botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show t ++ "\n ... " ++ show (botInLazy t) ++ "\n\n") False = undefined
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if isExpandedLight st then False else botInLazy st) where
   st = step term
 botInLazy _ = error "botInLazy: Bottom membership is not defined"
@@ -94,7 +95,7 @@ step (TMinusClosure t sset) =
     st = step t
     strem = removeFixpoints st
     incr = removeRedundantTerms $ ominusSymbolsLazy strem sset
-    complete = removeRedundantTerms $ unionTSets [incr, st]
+    complete = removeSet $ removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
@@ -126,6 +127,7 @@ isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >
   where
     lst = Set.toList tset2
 isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
+isSubsumedLazy t1 (TMinusClosure t2 sym) = isSubsumedLazy t1 t2
 isSubsumedLazy _ _ = False
 
 
@@ -173,11 +175,12 @@ formula2TermsVarsLazy _ (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only f
 
 -- |Convert formula to term representation.
 formula2Terms :: MonaAutDict -> Lo.Formula -> Term
-formula2Terms autdict f = formula2TermsVarsLazy autdict f []
+formula2Terms autdict f = joinSetTerm $ formula2TermsVarsLazy autdict f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
+--isValid autdict f | Dbg.trace ("botInLazy: " ++ show (formula2Terms autdict f) ++ "\n ... ") False = undefined
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms autdict f
    | otherwise = Right "isValidLazy: Only ground formula is allowed"

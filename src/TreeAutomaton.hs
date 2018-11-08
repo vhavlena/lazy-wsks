@@ -15,6 +15,7 @@ module TreeAutomaton (
    , preCom
    , ComState(..)
    , ComTA(..)
+   , containsRoot
 ) where
 
 import Data.List
@@ -40,7 +41,7 @@ data ComState a =
 
 
 data ComTA a b =
-  Base (BATreeAutomaton a b)
+  Base (BATreeAutomaton a b) [Alp.Variable]
   | ConjTA (ComTA a b) (ComTA a b)
   | DisjTA (ComTA a b) (ComTA a b)
   deriving (Eq, Ord)
@@ -79,6 +80,18 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
       (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
 
 
+instance (Show a) => Show (ComState a) where
+  show Sink = "#"
+  show (State s) = show s
+  show (ConjSt s1 s2) = show s1 ++ "&" ++ show s2
+  show (DisjSt s1 s2) = show s1 ++ "+" ++ show s2
+
+
+instance (Show a, Show b) => Show (ComTA a b) where
+  show (Base a _) = show a
+  show (ConjTA a1 a2) = show a1 ++ "&" ++ show a2
+  show (DisjTA a1 a2) = show a1 ++ "+" ++ show a2
+
 -- -- |Pre (Up) of a set of states wrt given symbol.
 -- pre :: (Ord a, Ord b) => BATreeAutomaton a b -> [Set.Set a] -> b -> Set.Set a
 -- pre (BATreeAutomaton _ _ _ tr) st sym =
@@ -89,29 +102,39 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
 
 
 -- |Pre (Up) of a set of states wrt given symbol.
-pre :: (Ord a, Ord b) => ComTA a b -> [Set.Set (ComState a)] -> b -> Set.Set (ComState a)
-pre aut st sym =
-  foldr (Set.union) Set.empty [preCom aut s1 s2 sym | [s1, s2] <- crossProd st ]
+pre :: (Ord a, Ord b) => ([Alp.Variable] -> b -> b) -> ComTA a b -> [Set.Set (ComState a)] -> b -> Set.Set (ComState a)
+pre proj aut st sym =
+  foldr (Set.union) Set.empty [preCom proj aut s1 s2 sym | [s1, s2] <- crossProd st ]
 
 
 
 -- |Pre (Up) of a set of states wrt given symbol.
-preCom :: (Ord a, Ord b) => ComTA a b -> ComState a -> ComState a -> b -> Set.Set (ComState a)
-preCom (ConjTA aut1 aut2) (ConjSt s1 s2) (ConjSt u1 u2) sym = Set.fromList [ConjSt a b | a <- a1, b <- a2]
+preCom :: (Ord a, Ord b) => ([Alp.Variable] -> b -> b) -> ComTA a b -> ComState a -> ComState a -> b -> Set.Set (ComState a)
+preCom proj (ConjTA aut1 aut2) (ConjSt s1 s2) (ConjSt u1 u2) sym = Set.fromList [ConjSt a b | a <- a1, b <- a2]
   where
-    a1 = Set.toList $ preCom aut1 s1 u1 sym
-    a2 = Set.toList $ preCom aut2 s2 u2 sym
-preCom (DisjTA aut1 aut2) (DisjSt s1 s2) (DisjSt u1 u2) sym = Set.fromList [DisjSt a b | a <- a1, b <- a2]
+    a1 = Set.toList $ preCom proj aut1 s1 u1 sym
+    a2 = Set.toList $ preCom proj aut2 s2 u2 sym
+preCom proj (DisjTA aut1 aut2) (DisjSt s1 s2) (DisjSt u1 u2) sym = Set.fromList [DisjSt a b | a <- a1, b <- a2]
   where
-    a1 = Set.toList $ preCom aut1 s1 u1 sym
-    a2 = Set.toList $ preCom aut2 s2 u2 sym
-preCom _ (State q) Sink _ = Set.singleton Sink
-preCom _ Sink (State q) _ = Set.singleton Sink
-preCom (Base (BATreeAutomaton _ _ _ tr)) (State q) (State r) sym =
+    a1 = Set.toList $ preCom proj aut1 s1 u1 sym
+    a2 = Set.toList $ preCom proj aut2 s2 u2 sym
+preCom _ _ (State q) Sink _ = Set.singleton Sink
+preCom _ _ Sink (State q) _ = Set.singleton Sink
+preCom _ _ Sink Sink _ = Set.singleton Sink
+preCom proj (Base (BATreeAutomaton _ _ _ tr) vars) (State q) (State r) sym =
     if null step then Set.singleton Sink
     else Set.map (State) step where
-      step = Map.findWithDefault (Set.empty) ([q,r], sym) tr
+      step = Map.findWithDefault (Set.empty) ([q,r], (proj vars sym)) tr
 
+
+isRoot :: (Ord a, Ord b) => ComTA a b -> ComState a -> Bool
+isRoot _ Sink = False
+isRoot (Base aut _) (State st) = Set.member st (roots aut)
+isRoot (ConjTA aut1 aut2) (ConjSt st1 st2) = (isRoot aut1 st1) && (isRoot aut2 st2)
+isRoot (DisjTA aut1 aut2) (DisjSt st1 st2) = (isRoot aut1 st1) || (isRoot aut2 st2)
+
+containsRoot :: (Ord a, Ord b) => ComTA a b -> Set.Set (ComState a) -> Bool
+containsRoot aut st = any (isRoot aut) (Set.toList st)
 
 
 -- |Simplify TA transitions (remove symbol, break a set of the destination

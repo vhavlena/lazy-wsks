@@ -34,14 +34,14 @@ ominusSymbols _ _ = error "ominusSymbols: Ominus is defined only on a set of ter
 
 -- |Fixpoint minus computation of the given term and a set of symbols.
 fixpointComp :: Term -> Set.Set Alp.Symbol -> Term
---fixpointComp term@(TSet tset) sset | Dbg.trace ("fixpointComp " ++ show (term) ++ " ----- " ++ show (ominusSymbols term sset)) False = undefined
+fixpointComp term@(TSet tset) sset | Dbg.trace ("fixpointComp " ++ show (term)) False = undefined
 fixpointComp term@(TSet tset) sset =
    case ominusSymbols term sset of
       TSet modifset ->
-         if Set.isSubsetOf modifset tset then term
-         else fixpointComp (TSet $ Set.union modifset tset) sset
+         if isSubsumedStrict (TSet modifset) term then term
+         else fixpointComp (removeSet $ TSet $ Set.union modifset tset) sset
       _ -> error "fixpointComp: Ominus is defined only on a set of terms"
-fixpointComp term sset = fixpointComp (TSet $ Set.fromList [term]) sset
+--fixpointComp term sset = fixpointComp (TSet $ Set.fromList [term]) sset
 
 
 -- |Unwind fixpoints into sets of terms (corresponding to applying all fixpoints).
@@ -56,6 +56,20 @@ unwindFixpoints (TSet tset) = TSet $ Set.fromList [unwindFixpoints t | t <- Set.
 unwindFixpoints t = error ("unwindFixpoints: Unwind is not defined for pair and minus terms" ++ (show t))
 
 
+isSubsumedStrict :: Term -> Term -> Bool
+isSubsumedStrict (TUnion t1 t2) (TUnion t3 t4) = (isSubsumedStrict t1 t3) && (isSubsumedStrict t2 t4)
+isSubsumedStrict (TIntersect t1 t2) (TIntersect t3 t4) = (isSubsumedStrict t1 t3) && (isSubsumedStrict t2 t4)
+isSubsumedStrict (TCompl t1) (TCompl t2) = isSubsumedStrict t2 t1
+isSubsumedStrict (TProj v1 t1) (TProj v2 t2)
+  | v1 == v2 = isSubsumedStrict t1 t2
+  | otherwise = False
+isSubsumedStrict (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedStrict a) lst))
+  where
+    lst = Set.toList tset2
+isSubsumedStrict (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
+isSubsumedStrict _ _ = False
+
+
 -- |Test whether bottom is in the language of the term.
 botIn :: Term -> Bool
 botIn (TUnion t1 t2) = (botIn t1) || (botIn t2)
@@ -65,17 +79,18 @@ botIn (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botIn t) || b
 botIn (TProj _ t) = botIn t
-botIn (TStates aut _ st) = (Set.intersection (TA.roots aut) st) /= Set.empty
+botIn (TStates aut _ st) =  TA.containsRoot aut st --(Set.intersection (TA.roots aut) st) /= Set.empty
 botIn _ = error "botIn: Bottom membership is not defined"
 
 
 -- |Convert formula to term representation.
 formula2Terms :: Lo.Formula -> Term
-formula2Terms f = formula2TermsVars Map.empty f []
+formula2Terms f = joinSetTerm $ formula2TermsVars Map.empty f []
 
 
 -- |Decide whether given ground formula is valid (strict approach).
 isValid :: Lo.Formula -> Either Bool String
+--isValid f | Dbg.trace ("fixpointComp " ++ show (f) ++ " ----- " ++ show (unwindFixpoints $ formula2Terms $ Lo.removeForAll f)) False = undefined
 isValid f
    | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms $ Lo.removeForAll f
    | otherwise = Right "isValid: Only ground formula is allowed"
