@@ -34,6 +34,7 @@ type SimplTransitionRev a = (a,a)
 
 data ComState a =
   Sink
+  | SetSt (Set.Set a)
   | State a
   | ConjSt (ComState a) (ComState a)
   | DisjSt (ComState a) (ComState a)
@@ -82,6 +83,7 @@ instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
 
 instance (Show a) => Show (ComState a) where
   show Sink = "#"
+  show (SetSt set) = Aux.prArr "," (Set.toList set)
   show (State s) = show s
   show (ConjSt s1 s2) = show s1 ++ "&" ++ show s2
   show (DisjSt s1 s2) = show s1 ++ "+" ++ show s2
@@ -125,6 +127,10 @@ preCom proj (Base (BATreeAutomaton _ _ _ tr) vars) (State q) (State r) sym =
     if null step then Set.singleton Sink
     else Set.map (State) step where
       step = Map.findWithDefault (Set.empty) ([q,r], (proj vars sym)) tr
+preCom proj (Base (BATreeAutomaton _ _ _ tr) vars) (SetSt s1) (SetSt s2) sym =
+  Set.singleton $ SetSt $ foldr (Set.union) Set.empty [Map.findWithDefault Set.empty ([q1, q2],sym') tr |
+    q1 <- Set.toList s1, q2 <- Set.toList s2 ] where
+      sym' = proj vars sym
 
 
 isRoot :: (Ord a, Ord b) => ComTA a b -> ComState a -> Bool
@@ -132,6 +138,8 @@ isRoot _ Sink = False
 isRoot (Base aut _) (State st) = Set.member st (roots aut)
 isRoot (ConjTA aut1 aut2) (ConjSt st1 st2) = (isRoot aut1 st1) && (isRoot aut2 st2)
 isRoot (DisjTA aut1 aut2) (DisjSt st1 st2) = (isRoot aut1 st1) || (isRoot aut2 st2)
+isRoot (Base aut _) (SetSt st) = not $ null $ Set.intersection st (roots aut)
+
 
 containsRoot :: (Ord a, Ord b) => ComTA a b -> Set.Set (ComState a) -> Bool
 containsRoot aut st = any (isRoot aut) (Set.toList st)

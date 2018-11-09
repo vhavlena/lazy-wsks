@@ -126,7 +126,7 @@ isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
 isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedLazy a) lst))
   where
     lst = Set.toList tset2
-isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
+isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (subsetSetStates st1 st2)
 isSubsumedLazy t1 (TMinusClosure t2 sym) = isSubsumedLazy t1 t2
 isSubsumedLazy _ _ = False
 
@@ -175,7 +175,7 @@ formula2TermsVarsLazy _ (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only f
 
 -- |Convert formula to term representation.
 formula2Terms :: MonaAutDict -> Lo.Formula -> Term
-formula2Terms autdict f = joinSetTerm $ formula2TermsVarsLazy autdict f []
+formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).

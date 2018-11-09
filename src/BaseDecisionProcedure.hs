@@ -115,9 +115,28 @@ unionTSets = TSet . unionTerms
 flattenStates :: [Term] -> Term
 flattenStates terms = foldr1 (fun) terms where
     fun (TStates aut1 var1 st1) (TStates aut2 var2 st2)
-      | (aut1 == aut2) && (var1 == var2) = TStates aut1 var1 (Set.union st1 st2)
+      | (aut1 == aut2) && (var1 == var2) = TStates aut1 var1 (unionComStates (Set.toList st1) (Set.toList st2))
       | otherwise = error "flattenStates: incompatible states"
     fun _ _ = error "flattenStates: incompatible states"
+
+
+unionComStates :: [WS2SComState] -> [WS2SComState] -> Set.Set WS2SComState
+unionComStates [TA.SetSt st1] [TA.SetSt st2] = Set.singleton $ TA.SetSt $ Set.union st1 st2
+unionComStates t1 t2 = Set.union (Set.fromList t1) (Set.fromList t2)
+
+
+isSubsetStates [TA.SetSt st1] [TA.SetSt st2] = Just $ Set.isSubsetOf st1 st2
+isSubsetStates _ _ = Nothing
+
+
+subsetSetStates :: Set.Set WS2SComState -> Set.Set WS2SComState -> Bool
+subsetSetStates s1 s2 =
+  case isSubsetStates lst1 lst2 of
+    Just a -> a
+    Nothing -> Set.isSubsetOf s1 s2
+  where
+    lst1 = Set.toList s1
+    lst2 = Set.toList s2
 
 
 flattenList :: [Term] -> Maybe [Term]
@@ -151,26 +170,26 @@ removeSet t = t
 
 -- |Convert atomic formula to term.
 atom2Terms :: MonaAutDict -> Lo.Atom -> Term
-atom2Terms _ (Lo.Sing var) = TStates (TA.Base aut [var]) [var] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Sing var) = TStates (TA.Base aut [var]) [var] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = singAut var
-atom2Terms _ (Lo.Cat1 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Cat1 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = cat1Aut v1 v2
-atom2Terms _ (Lo.Cat2 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Cat2 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = cat2Aut v1 v2
-atom2Terms _ (Lo.Subseteq v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Subseteq v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = subseteqAut v1 v2
-atom2Terms _ (Lo.Eps var) = TStates (TA.Base aut [var]) [var] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Eps var) = TStates (TA.Base aut [var]) [var] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = epsAut var
-atom2Terms _ (Lo.Eqn v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Eqn v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = eqAut v1 v2
-atom2Terms _ (Lo.In v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.In v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = inAut v1 v2
-atom2Terms _ (Lo.Subset v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Subset v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = subsetAut v1 v2
-atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.map (TA.State) (TA.leaves aut)) where
+atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
    aut = eqAut v1 v2
 atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
-  Just aut -> TStates (TA.Base aut vars) vars (Set.map (TA.State) (TA.leaves aut))
+  Just aut -> TStates (TA.Base aut vars) vars (Set.singleton $ TA.SetSt (TA.leaves aut))
   Nothing -> error "Internal error: cannot find corresponding mona automaton"
 
 
@@ -197,7 +216,12 @@ joinStatesTerm t = t
 
 expand :: (WS2SComState -> WS2SComState -> WS2SComState) -> Set.Set WS2SComState
   -> Set.Set WS2SComState -> Set.Set WS2SComState
-expand f s1 s2 = Set.fromList $ [f a b | a <- Set.toList s1, b <- Set.toList s2]
+expand f s1 s2 = Set.fromList $ [f a b | a <- unwindFromSet $ Set.toList s1, b <- unwindFromSet $ Set.toList s2]
+
+
+unwindFromSet :: [WS2SComState] -> [WS2SComState]
+unwindFromSet [TA.SetSt st] = map (TA.State) (Set.toList st)
+unwindFromSet t = t
 
 
 -- |Convert formula to term representation. Uses additional information about
