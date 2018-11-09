@@ -14,7 +14,7 @@ module LazyDecisionProcedure (
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
-import qualified TreeAutomaton as TA
+import qualified ComTreeAutomaton as CTA
 import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified Alphabet as Alp
@@ -38,10 +38,8 @@ botInLazy (TCompl t) = not $ botInLazy t
 botInLazy (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botInLazy t) || b
---botInLazy (TIncrSet a _) = botInLazy a
 botInLazy (TProj _ t) = botInLazy t
---botInLazy (TStates aut _ st) | Dbg.trace ("botInLazy: " ++ show (TA.containsRoot aut st) ++ "\n ... " ++ (show st) ++ (show aut)++ "\n\n") False = undefined
-botInLazy (TStates aut _ st) = TA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
+botInLazy (TStates aut _ st) = CTA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
 --botInLazy term@(TMinusClosure t sset) | Dbg.trace ("botInLazy: " ++ show t ++ "\n ... " ++ show (botInLazy t) ++ "\n\n") False = undefined
 botInLazy term@(TMinusClosure t sset) = (botInLazy t) || (if isExpandedLight st then False else botInLazy st) where
   st = step term
@@ -180,7 +178,6 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
---isValid autdict f | Dbg.trace ("botInLazy: " ++ show (formula2Terms autdict f) ++ "\n ... ") False = undefined
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms autdict f
    | otherwise = Right "isValidLazy: Only ground formula is allowed"

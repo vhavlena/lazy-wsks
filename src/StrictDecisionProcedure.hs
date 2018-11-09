@@ -15,7 +15,7 @@ module StrictDecisionProcedure (
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
-import qualified TreeAutomaton as TA
+import qualified ComTreeAutomaton as CTA
 import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified Alphabet as Alp
@@ -41,7 +41,6 @@ fixpointComp term@(TSet tset) sset =
          if isSubsumedStrict (TSet modifset) term then term
          else fixpointComp (removeSet $ TSet $ Set.union modifset tset) sset
       _ -> error "fixpointComp: Ominus is defined only on a set of terms"
---fixpointComp term sset = fixpointComp (TSet $ Set.fromList [term]) sset
 
 
 -- |Unwind fixpoints into sets of terms (corresponding to applying all fixpoints).
@@ -66,7 +65,7 @@ isSubsumedStrict (TProj v1 t1) (TProj v2 t2)
 isSubsumedStrict (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedStrict a) lst))
   where
     lst = Set.toList tset2
-isSubsumedStrict (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (Set.isSubsetOf st1 st2)
+isSubsumedStrict (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (subsetSetStates st1 st2)
 isSubsumedStrict _ _ = False
 
 
@@ -79,7 +78,7 @@ botIn (TSet tset) =
    foldr gather False (Set.toList tset) where
       gather t b = (botIn t) || b
 botIn (TProj _ t) = botIn t
-botIn (TStates aut _ st) =  TA.containsRoot aut st --(Set.intersection (TA.roots aut) st) /= Set.empty
+botIn (TStates aut _ st) =  CTA.containsRoot aut st --(Set.intersection (TA.roots aut) st) /= Set.empty
 botIn _ = error "botIn: Bottom membership is not defined"
 
 
@@ -90,7 +89,6 @@ formula2Terms f = joinSetTerm $ formula2TermsVars Map.empty f []
 
 -- |Decide whether given ground formula is valid (strict approach).
 isValid :: Lo.Formula -> Either Bool String
---isValid f | Dbg.trace ("fixpointComp " ++ show (f) ++ " ----- " ++ show (unwindFixpoints $ formula2Terms $ Lo.removeForAll f)) False = undefined
 isValid f
    | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms $ Lo.removeForAll f
    | otherwise = Right "isValid: Only ground formula is allowed"

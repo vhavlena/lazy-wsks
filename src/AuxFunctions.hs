@@ -9,10 +9,12 @@ module AuxFunctions (
    insertAt
    , deleteAt
    , prArr
+   , crossProd
 ) where
 
 
 import Data.List
+import qualified Data.Set as Set
 
 -- |Insert a value into list to a given position (indices start at 0).
 insertAt :: a -> [a] -> Int -> [a]
@@ -31,3 +33,15 @@ deleteAt (x:xs) i
 -- |Print list (items are separated by delim).
 prArr :: (Show a) => String -> [a] -> String
 prArr delim arr = intercalate delim (map (show) arr)
+
+
+-- |Cross product of a given sets.
+crossProd :: [Set.Set a] -> [[a]]
+crossProd [] = []
+crossProd (y:ys) = mergeLists y (crossProd ys)
+
+
+-- |Cross product of a set and the list of tuples.
+mergeLists :: Set.Set a -> [[a]] -> [[a]]
+mergeLists a [] = [[x] | x <- Set.toList a]
+mergeLists a b = [x:y | x <- Set.toList a, y <- b ]

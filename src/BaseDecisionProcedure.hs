@@ -11,6 +11,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified TreeAutomaton as TA
+import qualified ComTreeAutomaton as CTA
 import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified Alphabet as Alp
@@ -21,8 +22,8 @@ import qualified Debug.Trace as Dbg
 
 
 type MonaAutDict = Map.Map String WS2STreeAut
-type WS2SComTA = TA.ComTA State Alp.Symbol
-type WS2SComState = TA.ComState State
+type WS2SComTA = CTA.ComTA State Alp.Symbol
+type WS2SComState = CTA.ComState State
 
 
 -- |WS2S Lazy terms.
@@ -90,11 +91,8 @@ minusSymbol (TProj v1 t1) (TProj v2 t2) sym
    | otherwise = error "minusSymbol: Projection variables do not match"
 minusSymbol (TSet tset1) (TSet tset2) sym = TSet (Set.fromList [minusSymbol t1 t2 sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
 minusSymbol (TStates aut1 var1 st1) (TStates aut2  var2 st2) sym
-   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (TA.pre (Alp.cylindrifySymbol) aut1 [st1, st2] sym)
+   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (CTA.preCom (Alp.cylindrifySymbol) aut1 [st1, st2] sym)
    | otherwise = error "minusSymbol: Inconsistent basic automata"
---minusSymbol (TMinusClosure t1 _) (TMinusClosure t2 _) sym = minusSymbol t1 t2 sym
---minusSymbol (TMinusClosure t1 _) term2@(TSet t2) sym = minusSymbol t1 term2 sym
---minusSymbol term2@(TSet t2) (TMinusClosure t1 _) sym = minusSymbol t1 term2 sym
 minusSymbol t _ _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
 
@@ -112,6 +110,10 @@ unionTSets :: [Term] -> Term
 unionTSets = TSet . unionTerms
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with the functions concerning compound states
+--------------------------------------------------------------------------------------------------------------
+
 flattenStates :: [Term] -> Term
 flattenStates terms = foldr1 (fun) terms where
     fun (TStates aut1 var1 st1) (TStates aut2 var2 st2)
@@ -121,22 +123,8 @@ flattenStates terms = foldr1 (fun) terms where
 
 
 unionComStates :: [WS2SComState] -> [WS2SComState] -> Set.Set WS2SComState
-unionComStates [TA.SetSt st1] [TA.SetSt st2] = Set.singleton $ TA.SetSt $ Set.union st1 st2
+unionComStates [CTA.SetSt st1] [CTA.SetSt st2] = Set.singleton $ CTA.SetSt $ Set.union st1 st2
 unionComStates t1 t2 = Set.union (Set.fromList t1) (Set.fromList t2)
-
-
-isSubsetStates [TA.SetSt st1] [TA.SetSt st2] = Just $ Set.isSubsetOf st1 st2
-isSubsetStates _ _ = Nothing
-
-
-subsetSetStates :: Set.Set WS2SComState -> Set.Set WS2SComState -> Bool
-subsetSetStates s1 s2 =
-  case isSubsetStates lst1 lst2 of
-    Just a -> a
-    Nothing -> Set.isSubsetOf s1 s2
-  where
-    lst1 = Set.toList s1
-    lst2 = Set.toList s2
 
 
 flattenList :: [Term] -> Maybe [Term]
@@ -147,8 +135,6 @@ flattenList lst =
     fun (TStates _ _ _) = True
     fun _ = False
 
---flattenSet :: Term -> Term
---flattenSet (TSet set) = TSet $ Set.fromList $ flattenList $ Set.toList set
 
 removeSet :: Term -> Term
 removeSet (TSet set) =
@@ -164,53 +150,59 @@ removeSet (TProj v1 t1) = TProj v1 (removeSet t1)
 removeSet t = t
 
 
+isSubsetStates [CTA.SetSt st1] [CTA.SetSt st2] = Just $ Set.isSubsetOf st1 st2
+isSubsetStates _ _ = Nothing
+
+
+subsetSetStates :: Set.Set WS2SComState -> Set.Set WS2SComState -> Bool
+subsetSetStates s1 s2 =
+  case isSubsetStates lst1 lst2 of
+    Just a -> a
+    Nothing -> Set.isSubsetOf s1 s2
+  where
+    lst1 = Set.toList s1
+    lst2 = Set.toList s2
+
+
 --------------------------------------------------------------------------------------------------------------
 -- Part with the functions providing conversions from a formuala to terms.
 --------------------------------------------------------------------------------------------------------------
 
 -- |Convert atomic formula to term.
 atom2Terms :: MonaAutDict -> Lo.Atom -> Term
-atom2Terms _ (Lo.Sing var) = TStates (TA.Base aut [var]) [var] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = singAut var
-atom2Terms _ (Lo.Cat1 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = cat1Aut v1 v2
-atom2Terms _ (Lo.Cat2 v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = cat2Aut v1 v2
-atom2Terms _ (Lo.Subseteq v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = subseteqAut v1 v2
-atom2Terms _ (Lo.Eps var) = TStates (TA.Base aut [var]) [var] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = epsAut var
-atom2Terms _ (Lo.Eqn v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = eqAut v1 v2
-atom2Terms _ (Lo.In v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = inAut v1 v2
-atom2Terms _ (Lo.Subset v1 v2) = TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = subsetAut v1 v2
-atom2Terms _ (Lo.Neq v1 v2) = TCompl $ TStates (TA.Base aut [v1, v2]) [v1, v2] (Set.singleton $ TA.SetSt (TA.leaves aut)) where
-   aut = eqAut v1 v2
+atom2Terms _ (Lo.Sing var) = constructTermAtom (singAut var) [var]
+atom2Terms _ (Lo.Cat1 v1 v2) = constructTermAtom (cat1Aut v1 v2) [v1, v2]
+atom2Terms _ (Lo.Cat2 v1 v2) = constructTermAtom (cat2Aut v1 v2) [v1, v2]
+atom2Terms _ (Lo.Subseteq v1 v2) = constructTermAtom (subseteqAut v1 v2) [v1, v2]
+atom2Terms _ (Lo.Eps var) = constructTermAtom (epsAut var) [var]
+atom2Terms _ (Lo.Eqn v1 v2) = constructTermAtom (eqAut v1 v2) [v1, v2]
+atom2Terms _ (Lo.In v1 v2) = constructTermAtom (inAut v1 v2) [v1, v2]
+atom2Terms _ (Lo.Subset v1 v2) = constructTermAtom (subsetAut v1 v2) [v1, v2]
+atom2Terms _ (Lo.Neq v1 v2) = TCompl $ constructTermAtom (eqAut v1 v2) [v1, v2]
 atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
-  Just aut -> TStates (TA.Base aut vars) vars (Set.singleton $ TA.SetSt (TA.leaves aut))
+  Just aut -> TStates (CTA.Base aut vars) vars (Set.singleton $ CTA.SetSt (TA.leaves aut))
   Nothing -> error "Internal error: cannot find corresponding mona automaton"
 
 
+constructTermAtom :: WS2STreeAut -> [Alp.Variable] -> Term
+constructTermAtom aut vars = TStates (CTA.Base aut vars) vars (Set.singleton $ CTA.SetSt (TA.leaves aut))
+
+
 joinSetTerm :: Term -> Term
---joinSetTerm (TUnion (TSet s1) (TSet s2)) = TSet $ Set.fromList [ TUnion t1 t2 | t1 <- Set.toList s1, t2 <- Set.toList s2 ]
---joinSetTerm (TIntersect (TSet s1) (TSet s2)) = TSet $ Set.fromList [ TIntersect t1 t2 | t1 <- Set.toList s1, t2 <- Set.toList s2 ]
 joinSetTerm (TSet s) = TSet $ Set.map (joinSetTerm) s
 joinSetTerm (TUnion t1 t2) = joinStatesTerm $ TUnion (joinSetTerm t1) (joinSetTerm t2)
 joinSetTerm (TIntersect t1 t2) = joinStatesTerm $ TIntersect (joinSetTerm t1) (joinSetTerm t2)
 joinSetTerm (TCompl t1) = TCompl $ joinSetTerm t1
 joinSetTerm (TProj var t) = TProj var (joinSetTerm t)
 joinSetTerm (TMinusClosure t sym) = TMinusClosure (joinSetTerm t) sym
---joinSetTerm (TStates aut var st)
 joinSetTerm t = t
 
 
 joinStatesTerm :: Term -> Term
 joinStatesTerm (TIntersect (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
-    TStates (TA.ConjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (TA.ConjSt) st1 st2)
+    TStates (CTA.ConjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (CTA.ConjSt) st1 st2)
 joinStatesTerm (TUnion (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
-    TStates (TA.DisjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (TA.DisjSt) st1 st2)
+    TStates (CTA.DisjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (CTA.DisjSt) st1 st2)
 joinStatesTerm t = t
 
 
@@ -220,7 +212,7 @@ expand f s1 s2 = Set.fromList $ [f a b | a <- unwindFromSet $ Set.toList s1, b <
 
 
 unwindFromSet :: [WS2SComState] -> [WS2SComState]
-unwindFromSet [TA.SetSt st] = map (TA.State) (Set.toList st)
+unwindFromSet [CTA.SetSt st] = map (CTA.State) (Set.toList st)
 unwindFromSet t = t
 
 
