@@ -7,6 +7,7 @@
 """
 
 import sys
+import getopt
 import subprocess
 import string
 import re
@@ -17,22 +18,38 @@ import resource
 VALIDLINE = -2
 TIMELINE = -1
 TIMEOUT = 100 #in seconds
-FORMULAS = 20
+FORMULAS = 5
 
 def main():
-    if len(sys.argv) != 4:
-        sys.stderr.write("Bad input arguments. \nFormat: ./experimental [lazy-bin] [mona-bin] [formula folder]\n")
+    #Input parsing
+    if len(sys.argv) < 4:
+        help_err()
+        sys.exit()
+    try:
+        opts, args = getopt.getopt(sys.argv[4:], "t", ["tex"])
+    except getopt.GetoptError as err:
+        help_err()
         sys.exit()
 
     lazybin = sys.argv[1]
     monabin = sys.argv[2]
     formulafolder = sys.argv[3]
+    texout = False
+
+    for o, a in opts:
+        if o in ("-t", "--tex"):
+            texout = True
+
+    #Experiments
 
     files = [f for f in os.listdir(formulafolder) \
         if os.path.isfile(os.path.join(formulafolder, f)) and \
             f.endswith(".mona")]
     files.sort()
     files = files[:FORMULAS]
+    tex = "Timeout: {0}\n".format(TIMEOUT)
+    tex += "\\begin{table}[h]\n\\begin{tabular}{lll}\n"
+    tex += "\\textbf{Formula File} & \\textbf{Lazy Approach} & \\textbf{Mona} \\\\\n\\toprule \n"
 
     print_config()
     print("Formula: lazy approach, MONA")
@@ -41,12 +58,14 @@ def main():
         filename = os.path.join(formulafolder, monafile)
 
         try:
-            lazy_output = subprocess.check_output([lazybin, filename], timeout=TIMEOUT).decode("utf-8")
+            lazy_output = subprocess.check_output([lazybin, filename], \
+                timeout=TIMEOUT).decode("utf-8")
             lazy_parse = parse_lazy(lazy_output)
         except subprocess.TimeoutExpired:
             lazy_parse = None, None
         try:
-            mona_output = subprocess.check_output([monabin, filename], timeout=TIMEOUT).decode("utf-8")
+            mona_output = subprocess.check_output([monabin, filename], \
+                timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
         except subprocess.TimeoutExpired:
             mona_parse = None, None
@@ -54,6 +73,12 @@ def main():
             mona_parse = None, None
 
         print_output(filename, lazy_parse, mona_parse)
+        tex = tex + "\\emph{{{0}}} & {1} & {2} \\\\\n\\midrule\n".format(filename, \
+            format_output(lazy_parse), format_output(mona_parse))
+
+    tex += "\\end{tabular}\n\\end{table}"
+    if texout:
+        print(tex)
 
 
 def parse_lazy(output):
@@ -107,6 +132,10 @@ def format_output(parse):
 
 def print_output(filename, lazy_parse, mona_parse):
     print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
+
+
+def help_err():
+    sys.stderr.write("Bad input arguments. \nFormat: ./experimental [lazy-bin] [mona-bin] [formula folder] [--tex]\n")
 
 
 if __name__ == "__main__":
