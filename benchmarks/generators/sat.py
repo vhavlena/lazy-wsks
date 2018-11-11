@@ -27,7 +27,7 @@ def main():
         delim = "&"
         if i == num-1:
             delim = ";"
-        sys.stdout.write("((Y1 sub X{0} & Y2 sub X{1}) => Y1 = Y2.0) {3}".format(i, i, i, delim))
+        sys.stdout.write("((X{0} = Y1.0 & X{1} sub Y2) => Y1 = Y2) {3}".format(i, i, i, delim))
     sys.stdout.write("\n")
 
 
