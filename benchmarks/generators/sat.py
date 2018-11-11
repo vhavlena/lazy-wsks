@@ -23,11 +23,11 @@ def main():
         sys.stdout.write("X{0}{1} ".format(i, delim))
     sys.stdout.write("all2 Y1, Y2: ")
 
-    for i in range(num-1):
+    for i in range(num):
         delim = "&"
-        if i == num-2:
+        if i == num-1:
             delim = ";"
-        sys.stdout.write("((X{0} = Y1.0 & X{1} sub Y2) => Y1 = Y2) {2}".format(i, i, delim))
+        sys.stdout.write("((Y1 sub X{0} & Y2 sub X{1}) => Y1 = Y2.0) {3}".format(i, i, i, delim))
     sys.stdout.write("\n")
 
 
