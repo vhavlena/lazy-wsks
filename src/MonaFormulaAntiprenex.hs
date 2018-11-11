@@ -110,8 +110,13 @@ antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (antiprenexDecl) decls
 -- Part with a conversion to formula without implications and equivalences.
 --------------------------------------------------------------------------------------------------------------
 
+convertToBaseAtom :: MonaAtom -> MonaFormula
+convertToBaseAtom (MonaAtomNeq t1 t2) = MonaFormulaNeg $ MonaFormulaAtomic $ (MonaAtomEq t1 t2)
+convertToBaseAtom atom = MonaFormulaAtomic atom
+
+
 convertToBaseFormula :: MonaFormula -> MonaFormula
-convertToBaseFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+convertToBaseFormula (MonaFormulaAtomic atom) = convertToBaseAtom atom
 convertToBaseFormula (MonaFormulaVar var) = MonaFormulaVar var
 convertToBaseFormula (MonaFormulaNeg f) = MonaFormulaNeg (convertToBaseFormula f)
 convertToBaseFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (convertToBaseFormula f1) (convertToBaseFormula f2)
