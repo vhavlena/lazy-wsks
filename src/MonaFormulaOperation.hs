@@ -306,7 +306,7 @@ removeForAllFile (MonaFile dom decls) = MonaFile dom (map (removeForAllDecl) dec
 freeVarsTerm :: MonaTerm -> [Lo.Var]
 freeVarsTerm (MonaTermVar var) = [var]
 freeVarsTerm (MonaTermConst num) = []
-freeVarsTerm (MonaTermPlus t1 t2) = (freeVarsTerm t1) ++ (freeVarsTerm t2)
+freeVarsTerm (MonaTermPlus t1 t2) = nub $ (freeVarsTerm t1) ++ (freeVarsTerm t2)
 freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermMinus t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermUp t) = freeVarsTerm t
@@ -314,7 +314,7 @@ freeVarsTerm (MonaTermRoot) = []
 
 
 freeVarsAtom :: MonaAtom -> [Lo.Var]
-freeVarsAtom (MonaAtomLe t1 t2) = (freeVarsTerm t1) ++ (freeVarsTerm t2)
+freeVarsAtom (MonaAtomLe t1 t2) = nub $ (freeVarsTerm t1) ++ (freeVarsTerm t2)
 freeVarsAtom (MonaAtomLeq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
 freeVarsAtom (MonaAtomEq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
 freeVarsAtom (MonaAtomNeq t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)

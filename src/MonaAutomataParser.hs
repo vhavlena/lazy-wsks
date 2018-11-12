@@ -107,7 +107,7 @@ m_reject = string "Rejecting states:"
 m_dontcare = string "Don't-care states:"
 m_white = whiteSpace lexer
 m_space = ((oneOf " "))
-m_variable = many1 alphaNum
+m_variable = many1 (alphaNum <|> char '$')
 m_identifier = lexeme lexer (many alphaNum)
 m_guideName = lexeme lexer (many1 (noneOf " \t\n:()\'"))
 

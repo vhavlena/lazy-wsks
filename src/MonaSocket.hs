@@ -40,8 +40,10 @@ writeTmpMonaFile dir name str = do
 getAutFormulaMona :: [Lo.Var] -> Lo.Formula -> IO WS2STreeAut
 getAutFormulaMona vars fle = writeTmpMonaFile "" "tmp-mona-34F53DSW4.mona" monafle where
   monafle = "ws2s;\n" ++ decl ++ Lo.showFormulaMona fle ++ ";"
-  decl = "var1 " ++ (intercalate "," var1) ++ ";\nvar2 " ++ (intercalate "," var2) ++ ";\n"
+  decl = ccat 1 var1 ++ ccat 2 var2
   (var1, var2) = getVariableDeclaration vars fle
+  ccat i [] = ""
+  ccat i lst = "var" ++ show i ++ " " ++ (intercalate "," lst) ++ ";\n"
 
 
 getVariableDeclaration :: [Lo.Var] -> Lo.Formula -> ([Lo.Var], [Lo.Var])
@@ -55,7 +57,18 @@ getMonaAtomVars (MonaAtomGeq a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) va
 getMonaAtomVars (MonaAtomGe a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) vars
 getMonaAtomVars (MonaAtomIn a1 a2) vars = (fv, vars \\ fv) where
   fv = freeVarsTerm a1
+getMonaAtomVars (MonaAtomNotIn a1 a2) vars = getMonaAtomVars (MonaAtomIn a1 a2) vars
+getMonaAtomVars (MonaAtomEq a1 a2) vars
+  | min (getTypeTerm a1) (getTypeTerm a2) == 1 = (vars, [])
+  | otherwise = ([], vars)
 getMonaAtomVars t vars = ([], vars)
+
+
+getTypeTerm :: MonaTerm -> Int
+getTypeTerm MonaTermRoot = 1
+getTypeTerm (MonaTermPlus t1 t2) = min (getTypeTerm t1) (getTypeTerm t2)
+getTypeTerm (MonaTermCat t1 t2) = min (getTypeTerm t1) (getTypeTerm t2)
+getTypeTerm _ = 2
 
 
 -- |Get Mona tree automata for a list of tuples (identifier, formula) ->

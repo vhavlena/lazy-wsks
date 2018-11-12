@@ -73,6 +73,7 @@ showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showT
 showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
 showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg ind b)
+showTermDbg ind (TTrue) = (replicate ind ' ') ++ "True"
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the Minus symbol (pre on the terms)
