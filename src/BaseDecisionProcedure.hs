@@ -37,6 +37,7 @@ data Term =
    | TIncrSet Term Term
    | TPair Term Term
    | TSet (Set.Set Term)
+   | TTrue
    deriving (Eq, Ord)
 
 sinkTerm = TSet $ Set.empty
@@ -179,7 +180,8 @@ atom2Terms _ (Lo.Eqn v1 v2) = constructTermAtom (eqAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.In v1 v2) = constructTermAtom (inAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Subset v1 v2) = constructTermAtom (subsetAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Neq v1 v2) = TCompl $ constructTermAtom (eqAut v1 v2) [v1, v2]
-atom2Terms autdict (Lo.MonaAtom iden vars) = case (Map.lookup iden autdict) of
+atom2Terms _ (Lo.AtTrue) = TTrue
+atom2Terms autdict (Lo.MonaAt at vars) = case (Map.lookup (show at) autdict) of
   Just aut -> TStates (CTA.Base aut vars) vars (Set.singleton $ CTA.SetSt (TA.leaves aut))
   Nothing -> error "Internal error: cannot find corresponding mona automaton"
 

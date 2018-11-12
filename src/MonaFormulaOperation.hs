@@ -310,6 +310,7 @@ freeVarsTerm (MonaTermPlus t1 t2) = (freeVarsTerm t1) ++ (freeVarsTerm t2)
 freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermMinus t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermUp t) = freeVarsTerm t
+freeVarsTerm (MonaTermRoot) = []
 
 
 freeVarsAtom :: MonaAtom -> [Lo.Var]

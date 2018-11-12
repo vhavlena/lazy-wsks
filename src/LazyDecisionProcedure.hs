@@ -32,6 +32,7 @@ import qualified Debug.Trace as Dbg
 
 -- |Lazy testing of bottom membership in the language of a given term.
 botInLazy :: Term -> Bool
+botInLazy (TTrue) = True
 botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
 botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
 botInLazy (TCompl t) = not $ botInLazy t
@@ -180,4 +181,4 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy $ formula2Terms autdict f
-   | otherwise = Right "isValidLazy: Only ground formula is allowed"
+   | otherwise = Right $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)

@@ -23,7 +23,7 @@ pred rightnil(var2 $, var1 x, var1 y) = root.0<=x & x.1 notin $ & y=root ;
 pred rightnil'(var2 $, var1 x, var1 y, var2 M) = root.0<=x & (~ex1 z where z in M: (rightchild(x,z,M))) & (~ex1 s where s in M : (leftchild(s,y,M) | rightchild(s,y,M))) ;
 
 pred validmodel(var2 $, var1 p, var1 n, var1 exdv1, var1 exdv2) =
-	all1 x where true: (x in $) => ((x^ in $) | (x^=x)) &
+	all1 x where true: (x in $) => ((x^ in $) | (x^ =x)) &
 	p in $ & n in $ & exdv1 in $ & exdv2 in $ &
 	n = root.1 & root.0<=p &
 	root.0 in $ & root.1 in $ & root.1.0 notin $ & root.1.1 notin $ ;
@@ -31,9 +31,9 @@ pred validmodel(var2 $, var1 p, var1 n, var1 exdv1, var1 exdv2) =
 pred lcp(var2 $, var1 x, var1 y, var1 z) =
 	z<=x & z<=y & (~ex1 u where u in $ : (u<=x & u<=y & z<u)) ;
 
-pred validmodel'(var2 $, var1 p, var1 n, var2 M) = 
+pred validmodel'(var2 $, var1 p, var1 n, var2 M) =
 	root in M & root.1 in M & root.1.0 notin M & root.1.1 notin M &
-	root.0<=p & n=root.1 & 
+	root.0<=p & n=root.1 &
 	(all1 x,y,z where x in $ & y in $ & z in $ : (x in M & y in M & lcp($,x,y,z)) => z in M);
 
 pred minimalmodel(var2 $, var1 p, var1 n, var1 exdv1, var1 exdv2) =
@@ -49,4 +49,3 @@ var2 $ ;
 
 ex1 p,n,exdv1,exdv2 : (
 	validmodel($,p,n,exdv1,exdv2) & minimalmodel($,p,n,exdv1,exdv2) ) ;
-

@@ -15,7 +15,9 @@ import GHC.IO.Handle
 import System.Process
 import Data.List
 
-import MonaAutomataParser
+import MonaFormulaOperation
+import MonaParser
+import qualified MonaAutomataParser as MAP
 import MonaAutomataWrapper
 import TreeAutomaton
 import BasicAutomata
@@ -30,14 +32,30 @@ import qualified Alphabet as Alp
 writeTmpMonaFile :: FilePath -> String -> String -> IO WS2STreeAut
 writeTmpMonaFile dir name str = do
    res <- withTempFile dir name (monaActionAut str)
-   return $ removeUnreachable $ monaGTAToTA $ parseString res
+   return $ removeUnreachable $ monaGTAToTA $ MAP.parseString res
 
 
 -- |Get Mona tree automaton corresponding to a given formula with a given
 -- free variables.
 getAutFormulaMona :: [Lo.Var] -> Lo.Formula -> IO WS2STreeAut
 getAutFormulaMona vars fle = writeTmpMonaFile "" "tmp-mona-34F53DSW4.mona" monafle where
-  monafle = "ws2s;\nvar2 " ++ (intercalate "," vars) ++ ";\n" ++ Lo.showFormulaMona fle ++ ";"
+  monafle = "ws2s;\n" ++ decl ++ Lo.showFormulaMona fle ++ ";"
+  decl = "var1 " ++ (intercalate "," var1) ++ ";\nvar2 " ++ (intercalate "," var2) ++ ";\n"
+  (var1, var2) = getVariableDeclaration vars fle
+
+
+getVariableDeclaration :: [Lo.Var] -> Lo.Formula -> ([Lo.Var], [Lo.Var])
+getVariableDeclaration vars (Lo.FormulaAtomic (Lo.MonaAt atom _)) = getMonaAtomVars atom vars
+
+
+getMonaAtomVars :: MonaAtom -> [Lo.Var] -> ([Lo.Var], [Lo.Var])
+getMonaAtomVars (MonaAtomLe a1 a2) vars = (vars, [])
+getMonaAtomVars (MonaAtomLeq a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) vars
+getMonaAtomVars (MonaAtomGeq a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) vars
+getMonaAtomVars (MonaAtomGe a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) vars
+getMonaAtomVars (MonaAtomIn a1 a2) vars = (fv, vars \\ fv) where
+  fv = freeVarsTerm a1
+getMonaAtomVars t vars = ([], vars)
 
 
 -- |Get Mona tree automata for a list of tuples (identifier, formula) ->
@@ -52,6 +70,7 @@ getMonaAutomata lst = sequence $ zipWith (conn) lst $ map (conv) lst where
 -- then run Mona on this tmp file.
 monaActionAut :: String -> FilePath -> Handle -> IO String
 monaActionAut str filename handle = do
+  putStrLn str
   hPutStr handle str
   hFlush handle
   hClose handle

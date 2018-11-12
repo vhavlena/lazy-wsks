@@ -7,6 +7,7 @@ License     : GPL-3
 
 module Logic where
 
+import MonaParser
 import Data.List
 import Data.Monoid
 import Control.Monad.Writer
@@ -28,7 +29,8 @@ data Atom =
    | Eps Var
    | Neq Var Var
    | Eqn Var Var
-   | MonaAtom String [Var]
+   | MonaAt MonaAtom [Var]
+   | AtTrue
 
 
 -- formula type
@@ -66,7 +68,8 @@ showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
-showAtom (MonaAtom iden var) = "MA: {" ++ iden ++ "}"
+showAtom (MonaAt atom var) = "MA: {" ++ show atom ++ "}"
+showAtom AtTrue = "true"
 
 
 -- |Show formula in Mona format.
@@ -86,7 +89,10 @@ showAtomMona (Eqn v1 v2) = v1 ++ " = " ++ v2
 showAtomMona (Neq v1 v2) = v1 ++ " ~= " ++ v2
 showAtomMona (Cat1 v1 v2) = v1 ++ " = " ++ v2 ++ ".0"
 showAtomMona (Cat2 v1 v2) = v1 ++ " = " ++ v2 ++ ".1"
-showAtomMona _ = error "Not implemented"
+showAtomMona AtTrue = "true"
+showAtomMona (MonaAt atom vars) =  show atom 
+showAtomMona (Sing v) = "sing " ++ show v
+--showAtomMona a_= error "Not implemented"
 
 
 -- instantiance of the data type as class Show
@@ -142,9 +148,9 @@ removeMonaFormulas (ForAll var f) = removeMonaFormulas f >>=
   \x -> return $ ForAll var x
 
 
-removeMonaStop :: Formula -> Writer [(String, Formula)] Formula
-removeMonaStop fle = writer (FormulaAtomic $ MonaAtom iden (freeVars fle), [(iden, fle)]) where
-  iden = showFormulaMona fle
+--removeMonaStop :: Formula -> Writer [(String, Formula)] Formula
+--removeMonaStop fle = writer (FormulaAtomic $ MonaAt iden (freeVars fle), [(iden, fle)]) where
+--  iden = showFormulaMona fle
 
 
 -- |Replace certain atoms with a special atom denoting that this part is
@@ -152,10 +158,12 @@ removeMonaStop fle = writer (FormulaAtomic $ MonaAtom iden (freeVars fle), [(ide
 removeMonaAtom :: Atom -> Writer [(String, Formula)] Atom
 --removeMonaAtom t@(Subseteq v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
 --  iden = v1++"sub"++v2
-removeMonaAtom t@(Cat1 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
-  iden = v1++"cat1"++v2
-removeMonaAtom t@(Cat2 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
-  iden = v1++"cat2"++v2
+-- removeMonaAtom t@(Cat1 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+--   iden = v1++"cat1"++v2
+-- removeMonaAtom t@(Cat2 v1 v2) = writer (MonaAtom iden [v1,v2], [(iden, FormulaAtomic t)]) where
+--  iden = v1++"cat2"++v2
+removeMonaAtom t@(MonaAt atom vars) = writer (t, [(iden, FormulaAtomic t)]) where
+  iden = show atom
 removeMonaAtom t = return t
 
 
@@ -188,4 +196,5 @@ freeVarsAtom (Eps x) = [x]
 freeVarsAtom (Neq x y) = [x,y]
 freeVarsAtom (Eqn x y) = [x,y]
 freeVarsAtom (In x y) = [x,y]
-freeVarsAtom (MonaAtom _ vars) = vars
+freeVarsAtom (MonaAt _ vars) = vars
+freeVarsAtom AtTrue = []

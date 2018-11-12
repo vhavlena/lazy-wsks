@@ -26,7 +26,7 @@ import qualified MonaSocket as MS
 
 -- |Use Mona for translating formulas (so far only support for atoms)
 -- to tree automata.
-useMona = False
+useMona = True
 
 -- |Program arguments.
 data ProgArgs =
@@ -89,6 +89,7 @@ main = do
        let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
            (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ MoWr.getBaseFormula prenexFile in
            do
+             putStrLn $ show monareq
              auts <- MS.getMonaAutomata monareq
              showValidMonaLazy auts hf
      Error -> do

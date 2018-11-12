@@ -19,7 +19,7 @@ import Text.Parsec.Prim
 import Text.Parsec.String
 import Text.Parsec.Token
 
-import Logic
+--import Logic
 
 
 parseFile :: FilePath -> IO MonaFile
@@ -97,7 +97,7 @@ def = emptyDef{ commentStart = "/*"
                 , "restrict"
                 , "empty"
                 , "prefix"
-                --, "root"
+                , "root"
                 , "variant"
                 , "type"
                 , "in_state_space"
@@ -145,10 +145,12 @@ data MonaTerm
   | MonaTermCat MonaTerm MonaTerm
   | MonaTermUp MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
+  | MonaTermRoot
   deriving (Eq)
 
 instance Show MonaTerm where
   show (MonaTermVar str) = str
+  show (MonaTermRoot) = "root"
   show (MonaTermConst n) = show n
   show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (pars $ show t2)
   show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (show t2)
@@ -177,6 +179,7 @@ termP :: Parser MonaTerm
 termP = m_parens termParser
     <|> fmap MonaTermVar m_identifier
     <|> fmap MonaTermConst m_natural
+    <|>  (m_reserved "root" >> return MonaTermRoot)
 
 
 -- sanitizes terms
@@ -351,8 +354,8 @@ formulaTerm = m_parens formulaParser
                  ; return (MonaFormulaAll2 varWhereList phi)
                  }
           <|> try (do { predname <- m_identifier
-                      ; args <- m_parens $ m_commaSep m_identifier
-                      ; return (MonaFormulaPredCall predname $ map MonaTermVar args)
+                      ; args <- m_parens $ m_commaSep termP
+                      ; return (MonaFormulaPredCall predname $ args)
                       })
           <|> fmap MonaFormulaVar m_identifier
   where

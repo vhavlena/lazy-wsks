@@ -32,7 +32,9 @@ convertAtom (MonaAtomIn (MonaTermVar v1) (MonaTermVar v2)) = Lo.Subseteq v1 v2
 convertAtom (MonaAtomSub (MonaTermVar v1) (MonaTermVar v2)) = Lo.Subseteq v1 v2
 convertAtom (MonaAtomSing (MonaTermVar v)) = Lo.Sing v
 convertAtom (MonaAtomEps (MonaTermVar v)) = Lo.Eps v
-convertAtom a = error $ "convertAtom: Unsupported behaviour: " ++ (show a)
+convertAtom MonaAtomTrue = Lo.AtTrue
+convertAtom atom = Lo.MonaAt atom (freeVarsAtom atom)
+--convertAtom a = error $ "convertAtom: Unsupported behaviour: " ++ (show a)
 
 
 convertBaseMonaToFormula :: MonaFormula -> Lo.Formula
