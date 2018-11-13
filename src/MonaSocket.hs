@@ -46,10 +46,14 @@ getAutFormulaMona vars fle = writeTmpMonaFile "" "tmp-mona-34F53DSW4.mona" monaf
   ccat i lst = "var" ++ show i ++ " " ++ (intercalate "," lst) ++ ";\n"
 
 
+-- |Get first and second-order variables from Logic formula. Return
+-- value: (list of first-order variables, list of second-order variables).
 getVariableDeclaration :: [Lo.Var] -> Lo.Formula -> ([Lo.Var], [Lo.Var])
 getVariableDeclaration vars (Lo.FormulaAtomic (Lo.MonaAt atom _)) = getMonaAtomVars atom vars
 
 
+-- |Get first-order variables and second-order variables from Mona atom. Return
+-- value: (list of first-order variables, list of second-order variables).
 getMonaAtomVars :: MonaAtom -> [Lo.Var] -> ([Lo.Var], [Lo.Var])
 getMonaAtomVars (MonaAtomLe a1 a2) vars = (vars, [])
 getMonaAtomVars (MonaAtomLeq a1 a2) vars = getMonaAtomVars (MonaAtomLe a1 a2) vars
@@ -64,6 +68,8 @@ getMonaAtomVars (MonaAtomEq a1 a2) vars
 getMonaAtomVars t vars = ([], vars)
 
 
+-- |Determine whether the term is first-order term (returns 1) or second
+-- order (returns 2).
 getTypeTerm :: MonaTerm -> Int
 getTypeTerm MonaTermRoot = 1
 getTypeTerm (MonaTermPlus t1 t2) = min (getTypeTerm t1) (getTypeTerm t2)
@@ -83,7 +89,6 @@ getMonaAutomata lst = sequence $ zipWith (conn) lst $ map (conv) lst where
 -- then run Mona on this tmp file.
 monaActionAut :: String -> FilePath -> Handle -> IO String
 monaActionAut str filename handle = do
-  putStrLn str
   hPutStr handle str
   hFlush handle
   hClose handle
