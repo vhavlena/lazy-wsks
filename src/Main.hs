@@ -92,8 +92,8 @@ main = do
              putStrLn $ show monareq
              auts <- MS.getMonaAutomata monareq
              showValidMonaLazy auts hf
+             stop <- getCurrentTime
+             putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Error -> do
        prname <- getProgName
        putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
-   stop <- getCurrentTime
-   putStrLn $ "Time: " ++ show (diffUTCTime stop start)
