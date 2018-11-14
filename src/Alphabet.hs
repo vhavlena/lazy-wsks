@@ -87,5 +87,6 @@ cylindrifySymbols :: [Variable] -> Set.Set Symbol -> Set.Set Symbol
 cylindrifySymbols vars sym = Set.map (cylindrifySymbol vars) sym
 
 
+-- |Project the zero symbol (consisting of all zeros).
 projZeroSymbol :: [Variable] -> Set.Set Symbol
 projZeroSymbol (var:vars) = projSymbolVars (Set.fromList [zeroSymbol vars]) [var]

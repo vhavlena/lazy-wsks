@@ -116,6 +116,7 @@ unionTSets = TSet . unionTerms
 -- Part with the functions concerning compound states
 --------------------------------------------------------------------------------------------------------------
 
+-- |Flatten a list of set of states to one set of state.
 flattenStates :: [Term] -> Term
 flattenStates terms = foldr1 (fun) terms where
     fun (TStates aut1 var1 st1) (TStates aut2 var2 st2)
@@ -124,11 +125,13 @@ flattenStates terms = foldr1 (fun) terms where
     fun _ _ = error "flattenStates: incompatible states"
 
 
+-- |Union list of compound states into one compound state.
 unionComStates :: [WS2SComState] -> [WS2SComState] -> Set.Set WS2SComState
 unionComStates [CTA.SetSt st1] [CTA.SetSt st2] = Set.singleton $ CTA.SetSt $ Set.union st1 st2
 unionComStates t1 t2 = Set.union (Set.fromList t1) (Set.fromList t2)
 
 
+-- |Flatten list of terms.
 flattenList :: [Term] -> Maybe [Term]
 flattenList lst =
   if null fil then Nothing
@@ -138,6 +141,7 @@ flattenList lst =
     fun _ = False
 
 
+-- |Remove redundant set of terms after term flattening.
 removeSet :: Term -> Term
 removeSet (TSet set) =
   case flattenList lst of
@@ -152,10 +156,13 @@ removeSet (TProj v1 t1) = TProj v1 (removeSet t1)
 removeSet t = t
 
 
+-- |Is the first singleton list of states subset of the second one.
+isSubsetStates :: [WS2SComState] -> [WS2SComState] -> Maybe Bool
 isSubsetStates [CTA.SetSt st1] [CTA.SetSt st2] = Just $ Set.isSubsetOf st1 st2
 isSubsetStates _ _ = Nothing
 
 
+-- |Is the first singleton set of states subset of the second one.
 subsetSetStates :: Set.Set WS2SComState -> Set.Set WS2SComState -> Bool
 subsetSetStates s1 s2 =
   case isSubsetStates lst1 lst2 of
@@ -187,10 +194,12 @@ atom2Terms autdict (Lo.MonaAt at vars) = case (Map.lookup (show at) autdict) of
   Nothing -> error "Internal error: cannot find corresponding mona automaton"
 
 
+-- |Construct term atom according to a TA and variables.
 constructTermAtom :: WS2STreeAut -> [Alp.Variable] -> Term
 constructTermAtom aut vars = TStates (CTA.Base aut vars) vars (Set.singleton $ CTA.SetSt (TA.leaves aut))
 
 
+-- |Join set terms into one union term.
 joinSetTerm :: Term -> Term
 joinSetTerm (TSet s) = TSet $ Set.map (joinSetTerm) s
 joinSetTerm (TUnion t1 t2) = joinStatesTerm $ TUnion (joinSetTerm t1) (joinSetTerm t2)
@@ -201,6 +210,8 @@ joinSetTerm (TMinusClosure t sym) = TMinusClosure (joinSetTerm t) sym
 joinSetTerm t = t
 
 
+-- |Join terms representing set of states connected with conj or disj into one
+-- set of compbound states.
 joinStatesTerm :: Term -> Term
 joinStatesTerm (TIntersect (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
     TStates (CTA.ConjTA aut1 aut2) (List.nub $ vars1 ++ vars2) (expand (CTA.ConjSt) st1 st2)
@@ -209,11 +220,13 @@ joinStatesTerm (TUnion (TStates aut1 vars1 st1) (TStates aut2 vars2 st2)) =
 joinStatesTerm t = t
 
 
+-- |Map over unwinded set of states.
 expand :: (WS2SComState -> WS2SComState -> WS2SComState) -> Set.Set WS2SComState
   -> Set.Set WS2SComState -> Set.Set WS2SComState
 expand f s1 s2 = Set.fromList $ [f a b | a <- unwindFromSet $ Set.toList s1, b <- unwindFromSet $ Set.toList s2]
 
 
+-- |Unwind set of states (CTA.SetSt) into set of CTA.State.
 unwindFromSet :: [WS2SComState] -> [WS2SComState]
 unwindFromSet [CTA.SetSt st] = map (CTA.State) (Set.toList st)
 unwindFromSet t = t
