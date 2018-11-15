@@ -15,12 +15,13 @@ def main():
 
     num = int(sys.argv[1])
 
-    sys.stdout.write("ws2s;\n\nex2 X: all2 ")
+    sys.stdout.write("ws2s;\n\nall2 ")
     for i in range(num):
         delim = ","
         if i == num-1:
             delim = ":"
         sys.stdout.write("X{0}{1} ".format(i, delim))
+    sys.stdout.write("ex2 X: ")
 
     for i in range(num-1):
         delim = "&"
