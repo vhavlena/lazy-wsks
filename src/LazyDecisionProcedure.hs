@@ -144,6 +144,9 @@ removeRedundantTerms (TMinusClosure t sset) = TMinusClosure (removeRedundantTerm
 removeRedundantTerms t = t
 
 
+-- |Removed subsumed items from a list. Note that the subsumption is preorder and
+-- hence there can be cyclic dependency (a < b and b < a). In this case it is NOT
+-- possible to remove both a and b.
 removeSubSet :: [Term] -> [Term] -> [Term]
 removeSubSet [] _ = []
 removeSubSet (a:lst) pat =

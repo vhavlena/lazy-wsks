@@ -37,6 +37,7 @@ convertAtom atom = Lo.MonaAt atom (freeVarsAtom atom)
 --convertAtom a = error $ "convertAtom: Unsupported behaviour: " ++ (show a)
 
 
+-- |Convert Formula in Mona internal type to simplified logic internal type.
 convertBaseMonaToFormula :: MonaFormula -> Lo.Formula
 convertBaseMonaToFormula (MonaFormulaAtomic atom) = Lo.FormulaAtomic $ convertAtom atom
 convertBaseMonaToFormula (MonaFormulaDisj f1 f2) = Lo.Disj (convertBaseMonaToFormula f1) (convertBaseMonaToFormula f2)
@@ -48,6 +49,7 @@ convertBaseMonaToFormula (MonaFormulaEx2 [p] f) = Lo.Exists (fst p) (convertBase
 convertBaseMonaToFormula f = error $ "convertBaseMonaToFormula: Unsupported behaviour: " ++ (show f)
 
 
+-- |Convert MonaFile to siplified logic formula.
 getBaseFormula :: MonaFile -> Lo.Formula
 getBaseFormula (MonaFile dom decls) = convertBaseMonaToFormula fle where
   (MonaDeclFormula fle) = head $ filter (flt) decls
@@ -55,7 +57,7 @@ getBaseFormula (MonaFile dom decls) = convertBaseMonaToFormula fle where
   flt _ = False
 
 
-
+-- |Only for debugging purposes.
 flatTest file = do
   mona <- parseFile file
   putStrLn $ show mona

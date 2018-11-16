@@ -55,6 +55,7 @@ unwindFixpoints (TSet tset) = TSet $ Set.fromList [unwindFixpoints t | t <- Set.
 unwindFixpoints t = error ("unwindFixpoints: Unwind is not defined for pair and minus terms" ++ (show t))
 
 
+-- |Is first term subsumed by the second one?
 isSubsumedStrict :: Term -> Term -> Bool
 isSubsumedStrict (TUnion t1 t2) (TUnion t3 t4) = (isSubsumedStrict t1 t3) && (isSubsumedStrict t2 t4)
 isSubsumedStrict (TIntersect t1 t2) (TIntersect t3 t4) = (isSubsumedStrict t1 t3) && (isSubsumedStrict t2 t4)

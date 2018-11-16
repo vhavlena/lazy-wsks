@@ -137,6 +137,7 @@ moveNegToLeaves f@(FormulaAtomic _) = f
 -- Part with conjunction and disjunction balancing
 --------------------------------------------------------------------------------------------------------------
 
+-- |Balance conjunctions and disjunctions in formula.
 balanceFormula :: Formula -> Formula
 balanceFormula f@(Conj _ _) = rebuildFormula (Conj) $ map (balanceFormula) (getConjList f)
 balanceFormula f@(Disj _ _) = rebuildFormula (Disj) $ map (balanceFormula) (getDisjList f)
@@ -146,6 +147,8 @@ balanceFormula (Exists var f) = Exists var (balanceFormula f)
 balanceFormula f@(FormulaAtomic _) = f
 
 
+-- |Rebuild formula from a list of subformulae using given formula constructor.
+-- Builds a balanced tree from the leaves in the list.
 rebuildFormula :: (Formula -> Formula -> Formula) -> [Formula] -> Formula
 rebuildFormula _ [f] = f
 rebuildFormula con xs = con (rebuildFormula con h) (rebuildFormula con t) where
@@ -154,10 +157,13 @@ rebuildFormula con xs = con (rebuildFormula con h) (rebuildFormula con t) where
   t = drop m xs
 
 
+-- |Get all conjunctions that are on the top of a given formula.
 getConjList :: Formula -> [Formula]
 getConjList (Conj f1 f2) = (getConjList f1) ++ (getConjList f2)
 getConjList v = [v]
 
+
+-- |Get all disjunctions that are on the top of a given formula.
 getDisjList :: Formula -> [Formula]
 getDisjList (Disj f1 f2) = (getDisjList f1) ++ (getDisjList f2)
 getDisjList v = [v]
@@ -168,6 +174,7 @@ getDisjList v = [v]
 -- first-, second-order logic equivalences)
 --------------------------------------------------------------------------------------------------------------
 
+-- |Recursively replace formula for equivalent formulas.
 replaceSubformulas :: Formula -> Formula
 replaceSubformulas (Disj f1 f2) = Disj (replaceSubformulas f1) (replaceSubformulas f2)
 replaceSubformulas (Conj f1 f2) =  Conj (replaceSubformulas f1) (replaceSubformulas f2)
@@ -177,6 +184,7 @@ replaceSubformulas (Exists var f) = Exists var (replaceSubformulas f)
 replaceSubformulas f@(FormulaAtomic _) = f
 
 
+-- |Replace a given formula for an equivalent formula.
 replaceSubformula :: Formula -> Formula
 --replaceSubformula (Conj (FormulaAtomic (Subseteq v1 v2)) (FormulaAtomic (Neq v3 v4)))
 --  | (v1 == v3) && (v2 == v4) = FormulaAtomic (Subset v1 v2)

@@ -26,7 +26,7 @@ import qualified MonaSocket as MS
 
 -- |Use Mona for translating formulas (so far only support for atoms)
 -- to tree automata.
-useMona = True
+useMona = False
 
 -- |Program arguments.
 data ProgArgs =
