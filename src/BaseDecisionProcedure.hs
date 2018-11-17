@@ -7,6 +7,8 @@ License     : GPL-3
 
 module BaseDecisionProcedure where
 
+import Data.MemoCombinators
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -33,7 +35,7 @@ data Term =
    | TIntersect Term Term
    | TCompl Term
    | TProj Alp.Variable Term
-   | TMinusClosure Term (Set.Set Alp.Symbol)
+   | TMinusClosure Term Term (Set.Set Alp.Symbol)
    | TIncrSet Term Term
    | TPair Term Term
    | TSet (Set.Set Term)
@@ -54,7 +56,7 @@ instance Show Term where
 showTerm :: Term -> String
 showTerm (TSet set) = "{" ++ show set ++ "}"
 showTerm (TPair t1 t2) = "\n(\n\t" ++ showTerm t1 ++ "\n\t,\n\t" ++ showTerm t2 ++ "\n)\n"
-showTerm (TMinusClosure t sym) = "(" ++ showTerm t ++ ") - {" ++ show sym ++ "}*"
+showTerm (TMinusClosure t _ sym) = "(" ++ showTerm t ++ ") - {" ++ show sym ++ "}*"
 showTerm (TProj var t) = "Proj_"++ show var ++ "( " ++ showTerm t ++ " )"
 showTerm (TCompl t) = "¬(" ++ showTerm t ++ ")"
 showTerm (TUnion t1 t2) = "(" ++ showTerm t1 ++ ") ∨ (" ++ showTerm t2 ++ ")"
@@ -66,7 +68,7 @@ showTerm (TStates _ _ st) = show st
 showTermDbg :: Int -> Term -> String
 showTermDbg ind (TSet set) = "\n" ++ (replicate ind ' ') ++ "{" ++ unwords (map (\a -> "\n" ++ (replicate (ind+2) ' ') ++ (showTermDbg (ind+2) a) ++ ",") (Set.toList set)) ++ "\n" ++ (replicate ind ' ') ++ "}"
 showTermDbg ind (TPair t1 t2) = "\n" ++ (replicate ind ' ') ++ "(\n" ++ showTermDbg (ind+2) t1 ++ "\n\t,\n\t" ++ showTermDbg (ind+2) t2 ++ "\n)\n"
-showTermDbg ind (TMinusClosure t sym) = "(" ++ showTermDbg ind t ++ (replicate ind ' ') ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
+showTermDbg ind (TMinusClosure t _ sym) = "(" ++ showTermDbg ind t ++ (replicate ind ' ') ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
 showTermDbg ind (TProj var t) = "Proj_"++ show var ++ "( " ++ showTermDbg ind t ++ " )"
 showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
 showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
@@ -81,6 +83,7 @@ showTermDbg ind (TTrue) = (replicate ind ' ') ++ "True"
 
 -- |Term minus symbol -- defined only for the term-pairs.
 minusSymbol :: Term -> Term -> Alp.Symbol -> Term
+
 minusSymbol t1 (TSet t2) sym
    | t2 == Set.empty = sinkTerm
 minusSymbol (TSet t1) t2 sym
@@ -110,6 +113,9 @@ unionTerms (t:xs) = Set.union (Set.singleton t) (unionTerms xs)
 -- [TSet a, TSet b, ..] and gives TSet (a union b union ...).
 unionTSets :: [Term] -> Term
 unionTSets = TSet . unionTerms
+
+differenceTSets :: Term -> Term -> Term
+differenceTSets (TSet t1) (TSet t2) = TSet $ t1 Set.\\ t2
 
 
 --------------------------------------------------------------------------------------------------------------
@@ -206,7 +212,7 @@ joinSetTerm (TUnion t1 t2) = joinStatesTerm $ TUnion (joinSetTerm t1) (joinSetTe
 joinSetTerm (TIntersect t1 t2) = joinStatesTerm $ TIntersect (joinSetTerm t1) (joinSetTerm t2)
 joinSetTerm (TCompl t1) = TCompl $ joinSetTerm t1
 joinSetTerm (TProj var t) = TProj var (joinSetTerm t)
-joinSetTerm (TMinusClosure t sym) = TMinusClosure (joinSetTerm t) sym
+joinSetTerm (TMinusClosure t inc sym) = TMinusClosure (joinSetTerm t) (joinSetTerm inc) sym
 joinSetTerm t = t
 
 
@@ -240,5 +246,5 @@ formula2TermsVars autdict (Lo.Disj f1 f2) vars = TUnion (formula2TermsVars autdi
 formula2TermsVars autdict (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVars autdict f1 vars) (formula2TermsVars autdict f2 vars)
 formula2TermsVars autdict (Lo.Neg f) vars = TCompl (formula2TermsVars autdict f vars)
 formula2TermsVars autdict (Lo.Exists var f) vars =
-   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars autdict f (var:vars)])) (Alp.projZeroSymbol (var:vars)))
+   TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars autdict f (var:vars)])) sinkTerm (Alp.projZeroSymbol (var:vars)))
 formula2TermsVars _ (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"

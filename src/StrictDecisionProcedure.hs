@@ -46,7 +46,7 @@ fixpointComp term@(TSet tset) sset =
 -- |Unwind fixpoints into sets of terms (corresponding to applying all fixpoints).
 unwindFixpoints :: Term -> Term
 unwindFixpoints t@(TStates _ _ _) = t
-unwindFixpoints (TMinusClosure t sset) = fixpointComp (unwindFixpoints t) sset
+unwindFixpoints (TMinusClosure t _ sset) = fixpointComp (unwindFixpoints t) sset
 unwindFixpoints (TUnion t1 t2) = TUnion (unwindFixpoints t1) (unwindFixpoints t2)
 unwindFixpoints (TIntersect t1 t2) = TIntersect (unwindFixpoints t1) (unwindFixpoints t2)
 unwindFixpoints (TCompl t) = TCompl (unwindFixpoints t)

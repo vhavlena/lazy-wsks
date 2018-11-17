@@ -89,7 +89,6 @@ main = do
        let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
            (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ MoWr.getBaseFormula prenexFile in
            do
-             putStrLn $ show monareq
              auts <- MS.getMonaAutomata monareq
              showValidMonaLazy auts hf
              stop <- getCurrentTime
