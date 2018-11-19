@@ -35,6 +35,7 @@ type Cache = Map.Map (Term, Term, Alp.Symbol) Term
 -- |Lazy testing of bottom membership in the language of a given term.
 botInLazy :: Term -> Cache -> Bool
 botInLazy (TTrue) _ = True
+botInLazy (TFalse) _ = False
 botInLazy (TUnion t1 t2) m = (botInLazy t1 m) || (botInLazy t2 m)
 botInLazy (TIntersect t1 t2) m = (botInLazy t1 m) && (botInLazy t2 m)
 botInLazy (TCompl t) m = not $ botInLazy t m
@@ -49,6 +50,7 @@ botInLazy term@(TMinusClosure t _ sset) m = (botInSub t True) || (if isExpandedL
 botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
 
 
+-- |Bottom membership in the language of a given term.
 botInSub :: Term -> Bool -> Bool
 botInSub (TTrue) _ = True
 botInSub (TUnion t1 t2) l = (botInSub t1 l) || (botInSub t2 l)
@@ -61,7 +63,7 @@ botInSub (TSet tset) l =
 botInSub (TProj _ t) l = botInSub t l
 botInSub (TStates aut _ st) l = CTA.containsRoot aut st
 botInSub term@(TMinusClosure t _ sset) l = if l then (botInSub t l) else (not l)
-botInSub _ _ = error "botInLazy: Bottom membership is not defined"
+botInSub _ _ = error "botInSub: Bottom membership is not defined"
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with a checking whether term is expanded (plus removing fixpoints from terms).
@@ -93,11 +95,6 @@ isExpandedLight (TIncrSet t _) = isExpandedLight t
 isExpandedLight t = True
 
 
--- |Test whether a given term is fully expanded. Uses incremental terms.
---isExpandedIncr :: Term -> Bool
---isExpandedIncr t = isSubsumedLazy (removeFixpoints $ step t) (removeFixpoints t)
-
-
 --------------------------------------------------------------------------------------------------------------
 -- Part with a fixpoint step functions
 --------------------------------------------------------------------------------------------------------------
@@ -116,18 +113,11 @@ step (TMinusClosure t inc sset) =
     incr = removeRedundantTerms $ ret
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
-step (TUnion t1 t2) = TUnion r1 r2 where
-  r1 = (step t1)
-  r2 = (step t2)
-step (TIntersect t1 t2) = TIntersect r1 r2 where
-  r1 = (step t1)
-  r2 = (step t2)
-step (TCompl t) = TCompl r1 where
-  r1 = step t
-step (TProj a t) = TProj a r1 where
-  r1 = step t
-step (TSet tset)= TSet $ Set.fromList r1 where
-  r1 = [step t | t <- Set.toList tset]
+step (TUnion t1 t2) = TUnion (step t1) (step t2)
+step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
+step (TCompl t) = TCompl $ step t
+step (TProj a t) = TProj a (step t)
+step (TSet tset)= TSet $ Set.fromList [step t | t <- Set.toList tset]
 step (TTrue) = TTrue
 
 
@@ -164,10 +154,10 @@ ominusSymbolsLazy (TSet tset) (TSet inc) sset = TSet $ Set.fromList om where
   tset' = tset
   iter = Set.union (Set.cartesianProduct tset inc) (Set.cartesianProduct inc tset)
   om = [minusSymbol t1 t2 s | s <- Set.toList sset, (t1, t2) <- Set.toList iter]
---ominusSymbolsLazy (TMinusClosure t _ _) sset mp = ominusSymbolsLazy t sset mp
 ominusSymbolsLazy t _ _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
 
 
+-- |Minus symbol with memoizing.
 minusSymbol' mp t1 t2 s = case Map.lookup (t1, t2, s) mp of
   Nothing -> (t,[((t1,t2,s),t)]) where
     t = minusSymbol t1 t2 s

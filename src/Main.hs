@@ -87,7 +87,7 @@ main = do
      (Validity file) -> do
        mona <- MoPa.parseFile file
        let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
-           (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ MoWr.getBaseFormula prenexFile in
+           (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
            do
              auts <- MS.getMonaAutomata monareq
              showValidMonaLazy auts hf

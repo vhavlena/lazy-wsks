@@ -7,8 +7,6 @@ License     : GPL-3
 
 module BaseDecisionProcedure where
 
-import Data.MemoCombinators
-
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -40,6 +38,7 @@ data Term =
    | TPair Term Term
    | TSet (Set.Set Term)
    | TTrue
+   | TFalse
    deriving (Eq, Ord)
 
 sinkTerm = TSet $ Set.empty
@@ -195,6 +194,7 @@ atom2Terms _ (Lo.In v1 v2) = constructTermAtom (inAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Subset v1 v2) = constructTermAtom (subsetAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Neq v1 v2) = TCompl $ constructTermAtom (eqAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.AtTrue) = TTrue
+atom2Terms _ (Lo.AtFalse) = TFalse
 atom2Terms autdict (Lo.MonaAt at vars) = case (Map.lookup (show at) autdict) of
   Just aut -> TStates (CTA.Base aut vars) vars (Set.singleton $ CTA.SetSt (TA.leaves aut))
   Nothing -> error "Internal error: cannot find corresponding mona automaton"

@@ -31,6 +31,7 @@ data Atom =
    | Eqn Var Var
    | MonaAt MonaAtom [Var]
    | AtTrue
+   | AtFalse
 
 
 -- formula type
@@ -70,6 +71,7 @@ showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
 showAtom (MonaAt atom var) = "MA: {" ++ show atom ++ "}"
 showAtom AtTrue = "true"
+showAtom AtFalse = "false"
 
 
 -- |Show formula in Mona format.
@@ -90,7 +92,7 @@ showAtomMona (Neq v1 v2) = v1 ++ " ~= " ++ v2
 showAtomMona (Cat1 v1 v2) = v1 ++ " = " ++ v2 ++ ".0"
 showAtomMona (Cat2 v1 v2) = v1 ++ " = " ++ v2 ++ ".1"
 showAtomMona AtTrue = "true"
-showAtomMona (MonaAt atom vars) =  show atom 
+showAtomMona (MonaAt atom vars) =  show atom
 showAtomMona (Sing v) = "sing " ++ show v
 --showAtomMona a_= error "Not implemented"
 
@@ -175,6 +177,33 @@ convertMonaSub useMona = preproc where
   preproc = if useMona then removeMonaFormulas else return
 
 
+-- |Simplify formulas containing true, false (tmp function).
+simplifyTrueFalseRule :: Formula -> Formula
+simplifyTrueFalseRule (Disj (FormulaAtomic AtTrue) fl) = FormulaAtomic AtTrue
+simplifyTrueFalseRule (Disj fl (FormulaAtomic AtTrue)) = FormulaAtomic AtTrue
+simplifyTrueFalseRule (Conj (FormulaAtomic AtTrue) fl) = fl
+simplifyTrueFalseRule (Conj fl (FormulaAtomic AtTrue)) = fl
+simplifyTrueFalseRule (Exists _ (FormulaAtomic AtTrue)) = FormulaAtomic AtTrue
+simplifyTrueFalseRule (Neg (FormulaAtomic AtTrue)) = FormulaAtomic AtFalse
+simplifyTrueFalseRule (Disj (FormulaAtomic AtFalse) fl) = fl
+simplifyTrueFalseRule (Disj fl (FormulaAtomic AtFalse)) = fl
+simplifyTrueFalseRule (Conj (FormulaAtomic AtFalse) fl) = FormulaAtomic AtFalse
+simplifyTrueFalseRule (Conj fl (FormulaAtomic AtFalse)) = FormulaAtomic AtFalse
+simplifyTrueFalseRule (Exists _ (FormulaAtomic AtFalse)) = FormulaAtomic AtFalse
+simplifyTrueFalseRule (Neg (FormulaAtomic AtFalse)) = FormulaAtomic AtTrue
+simplifyTrueFalseRule f = f
+
+
+-- |Simplify formulas containing true, false.
+simplifyTrueFalse :: Formula -> Formula
+simplifyTrueFalse (FormulaAtomic at) = FormulaAtomic at
+simplifyTrueFalse (Conj f1 f2) = simplifyTrueFalseRule $ Conj (simplifyTrueFalse f1) (simplifyTrueFalse f2)
+simplifyTrueFalse (Disj f1 f2) = simplifyTrueFalseRule $ Disj (simplifyTrueFalse f1) (simplifyTrueFalse f2)
+simplifyTrueFalse (Neg f) = simplifyTrueFalseRule $ Neg $ simplifyTrueFalse f
+simplifyTrueFalse (Exists var f) = simplifyTrueFalseRule $ Exists var (simplifyTrueFalse f)
+simplifyTrueFalse (ForAll var f) = simplifyTrueFalseRule $ ForAll var (simplifyTrueFalse f)
+
+
 -- retrieves free variables of a formula
 freeVars :: Formula -> [Var]
 freeVars (FormulaAtomic phi) = freeVarsAtom phi
@@ -198,3 +227,4 @@ freeVarsAtom (Eqn x y) = [x,y]
 freeVarsAtom (In x y) = [x,y]
 freeVarsAtom (MonaAt _ vars) = vars
 freeVarsAtom AtTrue = []
+freeVarsAtom AtFalse = []
