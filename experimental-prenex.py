@@ -65,7 +65,7 @@ def main():
 def parse_lazy(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
-    valid = lines[VALIDLINE] == "True"
+    valid = lines[VALIDLINE] == "valid"
     match = re.search("Time: ([0-9]+.[0-9]+)s", lines[TIMELINE])
     time = round(float(match.group(1)), 2)
     return valid, time

@@ -41,7 +41,7 @@ def main():
         lines = program_output.split('\n')
         lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)
-        if (lines[VALIDLINE] == "True" and valid) or (lines[VALIDLINE] == "False" and not valid):
+        if (lines[VALIDLINE] == "valid" and valid) or (lines[VALIDLINE] == "unsatisfiable" and not valid):
             print("Correct: {0}; {1}".format(monafile, lines[TIMELINE]))
         else:
             print("Fail: {0}; {1}".format(monafile, lines[TIMELINE]))

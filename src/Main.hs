@@ -63,8 +63,8 @@ showValidMonaLazy aut f = do
 
 
 -- |Format validity answer
-formatAnswer :: (Show a, Show b) => Either a b -> String
-formatAnswer (Left x) = show x
+formatAnswer :: Either Bool String -> String
+formatAnswer (Left x) = if x then "valid" else "unsatisfiable"
 formatAnswer (Right y) = "Error: " ++ show y
 
 
