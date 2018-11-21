@@ -152,9 +152,9 @@ instance Show MonaTerm where
   show (MonaTermVar str) = str
   show (MonaTermRoot) = "root"
   show (MonaTermConst n) = show n
-  show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (pars $ show t2)
+  show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (show t2)
   show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (show t2)
-  show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (pars $ show t2)
+  show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (show t2)
   show (MonaTermUp t) = (pars $ show t) ++ "^"
 
 
@@ -264,11 +264,11 @@ instance Show MonaFormula where
 
 
 -- parses a binary atom
-binAtomParser :: String -> (MonaTerm -> MonaTerm -> MonaAtom) -> Parser MonaFormula
+binAtomParser :: String -> (MonaTerm -> MonaTerm -> MonaAtom) -> Parser MonaAtom
 binAtomParser op f = do { lhs <- termParser
                       ; m_reservedOp op
                       ; rhs <- termParser
-                      ; return (MonaFormulaAtomic $ f lhs rhs) ---((show lhs) ++ " " ++ op ++ " " ++ (show rhs)))
+                      ; return (f lhs rhs) ---((show lhs) ++ " " ++ op ++ " " ++ (show rhs)))
                       }
 
 
@@ -282,7 +282,7 @@ binAtomParser op f = do { lhs <- termParser
 
 
 -- parses atomic formulae
-atomicFormulaParser :: Parser MonaFormula
+atomicFormulaParser :: Parser MonaAtom
 atomicFormulaParser = try (binAtomParser "=" (MonaAtomEq))
                   <|> try (binAtomParser "~=" (MonaAtomNeq))
                   <|> try (binAtomParser "<" (MonaAtomLe))
@@ -316,7 +316,9 @@ formulaOpTable = [ [ Prefix (m_reservedOp "~"   >> return MonaFormulaNeg) ]
 
 formulaTerm :: Parser MonaFormula
 formulaTerm = m_parens formulaParser
-          <|> atomicFormulaParser
+          <|> do { atom <- atomicFormulaParser
+                 ; return $ MonaFormulaAtomic atom
+                 }
           <|> (m_reserved "true" >> return (MonaFormulaAtomic $ MonaAtomTrue))
           <|> (m_reserved "false" >> return (MonaFormulaAtomic $ MonaAtomFalse))
           <|> do { m_reserved "sing"
