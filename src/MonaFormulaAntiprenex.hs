@@ -45,9 +45,9 @@ type QuantifVarChain = QuantifChain (String, Maybe MonaFormula)
 -- formula f.
 flushQuantifChain :: [QuantifVarChain] -> MonaFormula -> MonaFormula
 flushQuantifChain [] f = f
-flushQuantifChain ((ForAll0Chain x):xs) f = MonaFormulaAll0 [fst x] (flushQuantifChain xs f)
-flushQuantifChain ((ForAll1Chain x):xs) f = MonaFormulaAll1 [x] (flushQuantifChain xs f)
-flushQuantifChain ((ForAll2Chain x):xs) f = MonaFormulaAll2 [x] (flushQuantifChain xs f)
+--flushQuantifChain ((ForAll0Chain x):xs) f = MonaFormulaAll0 [fst x] (flushQuantifChain xs f)
+--flushQuantifChain ((ForAll1Chain x):xs) f = MonaFormulaAll1 [x] (flushQuantifChain xs f)
+--flushQuantifChain ((ForAll2Chain x):xs) f = MonaFormulaAll2 [x] (flushQuantifChain xs f)
 flushQuantifChain ((Exists0Chain x):xs) f = MonaFormulaEx0 [fst x] (flushQuantifChain xs f)
 flushQuantifChain ((Exists1Chain x):xs) f = MonaFormulaEx1 [x] (flushQuantifChain xs f)
 flushQuantifChain ((Exists2Chain x):xs) f = MonaFormulaEx2 [x] (flushQuantifChain xs f)
@@ -79,7 +79,7 @@ propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeV
 antiprenexFreeVar :: MonaFormula -> [QuantifVarChain] -> MonaFormula
 antiprenexFreeVar (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar f [])
 antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
-antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = propagateTo (MonaFormulaDisj) f1 f2 chain
+antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar f1 chain) (antiprenexFreeVar f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
 antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
 antiprenexFreeVar (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar f ((Exists1Chain var):chain)
 antiprenexFreeVar (MonaFormulaEx2 [var] f) chain = antiprenexFreeVar f ((Exists2Chain var):chain)
@@ -91,8 +91,12 @@ antiprenexFreeVar atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
 antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
 
 
+antiprenexEmpty :: MonaFormula -> MonaFormula
+antiprenexEmpty f = antiprenexFreeVar f []
+
+
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula f = simplifyNegFormula $ moveNegToLeavesFormula $ antiprenexFreeVar (balanceFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ convertToBaseFormula f) []
+antiprenexFormula f = antiprenexEmpty $ simplifyNegFormula $ moveNegToLeavesFormula $ antiprenexEmpty $ balanceFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ convertToBaseFormula f
 
 
 antiprenexDecl :: MonaDeclaration -> MonaDeclaration
