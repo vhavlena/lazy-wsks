@@ -27,6 +27,8 @@ import qualified MonaSocket as MS
 -- |Use Mona for translating formulas (so far only support for atoms)
 -- to tree automata.
 useMona = False
+-- |Rename bound vars.
+renameBoundVars = False
 
 -- |Program arguments.
 data ProgArgs =
@@ -76,6 +78,11 @@ formulaOperationsDebug f = do
     putStrLn $ show $ FO.antiprenex $ FO.balanceFormula sf
 
 
+-- |Wrap for renaming bound variables in Mona file.
+renameBVFileWrap :: MoPa.MonaFile -> MoPa.MonaFile
+renameBVFileWrap = if renameBoundVars then renameBVFile else id
+
+
 -- |Main function
 main = do
    args <- getArgs
@@ -83,10 +90,10 @@ main = do
    case (parseArgs args) of
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
-       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
+       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
      (Validity file) -> do
        mona <- MoPa.parseFile file
-       let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
+       let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
            (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
            do
              auts <- MS.getMonaAutomata monareq

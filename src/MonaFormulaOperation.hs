@@ -44,6 +44,7 @@ unwindQuantifFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (unwindQuantifFor
 unwindQuantifFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (unwindQuantifFormula f1) (unwindQuantifFormula f2)
 unwindQuantifFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (unwindQuantifFormula f1) (unwindQuantifFormula f2)
 unwindQuantifFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (unwindQuantifFormula f1) (unwindQuantifFormula f2)
+unwindQuantifFormula (MonaFormulaPredCall s t) = MonaFormulaPredCall s t
 
 
 -- |Unwind quantifiers of a macro parameter, i.e, ex1 x,y --> ex1 x: ex1 y
@@ -148,6 +149,7 @@ filterMacro name _ = False
 -- arg1: MonaMacroParam (parameter of a predicate), MonaTerm (term that should
 -- replaced the macro parameter)
 substituteVars :: [(MonaMacroParam, MonaTerm)] -> MonaFormula -> MonaFormula
+substituteVars repl (MonaFormulaPredCall name terms) = MonaFormulaPredCall name $ map (substituteTerms repl) terms
 substituteVars repl (MonaFormulaAtomic atom) = MonaFormulaAtomic $ substituteAtoms repl atom
 substituteVars repl (MonaFormulaVar var) = MonaFormulaAtomic $  MonaAtomTerm $ substituteVar repl var
 substituteVars repl (MonaFormulaNeg f) = MonaFormulaNeg (substituteVars repl f)
@@ -171,7 +173,7 @@ substituteVars repl (MonaFormulaAll1 vardecl f) = MonaFormulaAll1 vardecl' (subs
 substituteVars repl (MonaFormulaAll2 vardecl f) = MonaFormulaAll2 vardecl' (substituteVars repl' f) where
   vardecl' = applyVarDecl (substituteVars repl') vardecl
   repl' = filterSubst vardecl repl
-substituteVars repl _ = error "Cyclic dependecy between predicates"
+--substituteVars repl _ = error "Cyclic dependecy between predicates"
 
 
 -- |Subtitute variable (given by its name) with a corresponding substitution term.
@@ -197,7 +199,8 @@ substituteAtoms repl (MonaAtomNotIn t1 t2) = MonaAtomNotIn (substituteTerms repl
 substituteAtoms repl (MonaAtomSub t1 t2) = MonaAtomSub (substituteTerms repl t1) (substituteTerms repl t2)
 substituteAtoms repl (MonaAtomSing t) = MonaAtomSing $ substituteTerms repl t
 substituteAtoms repl (MonaAtomEps t) = MonaAtomEps $ substituteTerms repl t
-substituteAtoms repl t = t
+substituteAtoms repl (MonaAtomTerm t) = MonaAtomTerm $ substituteTerms repl t
+--substituteAtoms repl t = t
 
 
 -- |Subtitute variables in terms with corresponding substitutions (terms).
@@ -300,7 +303,74 @@ removeForAllFile (MonaFile dom decls) = MonaFile dom (map (removeForAllDecl) dec
 
 
 --------------------------------------------------------------------------------------------------------------
--- Part with free variables determination.
+-- Part with renaming bound variables.
+--------------------------------------------------------------------------------------------------------------
+
+renameBVFile :: MonaFile -> MonaFile
+renameBVFile (MonaFile dom decls) = MonaFile dom (renameBVDecl [] decls [])
+
+
+renameBVDecl :: [MonaDeclaration] -> [MonaDeclaration] -> [Lo.Var] -> [MonaDeclaration]
+renameBVDecl _ [] _ = []
+renameBVDecl done (x:xs) vars = conv:(renameBVDecl (done ++ [conv]) xs (vars ++ v)) where
+    conv = case x of
+      MonaDeclPred name pars fle -> MonaDeclPred name pars (renameBVFormula vars fle)
+      MonaDeclFormula fle -> MonaDeclFormula $ renameBVFormula vars fle
+      MonaDeclVar1 vardecl -> MonaDeclVar1 $ renameBVForDecl vardecl vars
+      MonaDeclVar2 vardecl -> MonaDeclVar2 $ renameBVForDecl vardecl vars
+      a -> error $ "Unsupported formula: " ++ (show a)
+    v = varsDecl conv
+
+
+renameBVForDecl :: [(String, Maybe MonaFormula)] -> [Lo.Var] -> [(String, Maybe MonaFormula)]
+renameBVForDecl [] _ = []
+renameBVForDecl ((var,f):xs) vars =
+  if elem var vars then (new, f >>= \a -> Just $ substituteVars repl a):(renameBVForDecl xs (new:vars))
+  else  (var,f):(renameBVForDecl xs (var:vars)) where
+    new = getNewVarName (vars ++ vars') 0
+    repl = [(MonaMacroParamVar1 [(var, Nothing)], MonaTermVar new)]
+    vars' = case f of
+      Just a -> varsFormula a
+      Nothing -> []
+
+
+-- Works for formulae without forall
+renameBVFormula :: [Lo.Var] -> MonaFormula -> MonaFormula
+renameBVFormula vars t@(MonaFormulaPredCall name terms) = t
+renameBVFormula vars (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+renameBVFormula vars (MonaFormulaVar var) = MonaFormulaVar var
+renameBVFormula vars (MonaFormulaNeg f) = MonaFormulaNeg (renameBVFormula vars f)
+renameBVFormula vars (MonaFormulaDisj f1 f2) = MonaFormulaDisj (renameBVFormula vars f1) (renameBVFormula vars f2)
+renameBVFormula vars (MonaFormulaConj f1 f2) = MonaFormulaConj (renameBVFormula vars f1) (renameBVFormula vars f2)
+renameBVFormula vars (MonaFormulaImpl f1 f2) = MonaFormulaImpl (renameBVFormula vars f1) (renameBVFormula vars f2)
+renameBVFormula vars (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (renameBVFormula vars f1) (renameBVFormula vars f2)
+renameBVFormula vars (MonaFormulaEx0 [var] f) = handleQuantifRename vars var f var (MonaFormulaEx0) (fst)
+renameBVFormula vars (MonaFormulaEx1 [decl] f) = handleQuantifRename vars (fst decl) f decl (MonaFormulaEx1) (id)
+renameBVFormula vars (MonaFormulaEx2 [decl] f) = handleQuantifRename vars (fst decl) f decl (MonaFormulaEx2) (id)
+renameBVFormula vars (MonaFormulaAll0 [var] f) = handleQuantifRename vars var f var (MonaFormulaAll0) (fst)
+renameBVFormula vars (MonaFormulaAll1 [decl] f) = handleQuantifRename vars (fst decl) f decl (MonaFormulaAll1) (id)
+renameBVFormula vars (MonaFormulaAll2 [decl] f) = handleQuantifRename vars (fst decl) f decl (MonaFormulaAll2) (id)
+renameBVFormula vars t = error $ "renameBVFormula: " ++ show t
+
+
+handleQuantifRename :: [Lo.Var] -> Lo.Var -> MonaFormula -> a -> ([a] -> MonaFormula -> MonaFormula) -> ((String, Maybe MonaFormula) -> a) -> MonaFormula
+handleQuantifRename vars var f decl cons proj =
+  if (elem var vars) then cons [decl] (renameBVFormula (var:vars) f)
+  else cons decl' (renameBVFormula (new:vars) f') where
+    repl = [(MonaMacroParamVar1 [(var, Nothing)], MonaTermVar new)]
+    new = getNewVarName (vars ++ (varsFormula f)) 0
+    f' = substituteVars repl f
+    decl' = [proj (new, Nothing)]
+
+getNewVarName :: [Lo.Var] -> Int -> Lo.Var
+getNewVarName lst i =
+  if elem var lst then getNewVarName lst (i+1)
+  else var where
+    var = "T" ++ (show i)
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with (free) variables determination.
 --------------------------------------------------------------------------------------------------------------
 
 freeVarsTerm :: MonaTerm -> [Lo.Var]
@@ -328,6 +398,31 @@ freeVarsAtom (MonaAtomSing t) = freeVarsTerm t
 freeVarsAtom (MonaAtomTerm t) = freeVarsTerm t
 freeVarsAtom MonaAtomTrue = []
 freeVarsAtom MonaAtomFalse = []
+
+
+varsDecl (MonaDeclPred _ _ f) = varsFormula f
+varsDecl (MonaDeclVar0 vars) = vars
+varsDecl (MonaDeclVar1 decl) = nub $ map (fst) decl
+varsDecl (MonaDeclVar2 decl) = nub $ map (fst) decl
+varsDecl (MonaDeclFormula f) = varsFormula f
+
+
+varsFormula :: MonaFormula -> [Lo.Var]
+varsFormula (MonaFormulaAtomic atom) = freeVarsAtom atom
+varsFormula (MonaFormulaVar var) = [var]
+varsFormula (MonaFormulaNeg f) = varsFormula f
+varsFormula (MonaFormulaConj f1 f2) = nub $ (varsFormula f1) ++ (varsFormula f2)
+varsFormula (MonaFormulaDisj f1 f2) = varsFormula (MonaFormulaConj f1 f2)
+varsFormula (MonaFormulaImpl f1 f2) = varsFormula (MonaFormulaConj f1 f2)
+varsFormula (MonaFormulaEquiv f1 f2) = varsFormula (MonaFormulaConj f1 f2)
+varsFormula (MonaFormulaEx0 [var] f) = var:(varsFormula f)
+varsFormula (MonaFormulaEx1 [var] f) = (fst var):(varsFormula f)
+varsFormula (MonaFormulaEx2 [var] f) = (fst var):(varsFormula f)
+varsFormula (MonaFormulaAll0 v f) = varsFormula (MonaFormulaEx0 v f)
+varsFormula (MonaFormulaAll1 v f) = varsFormula (MonaFormulaEx1 v f)
+varsFormula (MonaFormulaAll2 v f) = varsFormula (MonaFormulaEx2 v f)
+varsFormula (MonaFormulaPredCall _ t) = concat $ map (freeVarsTerm) t
+varsFormula t = error $ "varsFormula: unimplemented: " ++ show t  -- TODO: incomplete
 
 
 freeVarsFormula :: MonaFormula -> [Lo.Var]
