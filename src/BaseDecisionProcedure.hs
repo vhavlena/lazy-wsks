@@ -82,7 +82,6 @@ showTermDbg ind (TTrue) = (replicate ind ' ') ++ "True"
 
 -- |Term minus symbol -- defined only for the term-pairs.
 minusSymbol :: Term -> Term -> Alp.Symbol -> Term
-
 minusSymbol t1 (TSet t2) sym
    | t2 == Set.empty = sinkTerm
 minusSymbol (TSet t1) t2 sym

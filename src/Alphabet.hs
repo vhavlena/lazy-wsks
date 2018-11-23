@@ -79,6 +79,10 @@ unwindSymbolX (lst, vars) = Set.fromList [(l, vars) | l <- lst'] where
     else [Set.singleton a]
 
 
+unwindSymbolsX :: Set.Set Symbol -> Set.Set Symbol
+unwindSymbolsX st = Set.unions $ Set.toList $ Set.map (unwindSymbolX) st
+
+
 -- |Pointwise extension of projSymbol to a set of variables and a set of symbols.
 projSymbolVars :: Set.Set Symbol -> [Variable] -> Set.Set Symbol
 projSymbolVars s [] = s

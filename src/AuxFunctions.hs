@@ -11,10 +11,12 @@ module AuxFunctions (
    , prArr
    , crossProd
    , updateAt
+   , strToUniqInt
 ) where
 
 
 import Data.List
+import Data.Char
 import qualified Data.Set as Set
 
 -- |Insert a value into list to a given position (indices start at 0).
@@ -50,3 +52,7 @@ crossProd (y:ys) = mergeLists y (crossProd ys)
 mergeLists :: Set.Set a -> [[a]] -> [[a]]
 mergeLists a [] = [[x] | x <- Set.toList a]
 mergeLists a b = [x:y | x <- Set.toList a, y <- b ]
+
+
+strToUniqInt :: String -> Int
+strToUniqInt str = foldr (\a b -> b * 256 + (ord a)) 0 str
