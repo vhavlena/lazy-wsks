@@ -10,6 +10,7 @@ module AuxFunctions (
    , deleteAt
    , prArr
    , crossProd
+   , updateAt
 ) where
 
 
@@ -21,6 +22,10 @@ insertAt :: a -> [a] -> Int -> [a]
 insertAt v xs 0 = v : xs
 insertAt v (x:xs) n = x : (insertAt v xs (n - 1))
 
+
+updateAt :: a -> [a] -> Int -> [a]
+updateAt item ls n = a ++ (item:b) where
+  (a, (_:b)) = splitAt n ls
 
 -- |Insert a value from list based on a given position (indices start at 0).
 deleteAt :: [a] -> Int -> [a]
