@@ -23,6 +23,7 @@ import qualified StrictDecisionProcedure as SDP
 import BaseDecisionProcedure
 import BaseProcedureSymbolic
 import BasicAutomata
+import Control.Exception.Assert
 
 import qualified Debug.Trace as Dbg
 
@@ -45,7 +46,7 @@ botInLazy (TSet tset) m =
       gather t b = (botInLazy t m) || b
 botInLazy (TProj _ t) m = botInLazy t m
 botInLazy (TStates aut _ st) _ = CTA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
-botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (term) ++ "\n ... ") False = undefined
+--botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (term) ++ "\n ... ") False = undefined
 botInLazy term@(TMinusClosure t _ sset) m = (botInSub t True) || (if isExpandedLight st then (botInSub st True) else botInLazy st m) where
   st= step term
 botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
@@ -111,7 +112,9 @@ step (TMinusClosure t inc sset) =
     strem = removeRedundantTerms $ removeFixpoints st
     inc' = differenceTSets strem inc
     ret = ominusSymbolsLazySym strem inc' sset
-    incr = removeRedundantTerms $ ret
+    ret2 = ominusSymbolsLazy strem inc' (Alp.unwindSymbolsX sset)
+    incr = if ret == ret2 then (removeRedundantTerms $ ret) else error $ (show ret) ++ "\n "++(show ret2) ++ (show sset) ++ (show strem) ++ (show inc')
+    --incr = removeRedundantTerms $ ret
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
