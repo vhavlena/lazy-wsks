@@ -10,6 +10,7 @@ module AuxFunctions (
    , deleteAt
    , prArr
    , crossProd
+   , crossProdLst
    , updateAt
    , strToUniqInt
 ) where
@@ -52,6 +53,17 @@ crossProd (y:ys) = mergeLists y (crossProd ys)
 mergeLists :: Set.Set a -> [[a]] -> [[a]]
 mergeLists a [] = [[x] | x <- Set.toList a]
 mergeLists a b = [x:y | x <- Set.toList a, y <- b ]
+
+
+crossProdLst :: [[a]] -> [[a]]
+crossProdLst [] = []
+crossProdLst (y:ys) = mergeListsLst y (crossProdLst ys)
+
+
+-- |Cross product of a set and the list of tuples.
+mergeListsLst :: [a]  -> [[a]] -> [[a]]
+mergeListsLst a [] = [[x] | x <- a]
+mergeListsLst a b = [x:y | x <- a, y <- b ]
 
 
 strToUniqInt :: String -> Int

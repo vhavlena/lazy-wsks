@@ -11,6 +11,7 @@ module Alphabet (
    , emptySymbol
    , projSymbol
    , projSymbolX
+   , projSymbolsX
    , projSymbolVars
    , remSymbol
    , remSymbolVars
@@ -19,6 +20,9 @@ module Alphabet (
    , showSymbolDbg
    , zeroSymbol
    , projZeroSymbol
+   , projXZeroSymbol
+   , unwindSymbolX
+   , unwindSymbolsX
 ) where
 
 
@@ -54,6 +58,10 @@ projSymbolX :: Symbol -> Variable -> Symbol
 projSymbolX s@(_, vars) new =
   if Set.member new vars then updateVarVal s new 'X'
   else insertVarVal s new 'X'
+
+
+projSymbolsX :: Set.Set Symbol -> Variable -> Set.Set Symbol
+projSymbolsX s var = Set.map (\a -> projSymbolX a var) s
 
 
 updateVarVal :: Symbol -> Variable -> Char -> Symbol
@@ -119,3 +127,7 @@ cylindrifySymbols vars sym = Set.map (cylindrifySymbol vars) sym
 -- |Project the zero symbol (consisting of all zeros).
 projZeroSymbol :: [Variable] -> Set.Set Symbol
 projZeroSymbol (var:vars) = projSymbolVars (Set.fromList [zeroSymbol vars]) [var]
+
+
+projXZeroSymbol :: [Variable] -> Set.Set Symbol
+projXZeroSymbol (var:vars) = Set.singleton $ projSymbolX (zeroSymbol vars) var

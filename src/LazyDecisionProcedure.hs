@@ -21,6 +21,7 @@ import qualified Alphabet as Alp
 import qualified StrictDecisionProcedure as SDP
 
 import BaseDecisionProcedure
+import BaseProcedureSymbolic
 import BasicAutomata
 
 import qualified Debug.Trace as Dbg
@@ -44,7 +45,7 @@ botInLazy (TSet tset) m =
       gather t b = (botInLazy t m) || b
 botInLazy (TProj _ t) m = botInLazy t m
 botInLazy (TStates aut _ st) _ = CTA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
---botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show ((botInSub t True)) ++ "\n ... ") False = undefined
+botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (term) ++ "\n ... ") False = undefined
 botInLazy term@(TMinusClosure t _ sset) m = (botInSub t True) || (if isExpandedLight st then (botInSub st True) else botInLazy st m) where
   st= step term
 botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
@@ -109,7 +110,7 @@ step (TMinusClosure t inc sset) =
     st = step t
     strem = removeRedundantTerms $ removeFixpoints st
     inc' = differenceTSets strem inc
-    ret = ominusSymbolsLazy strem inc' sset
+    ret = ominusSymbolsLazySym strem inc' sset
     incr = removeRedundantTerms $ ret
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
@@ -151,10 +152,18 @@ step (TTrue) = TTrue
 -- |Term ominus set of symbols for a lazy approach.
 ominusSymbolsLazy :: Term -> Term -> Set.Set Alp.Symbol -> Term
 ominusSymbolsLazy (TSet tset) (TSet inc) sset = TSet $ Set.fromList om where
-  tset' = tset
+  --tset' = tset
   iter = Set.union (Set.cartesianProduct tset inc) (Set.cartesianProduct inc tset)
   om = [minusSymbol t1 t2 s | s <- Set.toList sset, (t1, t2) <- Set.toList iter]
 ominusSymbolsLazy t _ _ = error $ "ominusSymbolsLazy: Ominus is defined only on a set of terms: " ++ (show t)
+
+
+
+ominusSymbolsLazySym :: Term -> Term -> Set.Set Alp.Symbol -> Term
+ominusSymbolsLazySym (TSet tset) (TSet inc) sset = TSet $ Set.fromList flatom where
+  iter = Set.union (Set.cartesianProduct tset inc) (Set.cartesianProduct inc tset)
+  om = [forgetFle $ minusSymbolSym t1 t2 sset | (t1, t2) <- Set.toList iter]
+  flatom = foldr (++) [] om
 
 
 -- |Minus symbol with memoizing.
@@ -224,7 +233,7 @@ formula2TermsVarsLazy autdict (Lo.Conj f1 f2) vars = TIntersect (formula2TermsVa
   (formula2TermsVarsLazy autdict f2 vars)
 formula2TermsVarsLazy autdict (Lo.Neg f) vars = TCompl $ formula2TermsVarsLazy autdict f vars
 formula2TermsVarsLazy autdict (Lo.Exists var f) vars =
-   TProj var (TMinusClosure innerTerm (sinkTerm) (Alp.projZeroSymbol (var:vars))) where
+   TProj var (TMinusClosure innerTerm (sinkTerm) (Alp.projXZeroSymbol (var:vars))) where
       innerTerm = TSet $ Set.fromList [formula2TermsVarsLazy autdict f (var:vars)]
 formula2TermsVarsLazy _ (Lo.ForAll _ _) _ = error "formula2TermsVarsLazy: Only formulas without forall are allowed"
 
@@ -236,6 +245,7 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
+--isValid autdict f | Dbg.trace ("isValid: " ++ show (formula2Terms autdict f)) False = undefined
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy  (formula2Terms autdict f) Map.empty
    | otherwise = Right $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)
