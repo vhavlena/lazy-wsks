@@ -112,9 +112,9 @@ step (TMinusClosure t inc sset) =
     strem = removeRedundantTerms $ removeFixpoints st
     inc' = differenceTSets strem inc
     ret = ominusSymbolsLazySym strem inc' sset
-    ret2 = ominusSymbolsLazy strem inc' (Alp.unwindSymbolsX sset)
-    incr = if ret == ret2 then (removeRedundantTerms $ ret) else error $ (show ret) ++ "\n "++(show ret2) ++ (show sset) ++ (show strem) ++ (show inc')
-    --incr = removeRedundantTerms $ ret
+    --ret = ominusSymbolsLazy strem inc' (Alp.unwindSymbolsX sset)
+    --incr = if ret == ret2 then (removeRedundantTerms $ ret) else error $ (show ret) ++ "\n "++(show ret2)-- ++ (show sset) ++ (show strem) ++ (show inc')
+    incr = removeRedundantTerms $ ret
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
