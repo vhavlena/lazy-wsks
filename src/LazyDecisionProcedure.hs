@@ -49,7 +49,7 @@ botInLazy (TStates aut _ st) _ = CTA.containsRoot aut st -- (Set.intersection (T
 --botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (term) ++ "\n ... ") False = undefined
 botInLazy term@(TMinusClosure t _ sset) m = (botInSub t True) || (if isExpandedLight st then (botInSub st True) else botInLazy st m) where
   st= step term
-botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
+--botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
 
 
 -- |Bottom membership in the language of a given term.
@@ -78,9 +78,9 @@ removeFixpoints (TIntersect t1 t2) = TIntersect (removeFixpoints t1) (removeFixp
 removeFixpoints (TCompl t) = TCompl $ removeFixpoints t
 removeFixpoints (TProj var t) = TProj var (removeFixpoints t)
 removeFixpoints (TMinusClosure t _ _) = removeFixpoints t
-removeFixpoints (TPair t1 t2) = TPair (removeFixpoints t1) (removeFixpoints t2)
+--removeFixpoints (TPair t1 t2) = TPair (removeFixpoints t1) (removeFixpoints t2)
 removeFixpoints (TSet tset) = TSet $ Set.map (removeFixpoints) tset
-removeFixpoints (TIncrSet t _) = removeFixpoints t
+--removeFixpoints (TIncrSet t _) = removeFixpoints t
 removeFixpoints t = t
 
 
@@ -91,9 +91,9 @@ isExpandedLight (TIntersect t1 t2) = (isExpandedLight t1) && (isExpandedLight t2
 isExpandedLight (TCompl t) = isExpandedLight t
 isExpandedLight (TProj _ t) = isExpandedLight t
 isExpandedLight (TMinusClosure _ _ _) = False
-isExpandedLight (TPair t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
+--isExpandedLight (TPair t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
 isExpandedLight (TSet tset) = Set.foldr (&&) True (Set.map (isExpandedLight) tset)
-isExpandedLight (TIncrSet t _) = isExpandedLight t
+--isExpandedLight (TIncrSet t _) = isExpandedLight t
 isExpandedLight t = True
 
 
@@ -191,7 +191,7 @@ isSubsumedLazy (TProj v1 t1) (TProj v2 t2)
 isSubsumedLazy (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedLazy a) lst))
   where
     lst = Set.toList tset2
-isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (subsetSetStates st1 st2)
+isSubsumedLazy (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (var1 == var2) && (subsetSetStates st1 st2)
 isSubsumedLazy t1 (TMinusClosure t2 _ sym) = isSubsumedLazy t1 t2
 isSubsumedLazy _ _ = False
 

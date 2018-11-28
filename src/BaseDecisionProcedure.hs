@@ -34,12 +34,10 @@ data Term =
    | TCompl Term
    | TProj Alp.Variable Term
    | TMinusClosure Term Term (Set.Set Alp.Symbol)
-   | TIncrSet Term Term
-   | TPair Term Term
    | TSet (Set.Set Term)
    | TTrue
    | TFalse
-   deriving (Eq, Ord)
+--   deriving (Ord)
 
 sinkTerm = TSet $ Set.empty
 
@@ -51,10 +49,35 @@ instance Show Term where
    show = showTermDbg 0
 
 
+instance Eq Term where
+  (TStates _ vars1 states1) == (TStates _ vars2 states2) = (vars1 == vars2) && (states1 == states2)
+  (TUnion t1 t2) == (TUnion t3 t4) = (t1 == t3) && (t2 == t4)
+  (TIntersect t1 t2) == (TIntersect t3 t4) = (t1 == t3) && (t2 == t4)
+  (TCompl t1) == (TCompl t2) = t1 == t2
+  (TProj var1 t1) == (TProj var2 t2) = (var1 == var2) && (t1 == t2)
+  (TMinusClosure t1 t2 s1) == (TMinusClosure t3 t4 s2) = (t1 == t3) && (t2 == t4) && (s1 == s2)
+  (TSet s1) == (TSet s2) = s1 == s2
+  TTrue == TTrue = True
+  TFalse == TFalse = True
+  t1 == t2 = False
+
+
+instance Ord Term where
+  (TStates _ vars1 states1) <= (TStates _ vars2 states2) = (vars1 <= vars2) && (states1 <= states2)
+  (TUnion t1 t2) <= (TUnion t3 t4) = (t1 <= t3) && (t2 <= t4)
+  (TIntersect t1 t2) <= (TIntersect t3 t4) = (t1 <= t3) && (t2 <= t4)
+  (TCompl t1) <= (TCompl t2) = t1 <= t2
+  (TProj var1 t1) <= (TProj var2 t2) = (var1 <= var2) && (t1 <= t2)
+  (TMinusClosure t1 t2 s1) <= (TMinusClosure t3 t4 s2) = (t1 <= t3) && (t2 <= t4) && (s1 <= s2)
+  (TSet s1) <= (TSet s2) = s1 <= s2
+  TTrue <= TTrue = True
+  TFalse <= TFalse = True
+  t1 <= t2 = False
+
+
 -- |Prints the term in human readable format.
 showTerm :: Term -> String
 showTerm (TSet set) = "{" ++ show set ++ "}"
-showTerm (TPair t1 t2) = "\n(\n\t" ++ showTerm t1 ++ "\n\t,\n\t" ++ showTerm t2 ++ "\n)\n"
 showTerm (TMinusClosure t _ sym) = "(" ++ showTerm t ++ ") - {" ++ show sym ++ "}*"
 showTerm (TProj var t) = "Proj_"++ show var ++ "( " ++ showTerm t ++ " )"
 showTerm (TCompl t) = "¬(" ++ showTerm t ++ ")"
@@ -66,14 +89,12 @@ showTerm (TStates _ _ st) = show st
 -- |Prints the term in human readable debug format.
 showTermDbg :: Int -> Term -> String
 showTermDbg ind (TSet set) = "\n" ++ (replicate ind ' ') ++ "{" ++ unwords (map (\a -> "\n" ++ (replicate (ind+2) ' ') ++ (showTermDbg (ind+2) a) ++ ",") (Set.toList set)) ++ "\n" ++ (replicate ind ' ') ++ "}"
-showTermDbg ind (TPair t1 t2) = "\n" ++ (replicate ind ' ') ++ "(\n" ++ showTermDbg (ind+2) t1 ++ "\n\t,\n\t" ++ showTermDbg (ind+2) t2 ++ "\n)\n"
 showTermDbg ind (TMinusClosure t _ sym) = "(" ++ showTermDbg ind t ++ (replicate ind ' ') ++ ") - {" ++ show (map (Alp.showSymbolDbg) (Set.toList sym)) ++ "}*"
 showTermDbg ind (TProj var t) = "Proj_"++ show var ++ "( " ++ showTermDbg ind t ++ " )"
 showTermDbg ind (TCompl t) = "¬(" ++ showTermDbg ind t ++ ")"
 showTermDbg ind (TUnion t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∨ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TIntersect t1 t2) = "(" ++ showTermDbg ind t1 ++ ") ∧ (" ++ showTermDbg ind t2 ++ ")"
 showTermDbg ind (TStates _ _ st) = (show $ Set.toList st)
-showTermDbg ind (TIncrSet a b) = (showTermDbg ind a)  ++ "---" ++ (showTermDbg ind b)
 showTermDbg ind (TTrue) = (replicate ind ' ') ++ "True"
 
 --------------------------------------------------------------------------------------------------------------
@@ -94,7 +115,7 @@ minusSymbol (TProj v1 t1) (TProj v2 t2) sym
    | otherwise = error "minusSymbol: Projection variables do not match"
 minusSymbol (TSet tset1) (TSet tset2) sym = TSet (Set.fromList [minusSymbol t1 t2 sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2])
 minusSymbol (TStates aut1 var1 st1) (TStates aut2  var2 st2) sym
-   | aut1 == aut2 && var1 == var2 = TStates aut1 var1 (CTA.preCom (Alp.cylindrifySymbol) aut1 [st1, st2] sym)
+   | var1 == var2 = TStates aut1 var1 (CTA.preCom (Alp.cylindrifySymbol) aut1 [st1, st2] sym)
    | otherwise = error "minusSymbol: Inconsistent basic automata"
 minusSymbol t _ _ = error $ "minusSymbol: Minus symbol is defined only on term-pairs: " ++ show t
 
@@ -124,7 +145,7 @@ differenceTSets (TSet t1) (TSet t2) = TSet $ t1 Set.\\ t2
 flattenStates :: [Term] -> Term
 flattenStates terms = foldr1 (fun) terms where
     fun (TStates aut1 var1 st1) (TStates aut2 var2 st2)
-      | (aut1 == aut2) && (var1 == var2) = TStates aut1 var1 (unionComStates (Set.toList st1) (Set.toList st2))
+      | (var1 == var2) = TStates aut1 var1 (unionComStates (Set.toList st1) (Set.toList st2))
       | otherwise = error "flattenStates: incompatible states"
     fun _ _ = error "flattenStates: incompatible states"
 

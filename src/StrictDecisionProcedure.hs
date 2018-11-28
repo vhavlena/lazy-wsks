@@ -66,7 +66,7 @@ isSubsumedStrict (TProj v1 t1) (TProj v2 t2)
 isSubsumedStrict (TSet tset1) (TSet tset2) = foldr (&&) True ((Set.toList tset1) >>= (\a -> return $ any (isSubsumedStrict a) lst))
   where
     lst = Set.toList tset2
-isSubsumedStrict (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (aut1 == aut2) && (var1 == var2) && (subsetSetStates st1 st2)
+isSubsumedStrict (TStates aut1 var1 st1) (TStates aut2 var2 st2) = (var1 == var2) && (subsetSetStates st1 st2)
 isSubsumedStrict _ _ = False
 
 

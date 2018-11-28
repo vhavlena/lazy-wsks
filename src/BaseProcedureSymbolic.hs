@@ -75,8 +75,8 @@ minusSymbolSym (TProj v1 t1) (TProj v2 t2) sym
       g (f, t) = (Set.delete (Not $ Var v1) (Set.delete (Var v1) f), TProj v1 t)
 minusSymbolSym (TSet tset1) (TSet tset2) sym = ret where
   cr = [minusSymbolSym t1 t2 sym | t1 <- Set.toList tset1, t2 <- Set.toList tset2]
-  cr' = map (\(a,b) -> (a, [b])) $ concat cr -- foldr (++) []
-  ret = map (\(a,b) -> (a, TSet $ Set.fromList b)) $ Map.toList $ Map.fromListWith (++) cr'
+  cr' = map (\(a,b) -> (a, TSet $ Set.singleton b)) $ concat cr -- foldr (++) []
+  ret = Map.toList $ Map.fromListWith (joinTerm) cr'
 
 
 -- |Unify symbolic terms. Symbolic terms having equal the literal part will be
@@ -100,20 +100,23 @@ convSymToFle (lst, var) = Set.fromList $ zipWith (fmerge) lst (List.sort $ Set.t
       | otherwise = error $ "convSymToFle: unrecognized symbol"
 
 
--- |Partition the set of literals into two sets -- sat vars and unsat vars.
-getSatUnsat :: Set.Set Literal -> (Set.Set String, Set.Set String)
-getSatUnsat s = (proj sat, proj $ s Set.\\ sat) where
-  sat = Set.filter g s
+-- |Partition the set of literals into two sets -- sat literals and unsat literals.
+getSatUnsat :: Set.Set Literal -> (Set.Set Literal, Set.Set Literal)
+getSatUnsat s = ( tr,  fs) where
+  (tr, fs) = Set.partition g s
+  --sat = Set.filter g s
   g (Var v) = True
   g _ = False
-  proj = Set.map (fn)
+
+
+proj = Set.map (fn) where
   fn (Var v) = v
   fn (Not x) = fn x
 
 
 -- |Are two clauses = set of literals satisfiable?
 isSatConjSet :: Set.Set Literal -> Set.Set Literal -> Bool
-isSatConjSet s1 s2 = (Set.disjoint sat1 unsat2) && (Set.disjoint sat2 unsat1) where
+isSatConjSet s1 s2 = (Set.disjoint (proj sat1) (proj unsat2)) && (Set.disjoint (proj sat2) (proj unsat1)) where
   (sat1, unsat1) = getSatUnsat s1
   (sat2, unsat2) = getSatUnsat s2
 
