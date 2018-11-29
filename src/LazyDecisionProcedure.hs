@@ -23,7 +23,6 @@ import qualified StrictDecisionProcedure as SDP
 import BaseDecisionProcedure
 import BaseProcedureSymbolic
 import BasicAutomata
-import Control.Exception.Assert
 
 import qualified Debug.Trace as Dbg
 
@@ -78,9 +77,7 @@ removeFixpoints (TIntersect t1 t2) = TIntersect (removeFixpoints t1) (removeFixp
 removeFixpoints (TCompl t) = TCompl $ removeFixpoints t
 removeFixpoints (TProj var t) = TProj var (removeFixpoints t)
 removeFixpoints (TMinusClosure t _ _) = removeFixpoints t
---removeFixpoints (TPair t1 t2) = TPair (removeFixpoints t1) (removeFixpoints t2)
 removeFixpoints (TSet tset) = TSet $ Set.map (removeFixpoints) tset
---removeFixpoints (TIncrSet t _) = removeFixpoints t
 removeFixpoints t = t
 
 
@@ -91,9 +88,7 @@ isExpandedLight (TIntersect t1 t2) = (isExpandedLight t1) && (isExpandedLight t2
 isExpandedLight (TCompl t) = isExpandedLight t
 isExpandedLight (TProj _ t) = isExpandedLight t
 isExpandedLight (TMinusClosure _ _ _) = False
---isExpandedLight (TPair t1 t2) = (isExpandedLight t1) && (isExpandedLight t2)
 isExpandedLight (TSet tset) = Set.foldr (&&) True (Set.map (isExpandedLight) tset)
---isExpandedLight (TIncrSet t _) = isExpandedLight t
 isExpandedLight t = True
 
 
@@ -110,8 +105,8 @@ step (TMinusClosure t inc sset) =
   else TMinusClosure complete strem sset where
     st = step t
     strem = removeRedundantTerms $ removeFixpoints st
-    inc' = differenceTSets strem inc
-    ret = ominusSymbolsLazySym strem inc' sset
+    --inc' = differenceTSets strem inc
+    ret = ominusSymbolsLazySym strem strem sset
     --ret = ominusSymbolsLazy strem inc' (Alp.unwindSymbolsX sset)
     --incr = if ret == ret2 then (removeRedundantTerms $ ret) else error $ (show ret) ++ "\n "++(show ret2)-- ++ (show sset) ++ (show strem) ++ (show inc')
     incr = removeRedundantTerms $ ret
@@ -163,10 +158,11 @@ ominusSymbolsLazy t _ _ = error $ "ominusSymbolsLazy: Ominus is defined only on 
 
 
 ominusSymbolsLazySym :: Term -> Term -> Set.Set Alp.Symbol -> Term
-ominusSymbolsLazySym (TSet tset) (TSet inc) sset = TSet $ Set.fromList flatom where
-  iter = Set.union (Set.cartesianProduct tset inc) (Set.cartesianProduct inc tset)
-  om = [forgetFle $ minusSymbolSym t1 t2 sset | (t1, t2) <- Set.toList iter]
-  flatom = foldr (++) [] om
+ominusSymbolsLazySym (TSet tset) (TSet inc) sset = TSet flatom where
+  iter = (Set.cartesianProduct tset inc) --(Set.cartesianProduct inc tset)
+  om = Set.map (\(t1,t2) -> Set.fromList $ forgetFle $ minusSymbolSym t1 t2 sset) iter
+  -- om = [forgetFle $ minusSymbolSym t1 t2 sset | (t1, t2) <- Set.toList iter]
+  flatom = Set.foldr (Set.union) Set.empty om
 
 
 -- |Minus symbol with memoizing.
