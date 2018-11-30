@@ -34,7 +34,7 @@ data BATreeAutomaton a b = BATreeAutomaton {
    , roots :: Set.Set a
    , leaves :: Set.Set a
    , transitions :: Transitions a b
-}
+} --deriving (Eq, Ord)
 
 -- |Formatted output of BA
 instance (Show a, Show b) => Show (BATreeAutomaton a b) where
@@ -51,14 +51,23 @@ printTrans ((a,b),c) = "(" ++ (Aux.prArr "," a) ++ ";" ++ (show b) ++ ") -> " ++
 
 
 -- |Syntax equivalence of two tree automata.
+-- instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
+--    BATreeAutomaton st1 rt1 lv1 tr1 == BATreeAutomaton st2 rt2 lv2 tr2 =
+--       (st1 == st2) && (rt1 == rt2) && (lv1 == lv2) && (tr1 == tr2)
+--
+-- -- |Syntax ordering of two tree automata.
+-- instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
+--    BATreeAutomaton st1 rt1 lv1 tr1 <= BATreeAutomaton st2 rt2 lv2 tr2 =
+--       (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
+
 instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
    BATreeAutomaton st1 rt1 lv1 tr1 == BATreeAutomaton st2 rt2 lv2 tr2 =
-      (st1 == st2) && (rt1 == rt2) && (lv1 == lv2) && (tr1 == tr2)
+      True -- DIRTY PERFORMANCE HACK!!!!
 
 -- |Syntax ordering of two tree automata.
 instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
    BATreeAutomaton st1 rt1 lv1 tr1 <= BATreeAutomaton st2 rt2 lv2 tr2 =
-      (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
+      True -- DIRTY PERFORMANCE HACK!!!!
 
 
 -- |Pre (Up) of a set of states wrt given symbol.
