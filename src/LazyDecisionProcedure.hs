@@ -34,21 +34,20 @@ type Cache = Map.Map (Term, Term, Alp.Symbol) Term
 --------------------------------------------------------------------------------------------------------------
 
 -- |Lazy testing of bottom membership in the language of a given term.
-botInLazy :: Term -> Cache -> Bool
-botInLazy (TTrue) _ = True
-botInLazy (TFalse) _ = False
-botInLazy (TUnion t1 t2) m = (botInLazy t1 m) || (botInLazy t2 m)
-botInLazy (TIntersect t1 t2) m = (botInLazy t1 m) && (botInLazy t2 m)
-botInLazy (TCompl t) m = not $ botInLazy t m
-botInLazy (TSet tset) m =
+botInLazy :: Term -> Bool
+botInLazy (TTrue) = True
+botInLazy (TFalse) = False
+botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
+botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
+botInLazy (TCompl t) = not $ botInLazy t
+botInLazy (TSet tset) =
    foldr gather False (Set.toList tset) where
-      gather t b = (botInLazy t m) || b
-botInLazy (TProj _ t) m = botInLazy t m
-botInLazy (TStates aut _ st) _ = CTA.containsRoot aut st -- (Set.intersection (TA.roots aut) st) /= Set.empty
---botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (term) ++ "\n ... ") False = undefined
-botInLazy term@(TMinusClosure t _ sset) m = (botInSub t True) || (if isExpandedLight st then (botInSub st True) else botInLazy st m) where
-  st= step term
---botInLazy _ _ = error "botInLazy: Bottom membership is not defined"
+      gather t b = (botInLazy t) || b
+botInLazy (TProj _ t) = botInLazy t
+botInLazy (TStates aut _ st) = CTA.containsRoot aut st
+-- botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (step term True) ++ "\n;\n" ++ show (if isExpandedLight (step term True)  then botInSub (step term True) True else True) ++ "\n ... ") False = undefined
+botInLazy term@(TMinusClosure t _ sset) = (if isExpandedLight st then (botInSub st True) else botInLazy st) where
+  st = step term
 
 
 -- |Bottom membership in the language of a given term.
@@ -57,13 +56,12 @@ botInSub (TTrue) _ = True
 botInSub (TUnion t1 t2) l = (botInSub t1 l) || (botInSub t2 l)
 botInSub (TIntersect t1 t2) l = (botInSub t1 l) && (botInSub t2 l)
 botInSub (TCompl t) l = not $ botInSub t (not l)
---botInSub (TSet tset) | Dbg.trace ("botInLazy: " ++ show (length $ Set.toList tset) ++ "\n ... ") False = undefined
 botInSub (TSet tset) l =
    foldr gather False (Set.toList tset) where
       gather t b = (botInSub t l) || b
 botInSub (TProj _ t) l = botInSub t l
 botInSub (TStates aut _ st) l = CTA.containsRoot aut st
-botInSub term@(TMinusClosure t _ sset) l = if l then (botInSub t l) else (not l)
+botInSub term@(TMinusClosure t _ sset) l = error "test" -- if l then (botInSub t l) else (not l)
 botInSub _ _ = error "botInSub: Bottom membership is not defined"
 
 --------------------------------------------------------------------------------------------------------------
@@ -92,59 +90,44 @@ isExpandedLight (TSet tset) = Set.foldr (&&) True (Set.map (isExpandedLight) tse
 isExpandedLight t = True
 
 
+containsCompl :: Term -> Bool
+containsCompl (TUnion t1 t2) = (containsCompl t1) && (containsCompl t2)
+containsCompl (TIntersect t1 t2) = (containsCompl t1) && (containsCompl t2)
+containsCompl (TCompl t) = True
+containsCompl (TProj _ t) = containsCompl t
+containsCompl (TMinusClosure t _ _) = containsCompl t
+containsCompl (TSet tset) = Set.foldr (||) False (Set.map (containsCompl) tset)
+containsCompl t = False
+
+
+expandAll :: Term -> Term
+expandAll t = if isExpandedLight t then t else expandAll $ step t
+
+
 --------------------------------------------------------------------------------------------------------------
 -- Part with a fixpoint step functions
 --------------------------------------------------------------------------------------------------------------
 
 -- |One step of all nested fixpoint computations. Returns modified term (fixpoints
 -- are unwinded into TMinusClosure t)
-step :: Term -> Term  --if (isExpandedIncr term) then (TMinusClosure t sset) else
---step (TMinusClosure (TSet t) inc sset) cache | Dbg.trace ("minus: " ++ (show $ length $ Set.toList t) ++ "\n " ) False = undefined
+step :: Term -> Term
 step (TMinusClosure t inc sset) =
-  if isSubsumedLazy incr strem then complete
+  if (isExpandedLight st) && (isSubsumedLazy incr strem) then complete
   else TMinusClosure complete strem sset where
-    st = step t
-    strem = removeRedundantTerms $ removeFixpoints st
+    st = if containsCompl t then expandAll t else step t
+    strem = removeFixpoints st
     --inc' = differenceTSets strem inc
-    ret = ominusSymbolsLazySym strem strem sset
-    --ret = ominusSymbolsLazy strem inc' (Alp.unwindSymbolsX sset)
-    --incr = if ret == ret2 then (removeRedundantTerms $ ret) else error $ (show ret) ++ "\n "++(show ret2)-- ++ (show sset) ++ (show strem) ++ (show inc')
-    incr = removeRedundantTerms $ ret
+    ret = removeRedundantTerms $ ominusSymbolsLazySym strem strem sset
+    --ret = ominusSymbolsLazy strem strem (Alp.unwindSymbolsX sset)
+    incr =  ret
     complete = removeRedundantTerms $ unionTSets [incr, st]
 step term@(TStates _ _ _) = term
 step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
-step (TSet tset)= TSet $ Set.fromList [step t | t <- Set.toList tset]
+step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
 step (TTrue) = TTrue
-
-
--- step :: Term -> Cache -> (Term, Cache)  --if (isExpandedIncr term) then (TMinusClosure t sset) else
--- --step (TMinusClosure (TSet t) inc sset) cache | Dbg.trace ("minus: " ++ (show $ length $ Set.toList t) ++ "\n " ) False = undefined
--- step (TMinusClosure t inc sset) cache =
---   if isSubsumedLazy incr strem then (complete, mp)
---   else (TMinusClosure complete strem sset, mp) where
---     (st, p) = step t cache
---     strem = removeRedundantTerms $ removeFixpoints st
---     inc' = differenceTSets strem inc
---     (ret, mp) = ominusSymbolsLazy strem inc' sset p
---     incr = removeRedundantTerms $ ret
---     complete = removeRedundantTerms $ unionTSets [incr, st]
--- step term@(TStates _ _ _) c = (term, c)
--- step (TUnion t1 t2) c = (TUnion r1 r2, Map.union m1 m2) where
---   (r1,m1) = (step t1 c)
---   (r2,m2) = (step t2 m1)
--- step (TIntersect t1 t2) c = (TIntersect r1 r2, Map.union m1 m2) where
---   (r1,m1) = (step t1 c)
---   (r2,m2) = (step t2 m1)
--- step (TCompl t) c = (TCompl r1, m1) where
---   (r1,m1) = (step t c)
--- step (TProj a t) c = (TProj a r1, m1) where
---   (r1,m1) = (step t c)
--- step (TSet tset) c = (TSet $ Set.fromList r1, m1) where
---   (r1,m1) = foldr (\(a,b) (c,d) -> (a:c, Map.union b d)) ([], Map.empty) [step t c | t <- Set.toList tset]
--- step (TTrue) m = (TTrue, m)
 
 
 -- |Term ominus set of symbols for a lazy approach.
@@ -246,5 +229,5 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
 --isValid autdict f | Dbg.trace ("isValid: " ++ show (formula2Terms autdict f)) False = undefined
 isValid autdict f
-   | Lo.freeVars f == [] = Left $ botInLazy  (formula2Terms autdict f) Map.empty
+   | Lo.freeVars f == [] = Left $ botInLazy (formula2Terms autdict f)
    | otherwise = Right $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)

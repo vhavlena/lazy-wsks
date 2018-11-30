@@ -36,7 +36,7 @@ data ComTA a b =
   Base (BATreeAutomaton a b) [Alp.Variable]
   | ConjTA (ComTA a b) (ComTA a b)
   | DisjTA (ComTA a b) (ComTA a b)
---  deriving (Eq, Ord)
+  deriving (Eq, Ord)
 
 
 instance (Show a) => Show (ComState a) where

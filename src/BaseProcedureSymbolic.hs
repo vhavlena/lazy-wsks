@@ -47,7 +47,7 @@ type SymTerm = (Set.Set Literal, Term)
 joinTerm :: Term -> Term -> Term
 joinTerm (TSet t1) (TSet t2) = TSet $ Set.union t1 t2
 joinTerm (TProj v1 t1) (TProj v2 t2) = TProj v1 (joinTerm t1 t2)
-joinTerm _ _ = error "joinTerm: structure"
+joinTerm t1 t2 = error $ "joinTerm: structure"
 
 
 -- |Minus symbolically (symbolic transition function) over a set of symbols.

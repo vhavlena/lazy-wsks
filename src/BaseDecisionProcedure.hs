@@ -37,7 +37,7 @@ data Term =
    | TSet (Set.Set Term)
    | TTrue
    | TFalse
---   deriving (Ord)
+   deriving (Eq, Ord)
 
 sinkTerm = TSet $ Set.empty
 
@@ -49,30 +49,30 @@ instance Show Term where
    show = showTermDbg 0
 
 
-instance Eq Term where
-  (TStates _ vars1 states1) == (TStates _ vars2 states2) = (vars1 == vars2) && (states1 == states2)
-  (TUnion t1 t2) == (TUnion t3 t4) = (t1 == t3) && (t2 == t4)
-  (TIntersect t1 t2) == (TIntersect t3 t4) = (t1 == t3) && (t2 == t4)
-  (TCompl t1) == (TCompl t2) = t1 == t2
-  (TProj var1 t1) == (TProj var2 t2) = (var1 == var2) && (t1 == t2)
-  (TMinusClosure t1 t2 s1) == (TMinusClosure t3 t4 s2) = (t1 == t3) && (t2 == t4) && (s1 == s2)
-  (TSet s1) == (TSet s2) = s1 == s2
-  TTrue == TTrue = True
-  TFalse == TFalse = True
-  t1 == t2 = False
-
-
-instance Ord Term where
-  (TStates _ vars1 states1) <= (TStates _ vars2 states2) = (vars1 <= vars2) && (states1 <= states2)
-  (TUnion t1 t2) <= (TUnion t3 t4) = (t1 <= t3) && (t2 <= t4)
-  (TIntersect t1 t2) <= (TIntersect t3 t4) = (t1 <= t3) && (t2 <= t4)
-  (TCompl t1) <= (TCompl t2) = t1 <= t2
-  (TProj var1 t1) <= (TProj var2 t2) = (var1 <= var2) && (t1 <= t2)
-  (TMinusClosure t1 t2 s1) <= (TMinusClosure t3 t4 s2) = (t1 <= t3) && (t2 <= t4) && (s1 <= s2)
-  (TSet s1) <= (TSet s2) = s1 <= s2
-  TTrue <= TTrue = True
-  TFalse <= TFalse = True
-  t1 <= t2 = False
+-- instance Eq Term where
+--   (TStates _ vars1 states1) == (TStates _ vars2 states2) = (vars1 == vars2) && (states1 == states2)
+--   (TUnion t1 t2) == (TUnion t3 t4) = (t1 == t3) && (t2 == t4)
+--   (TIntersect t1 t2) == (TIntersect t3 t4) = (t1 == t3) && (t2 == t4)
+--   (TCompl t1) == (TCompl t2) = t1 == t2
+--   (TProj var1 t1) == (TProj var2 t2) = (var1 == var2) && (t1 == t2)
+--   (TMinusClosure t1 t2 s1) == (TMinusClosure t3 t4 s2) = (t1 == t3) && (t2 == t4) && (s1 == s2)
+--   (TSet s1) == (TSet s2) = s1 == s2
+--   TTrue == TTrue = True
+--   TFalse == TFalse = True
+--   t1 == t2 = False
+--
+--
+-- instance Ord Term where
+--   (TStates _ vars1 states1) <= (TStates _ vars2 states2) = (vars1 <= vars2) && (states1 <= states2)
+--   (TUnion t1 t2) <= (TUnion t3 t4) = (t1 <= t3) && (t2 <= t4)
+--   (TIntersect t1 t2) <= (TIntersect t3 t4) = (t1 <= t3) && (t2 <= t4)
+--   (TCompl t1) <= (TCompl t2) = t1 <= t2
+--   (TProj var1 t1) <= (TProj var2 t2) = (var1 <= var2) && (t1 <= t2)
+--   (TMinusClosure t1 t2 s1) <= (TMinusClosure t3 t4 s2) = (t1 <= t3) && (t2 <= t4) && (s1 <= s2)
+--   (TSet s1) <= (TSet s2) = s1 <= s2
+--   TTrue <= TTrue = True
+--   TFalse <= TFalse = True
+--   t1 <= t2 = False
 
 
 -- |Prints the term in human readable format.
@@ -125,7 +125,6 @@ minusSymbol t _ _ = error $ "minusSymbol: Minus symbol is defined only on term-p
 unionTerms :: [Term] -> Set.Set Term
 unionTerms [] = Set.empty
 unionTerms ((TSet a):xs) = Set.union a (unionTerms xs)
-unionTerms (t:xs) = Set.union (Set.singleton t) (unionTerms xs)
 
 
 -- |Union set of terms -- defined only for a list of the form

@@ -51,14 +51,14 @@ printTrans ((a,b),c) = "(" ++ (Aux.prArr "," a) ++ ";" ++ (show b) ++ ") -> " ++
 
 
 -- |Syntax equivalence of two tree automata.
--- instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
---    BATreeAutomaton st1 rt1 lv1 tr1 == BATreeAutomaton st2 rt2 lv2 tr2 =
---       (st1 == st2) && (rt1 == rt2) && (lv1 == lv2) && (tr1 == tr2)
+instance (Eq m, Eq n) => Eq (BATreeAutomaton m n) where
+   BATreeAutomaton st1 rt1 lv1 tr1 == BATreeAutomaton st2 rt2 lv2 tr2 =
+      (st1 == st2) && (rt1 == rt2) && (lv1 == lv2) && (tr1 == tr2)
 
 -- |Syntax ordering of two tree automata.
--- instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
---    BATreeAutomaton st1 rt1 lv1 tr1 <= BATreeAutomaton st2 rt2 lv2 tr2 =
---       (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
+instance (Ord m, Ord n) => Ord (BATreeAutomaton m n) where
+   BATreeAutomaton st1 rt1 lv1 tr1 <= BATreeAutomaton st2 rt2 lv2 tr2 =
+      (st1 <= st2) && (rt1 <= rt2) && (lv1 <= lv2) && (tr1 <= tr2)
 
 
 -- |Pre (Up) of a set of states wrt given symbol.
