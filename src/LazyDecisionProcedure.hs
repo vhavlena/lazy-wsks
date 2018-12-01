@@ -46,7 +46,7 @@ botInLazy (TSet tset) =
 botInLazy (TProj _ t) = botInLazy t
 botInLazy (TStates aut _ st) = CTA.containsRoot aut st
 -- botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (step term True) ++ "\n;\n" ++ show (if isExpandedLight (step term True)  then botInSub (step term True) True else True) ++ "\n ... ") False = undefined
-botInLazy term@(TMinusClosure t _ sset) = (if isExpandedLight st then (botInSub st True) else botInLazy st) where
+botInLazy term@(TMinusClosure t _ sset) = (botInSub st True) || (if isExpandedLight st then (botInSub st True) else botInLazy st) where
   st = step term
 
 
@@ -61,7 +61,7 @@ botInSub (TSet tset) l =
       gather t b = (botInSub t l) || b
 botInSub (TProj _ t) l = botInSub t l
 botInSub (TStates aut _ st) l = CTA.containsRoot aut st
-botInSub term@(TMinusClosure t _ sset) l = error "test" -- if l then (botInSub t l) else (not l)
+botInSub term@(TMinusClosure t _ sset) l = if l then (botInSub t l) else (not l)
 botInSub _ _ = error "botInSub: Bottom membership is not defined"
 
 --------------------------------------------------------------------------------------------------------------
@@ -90,16 +90,19 @@ isExpandedLight (TSet tset) = Set.foldr (&&) True (Set.map (isExpandedLight) tse
 isExpandedLight t = True
 
 
+-- |Contains a given term in actual level a complemented term? (level is a
+-- subterm having leaves fixpoint computation or states.)
 containsCompl :: Term -> Bool
 containsCompl (TUnion t1 t2) = (containsCompl t1) && (containsCompl t2)
 containsCompl (TIntersect t1 t2) = (containsCompl t1) && (containsCompl t2)
 containsCompl (TCompl t) = True
 containsCompl (TProj _ t) = containsCompl t
-containsCompl (TMinusClosure t _ _) = containsCompl t
+containsCompl (TMinusClosure t _ _) = False -- containsCompl t
 containsCompl (TSet tset) = Set.foldr (||) False (Set.map (containsCompl) tset)
 containsCompl t = False
 
 
+-- |Expand fixpoint computation.
 expandAll :: Term -> Term
 expandAll t = if isExpandedLight t then t else expandAll $ step t
 
