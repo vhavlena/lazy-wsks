@@ -129,7 +129,7 @@ step (TUnion t1 t2) = TUnion (step t1) (step t2)
 step (TIntersect t1 t2) = TIntersect (step t1) (step t2)
 step (TCompl t) = TCompl $ step t
 step (TProj a t) = TProj a (step t)
-step (TSet tset) = TSet $ Set.fromList [step t | t <- Set.toList tset]
+step (TSet tset) = TSet $ Set.map (step) tset
 step (TTrue) = TTrue
 
 

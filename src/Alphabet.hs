@@ -66,14 +66,14 @@ projSymbolsX s var = Set.map (\a -> projSymbolX a var) s
 
 updateVarVal :: Symbol -> Variable -> Char -> Symbol
 updateVarVal (lst, vars) new val =
-  case List.elemIndex new (List.sort $ Set.toList vars) of
+  case List.elemIndex new (Set.toAscList vars) of
     Just idx -> (Aux.updateAt val lst idx, vars)
     Nothing -> error "updateVarVal: Index not found"
 
 
 insertVarVal :: Symbol -> Variable -> Char -> Symbol
 insertVarVal (lst, vars) new val =
-   case List.elemIndex new (List.sort $ Set.toList vars') of
+   case List.elemIndex new (Set.toAscList vars') of --List.sort $ Set.toList vars'
       Just idx -> (Aux.insertAt val lst idx, vars')
       Nothing -> error "projSymbol: Index not found"
    where
@@ -101,7 +101,7 @@ projSymbolVars s (x:xs) = projSymbolVars s' xs where
 -- |Remove value of given variable from a symbol.
 remSymbol :: Symbol -> Variable -> Symbol
 remSymbol (lst, vars) new =
-   case List.elemIndex new (List.sort $ Set.toList vars) of
+   case List.elemIndex new (Set.toAscList vars) of
       Just idx -> (Aux.deleteAt lst idx, vars')
       Nothing -> error "remSymbol: Index not found"
    where

@@ -92,7 +92,7 @@ forgetFle = map (snd)
 
 -- |Convert symbol to clause (set of literals).
 convSymToFle :: Alp.Symbol -> Set.Set Literal
-convSymToFle (lst, var) = Set.fromList $ zipWith (fmerge) lst (List.sort $ Set.toList var)
+convSymToFle (lst, var) = Set.fromList $ zipWith (fmerge) lst (Set.toAscList var)
   where
     fmerge sym var
       | sym == '0' = Not var
@@ -109,7 +109,7 @@ getSatUnsat s = (tr, fs) where
   g _ = False
 
 
-proj = Set.map (fn) where
+proj = Set.mapMonotonic (fn) where -- Replaced with Set.map (fn)
   fn t@(Var v) = t
   fn (Not v) = Var v
 

@@ -8,7 +8,7 @@
 * temporary
 * process
 
-You can install the following packages via
+You can install the packages via
 ```
 $ cabal install <package>
 ```

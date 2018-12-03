@@ -36,7 +36,7 @@ data ComTA a b =
   Base (BATreeAutomaton a b) [Alp.Variable]
   | ConjTA (ComTA a b) (ComTA a b)
   | DisjTA (ComTA a b) (ComTA a b)
-  deriving (Eq, Ord)
+--  deriving (Eq, Ord)
 
 
 instance (Show a) => Show (ComState a) where
@@ -53,6 +53,12 @@ instance (Show a, Show b) => Show (ComTA a b) where
   show (DisjTA a1 a2) = show a1 ++ "+" ++ show a2
 
 
+instance (Eq m, Eq n) => Eq (ComTA m n) where
+   a1 == a2 = True -- DIRTY PERFORMANCE HACK!!!!
+
+-- |Syntax ordering of two tree automata.
+instance (Ord m, Ord n) => Ord (ComTA m n) where
+   a1 <= a2 = True -- DIRTY PERFORMANCE HACK!!!!
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the pre function on compound tree automata
