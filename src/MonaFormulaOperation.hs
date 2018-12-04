@@ -200,7 +200,8 @@ substituteAtoms repl (MonaAtomSub t1 t2) = MonaAtomSub (substituteTerms repl t1)
 substituteAtoms repl (MonaAtomSing t) = MonaAtomSing $ substituteTerms repl t
 substituteAtoms repl (MonaAtomEps t) = MonaAtomEps $ substituteTerms repl t
 substituteAtoms repl (MonaAtomTerm t) = MonaAtomTerm $ substituteTerms repl t
---substituteAtoms repl t = t
+substituteAtoms _ MonaAtomTrue = MonaAtomTrue
+substituteAtoms _ MonaAtomFalse = MonaAtomFalse
 
 
 -- |Subtitute variables in terms with corresponding substitutions (terms).

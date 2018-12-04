@@ -116,7 +116,12 @@ remSymbolVars s (x:xs) = remSymbolVars (remSymbol s x) xs
 
 -- |Cylindrify symbol -- maintain values of only those variables which are in the list.
 cylindrifySymbol :: [Variable] -> Symbol -> Symbol
-cylindrifySymbol vars sym = remSymbolVars sym (Set.toList $ Set.difference (snd sym) (Set.fromList vars))
+cylindrifySymbol = cylidrifySymbol' -- = remSymbolVars sym (Set.toList $ Set.difference (snd sym) (Set.fromList vars))
+
+
+cylidrifySymbol' :: [Variable] -> Symbol -> Symbol
+cylidrifySymbol' vars (val,var) = (a, Set.fromList b) where
+  (a,b) = unzip $ filter (\(a,b) -> elem b vars) $ zip val (Set.toAscList var)
 
 
 -- |Cylindrify symbols (extension of cylindrifySymbol).
