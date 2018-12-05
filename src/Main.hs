@@ -30,18 +30,26 @@ useMona = False
 -- |Rename bound vars.
 renameBoundVars = False
 
+data ProcedureArgs =
+  Prenex
+  | None
+  deriving (Eq)
+
 -- |Program arguments.
 data ProgArgs =
-  Validity FilePath
+  Validity FilePath ProcedureArgs
   | Antiprenex FilePath
+  | Help
   | Error
 
 
 -- |Parse program arguments.
 parseArgs :: [String] -> ProgArgs
 parseArgs args
-  | (length args) == 1 = Validity $ head args
-  | (length args) == 2 && (last args) == "-p" = Antiprenex $ head args
+  | (length args) == 1 && (last args) == "--help" = Help
+  | (length args) == 1 = Validity (head args) None
+  | (length args) == 2 && (last args) == "-p" = Validity (head args) Prenex
+  | (length args) == 2 && (last args) == "--prenex" = Antiprenex $ head args
   | otherwise = Error
 
 
@@ -83,6 +91,15 @@ renameBVFileWrap :: MoPa.MonaFile -> MoPa.MonaFile
 renameBVFileWrap = if renameBoundVars then renameBVFile else id
 
 
+showHelp :: IO ()
+showHelp = do
+  prname <- getProgName
+  putStrLn $ "Usage: ./" ++ prname ++ " [file] [args]"
+  putStrLn $ "where [args] is one of\n  [--help] show this help\n  [-p] for " ++
+    "supress of formula antiprenexing\n  [--prenex] only for converting "++
+    "formula to antiprenexed MONA formula"
+
+
 -- |Main function
 main = do
    args <- getArgs
@@ -91,15 +108,17 @@ main = do
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
        putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
-     (Validity file) -> do
+     (Validity file par) -> do
        mona <- MoPa.parseFile file
-       let prenexFile = antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+       let fnc = if par == Prenex then simplifyFile else antiprenexFile
+           prenexFile = fnc $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
            (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
            do
              auts <- MS.getMonaAutomata monareq
              showValidMonaLazy auts hf
              stop <- getCurrentTime
              putStrLn $ "Time: " ++ show (diffUTCTime stop start)
+     Help -> showHelp
      Error -> do
        prname <- getProgName
        putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"

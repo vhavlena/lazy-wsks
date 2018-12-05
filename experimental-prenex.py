@@ -50,7 +50,7 @@ def main():
 
         try:
             f = open("test.mona", "w")
-            subprocess.call([lazybin, filename, "-p"], timeout=TIMEOUT, stdout=f)
+            subprocess.call([lazybin, filename, "--prenex"], timeout=TIMEOUT, stdout=f)
             mona_output_anti = subprocess.check_output([monabin, "test.mona"], timeout=TIMEOUT).decode("utf-8")
             mona_parse_anti = parse_mona(mona_output_anti)
             f.close()

@@ -96,19 +96,26 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula f = antiprenexEmpty $ simplifyNegFormula $ moveNegToLeavesFormula $ antiprenexEmpty $ balanceFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ convertToBaseFormula f
+antiprenexFormula = antiprenexEmpty . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . balanceFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula
 
 
-antiprenexDecl :: MonaDeclaration -> MonaDeclaration
-antiprenexDecl (MonaDeclFormula f) = MonaDeclFormula $ antiprenexFormula f
-antiprenexDecl (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . antiprenexFormula)]
-antiprenexDecl (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . antiprenexFormula)]
-antiprenexDecl (MonaDeclPred name params f) = MonaDeclPred name params (antiprenexFormula f) -- TODO: params are not antiprenexed
-antiprenexDecl a = a -- TODO: incomplete
-
+convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
+convertDecl g (MonaDeclFormula f) = MonaDeclFormula $ g f
+convertDecl g (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . g)]
+convertDecl g (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . g)]
+convertDecl g (MonaDeclPred name params f) = MonaDeclPred name params (g f) -- TODO: params are not converted
+convertDecl _ a = a -- TODO: incomplete
 
 antiprenexFile :: MonaFile -> MonaFile
-antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (antiprenexDecl) decls
+antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls
+
+
+simplifyFormula :: MonaFormula -> MonaFormula
+simplifyFormula = simplifyNegFormula . moveNegToLeavesFormula . balanceFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula
+
+simplifyFile :: MonaFile -> MonaFile
+simplifyFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (simplifyFormula)) decls
+
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with a conversion to formula without implications and equivalences.
