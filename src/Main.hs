@@ -30,6 +30,7 @@ useMona = False
 -- |Rename bound vars.
 renameBoundVars = False
 
+-- |Parameters of the decision procedure.
 data ProcedureArgs =
   Prenex
   | None
@@ -91,6 +92,7 @@ renameBVFileWrap :: MoPa.MonaFile -> MoPa.MonaFile
 renameBVFileWrap = if renameBoundVars then renameBVFile else id
 
 
+-- |Show help.
 showHelp :: IO ()
 showHelp = do
   prname <- getProgName

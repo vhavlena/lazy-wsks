@@ -110,9 +110,18 @@ antiprenexFile :: MonaFile -> MonaFile
 antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with the formula simplification
+--------------------------------------------------------------------------------------------------------------
+
+-- |Simplify formula: balance formula, move negations to leaves, simplify
+-- formula (without antiprenexing).
 simplifyFormula :: MonaFormula -> MonaFormula
 simplifyFormula = simplifyNegFormula . moveNegToLeavesFormula . balanceFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula
 
+
+-- |Simplify MONA file: balance formula, move negations to leaves, simplify
+-- formula (without antiprenexing).
 simplifyFile :: MonaFile -> MonaFile
 simplifyFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (simplifyFormula)) decls
 
