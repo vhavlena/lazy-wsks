@@ -112,4 +112,4 @@ eqAut v1 v2 = TA.BATreeAutomaton (Set.fromList [0]) (Set.fromList [0]) (Set.from
 epsAut :: Lo.Var -> WS2STreeAut
 epsAut var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fromList [1])
    (Map.fromList[ (([1,1], (singSymbol '1' var)), Set.fromList [0])
-      , (([0,0], (singSymbol '0' var)), Set.fromList [0])])
+      , (([1,1], (singSymbol '0' var)), Set.fromList [1])])
