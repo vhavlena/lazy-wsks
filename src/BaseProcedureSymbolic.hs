@@ -7,10 +7,14 @@ Author      : Vojtech Havlena, November 2018
 License     : GPL-3
 -}
 
+{-# OPTIONS_GHC -XTypeOperators #-}
+
 module BaseProcedureSymbolic where
 
 import Data.Maybe
 import qualified Data.Set as Set
+import qualified Control.Monad.Fix as Fix
+import qualified Data.Tuple as Tuple
 import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified TreeAutomaton as TA
@@ -20,6 +24,7 @@ import qualified Logic as Lo
 import qualified Alphabet as Alp
 
 import BaseDecisionProcedure
+import Control.Applicative
 
 import qualified Debug.Trace as Dbg
 
@@ -32,7 +37,7 @@ import qualified Debug.Trace as Dbg
 data Literal =
   Var String
   | Not String
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- |Set of literals describing possible assigments to vars (=this define symbols)
 -- and corresponding term.
@@ -82,7 +87,41 @@ minusSymbolSym (TSet tset1) (TSet tset2) sym = ret where
 -- |Unify symbolic terms. Symbolic terms having equal the literal part will be
 -- merged together using the fuction joinTerm.
 unifySymTerm :: [SymTerm] -> [SymTerm]
-unifySymTerm = Map.toList . Map.fromListWith (joinTerm)
+unifySymTerm =  Map.toList . Map.fromListWith (joinTerm)
+
+
+--unifyEqualSymTerm :: [SymTerm] -> [SymTerm]
+unifyEqualSymTerm :: [SymTerm] -> [SymTerm]
+unifyEqualSymTerm l = concat $ map (f) lst  -- Map.toList $ Map.map (removeRedundantLiterals) $ Map.fromListWith (Set.union) $ map (Tuple.swap) l -- List.groupBy ((==) `comp` (snd)) l
+  where
+    lst :: [[SymTerm]]
+    lst = List.groupBy ((==) `comp` (snd)) $ List.sortBy ((compare) `comp` (snd)) l
+    f :: [SymTerm] -> [SymTerm]
+    f l = Fix.fix (r) l
+    r re v = if v' == v then v else re v' where
+      v' = h v
+    g xs ys = liftA2 (,) xs ys
+    h :: [SymTerm] -> [SymTerm]
+    h lst = case List.find (differsInVar) $ g lst lst of
+      (Just (x,y)) -> (Set.intersection (fst x) (fst y), snd y):lst' where
+        lst' =  lst List.\\ [x,y]
+      Nothing -> lst
+
+
+
+removeRedundantLiterals set = newSet where
+  vars = Set.toList $ proj set
+  parRem = vars >>= \(Var x) -> let singX = Set.fromList [Var x, Not x] in if Set.isSubsetOf (singX) set then return $ set Set.\\ (singX) else [] where
+    sing x = Set.fromList [Var x, Not x]
+  newSet = foldr (Set.intersection) set parRem
+
+
+--infixl 5 .?.
+comp :: (a -> a -> b) -> (c -> a) -> (c -> c -> b)
+comp f g = \x y -> f (g x) (g y)
+
+differsInVar :: (SymTerm, SymTerm) -> Bool
+differsInVar (sym1, sym2) = ((Set.size $ fst sym1) == (Set.size $ fst sym2))  && (Set.size $ Set.intersection (fst sym1) (fst sym2)) == (Set.size $ fst sym1) - 1
 
 
 -- |Forget the literal part of the symbolic term yielding the ordinary term.
@@ -136,3 +175,19 @@ test1 = minusSymbolSym t3 t4 (Set.singleton ("X", Set.fromList ["Y"]) ) where
   t2 = atom2Terms Map.empty (Lo.Subseteq "X" "Y")
   t3 = TProj "X" t1
   t4 = TProj "X" t2
+
+
+test2 =unifyEqualSymTerm $ minusSymbolSym t1 t2 (Alp.unwindSymbolX ("XX", Set.fromList ["X","Y"])) where
+  t1 = atom2Terms Map.empty (Lo.Cat2 "X" "Y")
+  t2 = atom2Terms Map.empty (Lo.Cat2 "X" "Y")
+  s1 = (Set.fromList [Var "X", Not "Y"], t1)
+  s2 = (Set.fromList [Var "X", Var "Y"], t1)
+  s3 = (Set.fromList [Var "X", Not "Y"], t2)
+
+
+test3 = minusSymbolSym t1 t2 (Alp.unwindSymbolX ("XX", Set.fromList ["X","Y"])) where
+  t1 = atom2Terms Map.empty (Lo.Cat2 "X" "Y")
+  t2 = atom2Terms Map.empty (Lo.Cat2 "X" "Y")
+  s1 = (Set.fromList [Var "X", Not "Y"], t1)
+  s2 = (Set.fromList [Var "X", Var "Y"], t1)
+  s3 = (Set.fromList [Var "X", Not "Y"], t2)
