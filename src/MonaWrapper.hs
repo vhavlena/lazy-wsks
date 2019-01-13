@@ -26,6 +26,14 @@ import qualified Debug.Trace as Dbg
 convertAtom :: MonaAtom -> Lo.Atom
 convertAtom (MonaAtomEq (MonaTermVar v1) (MonaTermCat (MonaTermVar v2) (MonaTermConst 0))) = Lo.Cat1 v1 v2
 convertAtom (MonaAtomEq (MonaTermVar v1) (MonaTermCat (MonaTermVar v2) (MonaTermConst 1))) = Lo.Cat2 v1 v2
+convertAtom a@(MonaAtomEq (MonaTermVar v1) t@(MonaTermCat _ _)) =
+  case parseSucc t [] of
+    Just x -> Lo.TreeConst v1 x
+    Nothing -> Lo.MonaAt a (freeVarsAtom a)
+  where
+    parseSucc (MonaTermRoot) lst = Just lst
+    parseSucc (MonaTermCat t (MonaTermConst x)) lst = parseSucc t (x:lst)
+    parseSucc t _ = Nothing
 convertAtom (MonaAtomEq (MonaTermVar v1) (MonaTermVar v2)) = Lo.Eqn v1 v2
 convertAtom (MonaAtomNeq (MonaTermVar v1) (MonaTermVar v2)) = Lo.Neq v1 v2
 convertAtom (MonaAtomIn (MonaTermVar v1) (MonaTermVar v2)) = Lo.Subseteq v1 v2

@@ -212,6 +212,7 @@ atom2Terms _ (Lo.Eqn v1 v2) = constructTermAtom (eqAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.In v1 v2) = constructTermAtom (inAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Subset v1 v2) = constructTermAtom (subsetAut v1 v2) [v1, v2]
 atom2Terms _ (Lo.Neq v1 v2) = TCompl $ constructTermAtom (eqAut v1 v2) [v1, v2]
+atom2Terms _ (Lo.TreeConst v tree) = constructTermAtom (treeConstAut v tree) [v]
 atom2Terms _ (Lo.AtTrue) = TTrue
 atom2Terms _ (Lo.AtFalse) = TFalse
 atom2Terms autdict (Lo.MonaAt at vars) = case (Map.lookup (show at) autdict) of

@@ -32,6 +32,7 @@ data Atom =
    | MonaAt MonaAtom [Var]
    | AtTrue
    | AtFalse
+   | TreeConst Var [Integer]
 
 
 -- formula type
@@ -69,6 +70,7 @@ showAtom (Neq v1 v2) = v1 ++ "~=" ++ v2
 showAtom (Eqn v1 v2) = v1 ++ "=" ++ v2
 showAtom (In v1 v2) = v1 ++ " in " ++ v2
 showAtom (Subset v1 v2) = v1 ++ "⊂" ++ v2
+showAtom (TreeConst v tree) = v ++ "=" ++ (show tree)
 showAtom (MonaAt atom var) = "MA: {" ++ show atom ++ "}"
 showAtom AtTrue = "true"
 showAtom AtFalse = "false"
@@ -228,3 +230,4 @@ freeVarsAtom (In x y) = [x,y]
 freeVarsAtom (MonaAt _ vars) = vars
 freeVarsAtom AtTrue = []
 freeVarsAtom AtFalse = []
+freeVarsAtom (TreeConst var _) = [var]
