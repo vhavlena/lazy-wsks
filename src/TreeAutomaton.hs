@@ -34,7 +34,7 @@ data BATreeAutomaton a b = BATreeAutomaton {
    , roots :: Set.Set a
    , leaves :: Set.Set a
    , transitions :: Transitions a b
-} --deriving (Eq, Ord)
+}
 
 -- |Formatted output of BA
 instance (Show a, Show b) => Show (BATreeAutomaton a b) where

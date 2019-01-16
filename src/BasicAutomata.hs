@@ -115,6 +115,7 @@ epsAut var = TA.BATreeAutomaton (Set.fromList [0, 1]) (Set.fromList [0]) (Set.fr
       , (([1,1], (singSymbol '0' var)), Set.fromList [1])])
 
 
+-- |Tree automaton for first order const term of the form z=0.1....
 treeConstAut :: Lo.Var -> [Integer] -> WS2STreeAut
 treeConstAut var tree = TA.BATreeAutomaton (Set.fromList [0..n+1]) (Set.fromList [n+1]) (Set.fromList [0]) (Map.fromList trans)
   where

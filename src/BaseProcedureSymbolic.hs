@@ -90,9 +90,10 @@ unifySymTerm :: [SymTerm] -> [SymTerm]
 unifySymTerm =  Map.toList . Map.fromListWith (joinTerm)
 
 
---unifyEqualSymTerm :: [SymTerm] -> [SymTerm]
+-- |Unify symbolic terms that have equivalent term part and differs on value
+-- of one variable in literal part.
 unifyEqualSymTerm :: [SymTerm] -> [SymTerm]
-unifyEqualSymTerm l = concat $ map (f) lst  -- Map.toList $ Map.map (removeRedundantLiterals) $ Map.fromListWith (Set.union) $ map (Tuple.swap) l -- List.groupBy ((==) `comp` (snd)) l
+unifyEqualSymTerm l = concat $ map (f) lst
   where
     lst :: [[SymTerm]]
     lst = List.groupBy ((==) `comp` (snd)) $ List.sortBy ((compare) `comp` (snd)) l
@@ -108,20 +109,23 @@ unifyEqualSymTerm l = concat $ map (f) lst  -- Map.toList $ Map.map (removeRedun
       Nothing -> lst
 
 
+-- removeRedundantLiterals :: Set.Set Literal -> Set.Set Literal
+-- removeRedundantLiterals set = newSet where
+--   vars = Set.toList $ proj set
+--   parRem = vars >>= \(Var x) -> let singX = Set.fromList [Var x, Not x] in if Set.isSubsetOf (singX) set then return $ set Set.\\ (singX) else [] where
+--     sing x = Set.fromList [Var x, Not x]
+--   newSet = foldr (Set.intersection) set parRem
 
-removeRedundantLiterals set = newSet where
-  vars = Set.toList $ proj set
-  parRem = vars >>= \(Var x) -> let singX = Set.fromList [Var x, Not x] in if Set.isSubsetOf (singX) set then return $ set Set.\\ (singX) else [] where
-    sing x = Set.fromList [Var x, Not x]
-  newSet = foldr (Set.intersection) set parRem
 
-
---infixl 5 .?.
+-- |Function composition for f: a->a->b and g: c->a do f(g(x), g(y)).
 comp :: (a -> a -> b) -> (c -> a) -> (c -> c -> b)
 comp f g = \x y -> f (g x) (g y)
 
+
+-- |Does literal parts of two symbolic terms differ only in one variable?
 differsInVar :: (SymTerm, SymTerm) -> Bool
-differsInVar (sym1, sym2) = ((Set.size $ fst sym1) == (Set.size $ fst sym2))  && (Set.size $ Set.intersection (fst sym1) (fst sym2)) == (Set.size $ fst sym1) - 1
+differsInVar (sym1, sym2) = ((Set.size $ fst sym1) == (Set.size $ fst sym2))
+  && (Set.size $ Set.intersection (fst sym1) (fst sym2)) == (Set.size $ fst sym1) - 1
 
 
 -- |Forget the literal part of the symbolic term yielding the ordinary term.
