@@ -14,9 +14,12 @@ import os
 import os.path
 import resource
 
+from termcolor import colored
+
 VALIDLINE = -2
 TIMELINE = -1
 TIMEOUT=50 #in seconds
+COLOR=True
 
 def main():
     if len(sys.argv) != 3:
@@ -42,9 +45,11 @@ def main():
         lines = list(filter(None, lines)) #Remove empty lines
         valid = file_formula_valid(filename)
         if (lines[VALIDLINE] == "valid" and valid) or (lines[VALIDLINE] == "unsatisfiable" and not valid):
-            print("Correct: {0}; {1}".format(monafile, lines[TIMELINE]))
+            correct = colored("Correct:", "green") if COLOR else "Correct:"
+            print(correct, " {0: <25} {1}".format(monafile, lines[TIMELINE]))
         else:
-            print("Fail: {0}; {1}".format(monafile, lines[TIMELINE]))
+            fail = colored("Fail:", "red") if COLOR else "Fail:"
+            print(fail, " {0: <25} {1}".format(monafile, lines[TIMELINE]))
 
 
 def parse_validity(content):
