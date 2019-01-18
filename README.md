@@ -2,7 +2,8 @@
 
 ### Formula File Syntax
 
-Input WS2S formula is specified according to the following syntax. It is a subset of syntax MONA extended by additional atomic predicates.
+Input WS2S formula is specified according to the following syntax. It is a
+subset of syntax MONA extended by additional atomic predicates.
 
 ```
 file ::= (header;) (formula; | decl*)
@@ -39,7 +40,9 @@ second-order-term ::= var = var
 const ::= root(.(0+1))*
 ```
 
-Note that for experimental purposes it is possible to use full MONA syntax, however, it requires local installation of MONA tool.
+Note that for experimental purposes it is possible to use full MONA syntax,
+however, it requires local installation of MONA tool and enabling the option
+*useMona* in *src/Main.hs*.
 
 ### Haskell Package Dependencies
 
