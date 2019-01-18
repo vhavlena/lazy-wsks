@@ -56,3 +56,15 @@ You can install the packages via
 ```
 $ cabal install <package>
 ```
+
+### Python Package Dependencies
+
+Python scripts are used only for testing and automatized experimental
+evaluation.
+
+* termcolor
+
+You can install the packages via
+```
+$ pip install <package>
+```
