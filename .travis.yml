@@ -5,4 +5,4 @@ install:
   - cabal install --only-dependencies
 
 script:
-  - make debug
+  - make
