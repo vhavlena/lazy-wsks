@@ -1,6 +1,9 @@
 
 language: haskell
 
+ghc:
+  - "8.4"
+
 install:
   - cabal install --only-dependencies
 
