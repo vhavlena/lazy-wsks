@@ -1,0 +1,11 @@
+name: lazy-wsks
+version: 1.0
+license: gplv2
+build-depends:
+  mtl,
+  time,
+  parsec,
+  temporary,
+  process
+hs-source-dirs: src
+main-is:  Main.hs
