@@ -4,6 +4,14 @@ language: haskell
 notifications:
   email: false
 
+dist: "trusty"
+
+addons:
+  apt:
+    packages:
+      - "python3"
+      - "python3-pip"
+
 ghc:
   - "8.4"
 
@@ -12,7 +20,7 @@ python:
 
 install:
   - cabal install --only-dependencies
-  - pip install termcolor
+  - pip3 install termcolor
 
 script:
   - make
