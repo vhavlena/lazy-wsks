@@ -6,6 +6,9 @@
 all:
 	cd src && make
 
+install:
+	cabal install --only-dependencies
+
 release:
 	cd src && make release
 

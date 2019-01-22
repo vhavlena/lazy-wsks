@@ -44,7 +44,19 @@ Note that for experimental purposes it is possible to use full MONA syntax,
 however, it requires local installation of MONA tool and enabling the option
 *useMona* in *src/Main.hs*.
 
-### Haskell Package Dependencies
+### Install
+
+For a successful run of the tool and all its features *python3* and *ghc* of
+version 8.4 or greater is needed. To compile the tool carry out the following
+steps:
+
+1. Install required Haskell and Python packages (below)
+2. Run ``` $ make release ``` in the root folder
+
+The tests can be run via ``` $ make test ``` .
+
+
+#### Haskell Package Dependencies
 
 * mtl
 * time
@@ -56,8 +68,12 @@ You can install the packages via
 ```
 $ cabal install <package>
 ```
+or just
+```
+$ make install
+```
 
-### Python Package Dependencies
+#### Python Package Dependencies
 
 Python scripts are used only for testing and automatized experimental
 evaluation.

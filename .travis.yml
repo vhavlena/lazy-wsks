@@ -1,6 +1,9 @@
 
 language: haskell
 
+notifications:
+  email: false
+
 ghc:
   - "8.4"
 
@@ -9,3 +12,4 @@ install:
 
 script:
   - make
+  - make test
