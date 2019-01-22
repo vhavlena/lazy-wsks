@@ -9,6 +9,7 @@ ghc:
 
 install:
   - cabal install --only-dependencies
+  - pip install termcolor
 
 script:
   - make

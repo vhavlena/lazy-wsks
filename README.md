@@ -1,5 +1,7 @@
 # Lazy Decision Procedure for WSkS
 
+[![Build Status](https://travis-ci.org/vhavlena/lazy-wsks.svg?branch=master)](https://travis-ci.org/vhavlena/lazy-wsks)
+
 ### Formula File Syntax
 
 Input WS2S formula is specified according to the following syntax. It is a
