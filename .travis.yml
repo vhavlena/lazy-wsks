@@ -7,6 +7,9 @@ notifications:
 ghc:
   - "8.4"
 
+python:
+  - "3.6"
+
 install:
   - cabal install --only-dependencies
   - pip install termcolor
