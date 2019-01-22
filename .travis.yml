@@ -20,7 +20,7 @@ python:
 
 install:
   - cabal install --only-dependencies
-  - pip3 install termcolor
+  - pip3 install --user termcolor
 
 script:
   - make
