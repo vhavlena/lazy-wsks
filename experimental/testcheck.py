@@ -33,6 +33,8 @@ def main():
         if os.path.isfile(os.path.join(formulafolder, f)) and \
             f.endswith(".mona")]
 
+    success = True
+
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
         try:
@@ -50,6 +52,12 @@ def main():
         else:
             fail = colored("Fail:", "red") if COLOR else "Fail:"
             print(fail, " {0: <25} {1}".format(monafile, lines[TIMELINE]))
+            success = False
+
+    if success:
+        sys.exit(0)
+    else:
+        sys.exit(1)
 
 
 def parse_validity(content):

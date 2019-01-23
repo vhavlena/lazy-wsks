@@ -17,7 +17,7 @@ release:
 	ghc $(RELEASE_FLAGS) --make Main.hs
 
 test:
-	cd .. && python3 testcheck.py src/Main examples/
+	cd .. && python3 experimental/testcheck.py src/Main examples/
 
 clean:
 	rm obj/*.o obj/*.hi

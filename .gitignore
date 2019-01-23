@@ -3,3 +3,4 @@ src/Main
 automata/*
 results/*
 .DS_Store
+src/*.prof
