@@ -4,7 +4,7 @@
 
 ### Formula File Syntax
 
-Input WS2S formula is specified according to the following syntax. It is a
+Input *ground* WS2S formula is specified according to the following syntax. It is a
 subset of syntax MONA extended by additional atomic predicates.
 
 ```
@@ -12,7 +12,7 @@ file ::= (header;) (formula; | decl*)
 
 header ::= ws2s
 
-decl ::= pred var (params)* = formula;
+decl ::= pred var ( params* ) = formula;
 
 formula ::= true
     | false
@@ -36,6 +36,7 @@ second-order-term ::= var = var
     | var sub var
     | sing var
     | eps var
+    | var in var
     | var = var.0
     | var = var.1
 
@@ -45,6 +46,12 @@ const ::= root(.(0+1))*
 Note that for experimental purposes it is possible to use full MONA syntax,
 however, it requires local installation of MONA tool and enabling the option
 *useMona* in *src/Main.hs*.
+
+#### Example
+```
+pred allsub (var2 X) = all2 Y: X sub Y;
+all2 X: ex1 x: (x in X | allsub(X));
+```
 
 ### Install
 
