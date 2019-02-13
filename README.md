@@ -1,4 +1,4 @@
-# Lazy Decision Procedure for WSkS
+# Lazy Decision Procedure for WS2S
 
 [![Build Status](https://travis-ci.org/vhavlena/lazy-wsks.svg?branch=master)](https://travis-ci.org/vhavlena/lazy-wsks)
 
@@ -55,9 +55,9 @@ all2 X: ex1 x: (x in X | allsub(X));
 
 ### Install
 
-For a successful run of the tool and all its features *python3* and *ghc* of
-version 8.4 or greater is needed. To compile the tool carry out the following
-steps:
+For a successful run of the tool and all its features *python3*, *ghc* of
+version 8.4 or greater, and *cabal* of version 2.2 or greater is needed. To compile
+the tool carry out the following steps:
 
 1. Install required Haskell and Python packages (below)
 2. Run ``` $ make release ``` in the root folder

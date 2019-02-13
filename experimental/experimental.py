@@ -26,7 +26,7 @@ def main():
         help_err()
         sys.exit()
     try:
-        opts, args = getopt.getopt(sys.argv[4:], "t", ["tex"])
+        opts, args = getopt.getopt(sys.argv[4:], "tf:", ["tex", "formulas="])
     except getopt.GetoptError as err:
         help_err()
         sys.exit()
@@ -35,11 +35,15 @@ def main():
     monabin = sys.argv[2]
     formulafolder = sys.argv[3]
     texout = False
+    FORMULAS = 5
 
     for o, a in opts:
         if o in ("-t", "--tex"):
             texout = True
+        if o in ("-f", "--formulas"):
+            FORMULAS = int(a)
 
+    print("{0}".format(FORMULAS))
     #Experiments
 
     files = [f for f in os.listdir(formulafolder) \
@@ -148,7 +152,8 @@ def print_output(filename, lazy_parse, mona_parse, mona_pren_parse):
 
 
 def help_err():
-    sys.stderr.write("Bad input arguments. \nFormat: ./experimental [lazy-bin] [mona-bin] [formula folder] [--tex]\n")
+    sys.stderr.write("Bad input arguments. \nFormat: ./experimental [lazy-bin]"\
+        " [mona-bin] [formula folder] [--tex] [--formulas=X]\n")
 
 
 if __name__ == "__main__":
