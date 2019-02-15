@@ -12,6 +12,7 @@ import Data.Time
 import MonaFormulaOperation
 import MonaFormulaAntiprenex
 
+import qualified BaseDecisionProcedure as BP
 import qualified Data.Map as Map
 import qualified LazyDecisionProcedure as LDP
 import qualified StrictDecisionProcedure as SDP
@@ -70,12 +71,17 @@ showValidLazy f = showValidMonaLazy [] f
 showValidMonaLazy :: [(String, BA.WS2STreeAut)] -> Lo.Formula -> IO ()
 showValidMonaLazy aut f = do
    putStrLn $ show f
-   putStrLn $ formatAnswer $ LDP.isValid (Map.fromList aut) f
+   putStrLn $ formatAnswerStat $ LDP.isValid (Map.fromList aut) f
+
+
+formatAnswerStat :: Either BP.FormulaStat String -> String
+formatAnswerStat (Left (BP.FormulaStat val states)) = (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
+formatAnswerStat (Right y) = "Error: " ++ show y
 
 
 -- |Format validity answer
 formatAnswer :: Either Bool String -> String
-formatAnswer (Left x) = if x then "valid" else "unsatisfiable"
+formatAnswer (Left x) = formatAnswerStat (Left $ BP.FormulaStat x (-1))
 formatAnswer (Right y) = "Error: " ++ show y
 
 

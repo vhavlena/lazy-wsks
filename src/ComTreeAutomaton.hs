@@ -9,6 +9,7 @@ License     : GPL-3
 module ComTreeAutomaton (
    preCom
    , ComState(..)
+   , stateSize
    , ComTA(..)
    , containsRoot
 ) where
@@ -59,6 +60,11 @@ instance (Eq m, Eq n) => Eq (ComTA m n) where
 -- |Syntax ordering of two tree automata.
 instance (Ord m, Ord n) => Ord (ComTA m n) where
    a1 <= a2 = True -- DIRTY PERFORMANCE HACK!!!!
+
+
+stateSize :: ComState a -> Int
+stateSize (SetSt s) = max (Set.size s) 1
+stateSize _ = 1
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the pre function on compound tree automata

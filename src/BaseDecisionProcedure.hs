@@ -268,3 +268,37 @@ formula2TermsVars autdict (Lo.Neg f) vars = TCompl (formula2TermsVars autdict f 
 formula2TermsVars autdict (Lo.Exists var f) vars =
    TProj var (TMinusClosure (TSet (Set.fromList [formula2TermsVars autdict f (var:vars)])) sinkTerm (Alp.projZeroSymbol (var:vars)))
 formula2TermsVars _ (Lo.ForAll _ _) _ = error "formula2TermsVars: Only formulas without forall are allowed"
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with term and formula statistics
+--------------------------------------------------------------------------------------------------------------
+
+data FormulaStat = FormulaStat {
+  validity :: Bool
+  , space :: Int
+}
+
+defaultFormulaStat :: Bool -> FormulaStat
+defaultFormulaStat val = FormulaStat val 0
+
+meetBoolFormulaStat :: (Bool -> Bool -> Bool) -> FormulaStat -> FormulaStat -> FormulaStat
+meetBoolFormulaStat f (FormulaStat v1 s1) (FormulaStat v2 s2) = FormulaStat (f v1 v2) (s1 + s2)
+
+mapFormulaStat :: (Bool -> Bool) -> FormulaStat -> FormulaStat
+mapFormulaStat f (FormulaStat val s) = FormulaStat (f val) s
+
+
+termSize :: Term -> Int
+termSize (TUnion t1 t2) = 1 + (termSize t1) + (termSize t2)
+termSize (TIntersect t1 t2) = 1 + (termSize t1) + (termSize t2)
+termSize (TCompl t) = 1 + (termSize t)
+termSize (TProj _ t) = 1 + (termSize t)
+termSize (TSet s) = --Set.size s
+  Set.foldr (gather) 0 s where
+    gather t v = v + (termSize t)
+termSize (TMinusClosure t _ _) = 1 + (termSize t)
+termSize (TStates _ _ s) = Set.foldr (gather) 0 s where
+  gather t v = v + (CTA.stateSize t)
+termSize TTrue = 1
+termSize TFalse = 1

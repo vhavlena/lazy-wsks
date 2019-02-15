@@ -34,20 +34,31 @@ type Cache = Map.Map (Term, Term, Alp.Symbol) Term
 --------------------------------------------------------------------------------------------------------------
 
 -- |Lazy testing of bottom membership in the language of a given term.
-botInLazy :: Term -> Bool
-botInLazy (TTrue) = True
-botInLazy (TFalse) = False
-botInLazy (TUnion t1 t2) = (botInLazy t1) || (botInLazy t2)
-botInLazy (TIntersect t1 t2) = (botInLazy t1) && (botInLazy t2)
-botInLazy (TCompl t) = not $ botInLazy t
+botInLazy :: Term -> FormulaStat
+botInLazy (TTrue) = defaultFormulaStat True
+botInLazy (TFalse) = defaultFormulaStat False
+botInLazy (TUnion t1 t2) =
+  if validity fs1 then fs1
+  else meetBoolFormulaStat (||) fs1 (botInLazy t2) where
+    fs1 = botInLazy t1
+botInLazy (TIntersect t1 t2) =
+  if not $ validity fs1 then fs1
+  else meetBoolFormulaStat (&&) fs1 (botInLazy t2) where
+    fs1 = botInLazy t1
+botInLazy (TCompl t) = mapFormulaStat (not) $ botInLazy t
 botInLazy (TSet tset) =
-   foldr gather False (Set.toList tset) where
-      gather t b = (botInLazy t) || b
+   foldr gather (defaultFormulaStat False) (Set.toList tset) where
+      gather t b = meetBoolFormulaStat (||) (botInLazy t) b
 botInLazy (TProj _ t) = botInLazy t
-botInLazy (TStates aut _ st) = CTA.containsRoot aut st
+botInLazy (TStates aut _ st) = defaultFormulaStat $ CTA.containsRoot aut st
 -- botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (step term True) ++ "\n;\n" ++ show (if isExpandedLight (step term True)  then botInSub (step term True) True else True) ++ "\n ... ") False = undefined
-botInLazy term@(TMinusClosure t _ sset) = (botInSub st True) || (if isExpandedLight st then (botInSub st True) else botInLazy st) where
-  st = step term
+botInLazy term@(TMinusClosure t _ sset) =
+  if memcheck then fstat
+  else (if isExpandedLight st then fstat else botInLazy st) where
+    st = step term
+    fsize = termSize st
+    memcheck = (botInSub st True)
+    fstat = FormulaStat memcheck fsize
 
 
 -- |Bottom membership in the language of a given term.
@@ -229,7 +240,7 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).
-isValid :: MonaAutDict -> Lo.Formula -> Either Bool String
+isValid :: MonaAutDict -> Lo.Formula -> Either FormulaStat String
 --isValid autdict f | Dbg.trace ("isValid: " ++ show (formula2Terms autdict f)) False = undefined
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy (formula2Terms autdict f)

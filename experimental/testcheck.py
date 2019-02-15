@@ -16,7 +16,7 @@ import resource
 
 from termcolor import colored
 
-VALIDLINE = -2
+VALIDLINE = -3
 TIMELINE = -1
 TIMEOUT=50 #in seconds
 COLOR=True
