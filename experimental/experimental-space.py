@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
- Script for automated experimental evaluation.
+ Script for automated experimental space evaluation.
  @title experimental.py
- @author Vojtech Havlena, June 2018
+ @author Vojtech Havlena, February 2019
 """
 
 import sys
@@ -16,7 +16,7 @@ import os.path
 import resource
 
 VALIDLINE = -3
-TIMELINE = -1
+SPACELINE = -2
 TIMEOUT = 100 #in seconds
 FORMULAS = 5
 
@@ -68,7 +68,7 @@ def main():
         except subprocess.TimeoutExpired:
             lazy_parse = None, None
         try:
-            mona_output = subprocess.check_output([monabin, filename], \
+            mona_output = subprocess.check_output([monabin, "-s", filename], \
                 timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
         except subprocess.TimeoutExpired:
@@ -78,7 +78,7 @@ def main():
         try:
             f = open("test.mona", "w")
             subprocess.call([lazybin, filename, "--prenex"], timeout=TIMEOUT, stdout=f)
-            mona_pren_output = subprocess.check_output([monabin, "test.mona"], \
+            mona_pren_output = subprocess.check_output([monabin, "-s", "test.mona"], \
                 timeout=TIMEOUT).decode("utf-8")
             mona_pren_parse = parse_mona(mona_pren_output)
             f.close()
@@ -101,22 +101,22 @@ def parse_lazy(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
     valid = lines[VALIDLINE] == "valid"
-    match = re.search("Time: ([0-9]+.[0-9]+)s", lines[TIMELINE])
-    time = round(float(match.group(1)), 2)
-    return valid, time
+    match = re.search("Space: ([0-9]+)", lines[SPACELINE])
+    space = int(match.group(1))
+    return valid, space
 
 
 def parse_mona(output):
     valid = None
-    time = None
+    total = 0
     for line in output.split('\n'):
         out = parse_mona_sat(line)
         if out is not None:
             valid = out
-        out = parse_mona_time(line)
+        out = parse_mona_space(line)
         if out is not None:
-            time = out
-    return valid, time
+            total = total + out
+    return valid, total
 
 
 def parse_mona_sat(line):
@@ -129,11 +129,11 @@ def parse_mona_sat(line):
     return None
 
 
-def parse_mona_time(line):
-    match = re.search("Time: ([0-9][0-9]):([0-9][0-9]):([0-9][0-9].[0-9][0-9])", line)
+def parse_mona_space(line):
+    match = re.search("Minimizing \\([0-9]+,[0-9]+\\) -> \\(([0-9]+),[0-9]+\\)", line)
     if match is not None:
-        time = 3600*float(match.group(1)) + 60*float(match.group(2)) + float(match.group(3))
-        return time
+        space = int(match.group(1))
+        return space
     return None
 
 
