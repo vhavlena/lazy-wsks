@@ -43,7 +43,6 @@ def main():
         if o in ("-f", "--formulas"):
             FORMULAS = int(a)
 
-    print("{0}".format(FORMULAS))
     #Experiments
 
     files = [f for f in os.listdir(formulafolder) \
@@ -55,7 +54,7 @@ def main():
     tex += "\\begin{table}[h]\n\\begin{tabular}{llll}\n"
     tex += "\\textbf{Formula File} & \\textbf{Lazy Approach} & \\textbf{Mona} & \\textbf{Mona+antiprenex} \\\\\n\\toprule \n"
 
-    print_config()
+    print_config(FORMULAS)
     print("Formula: lazy approach, MONA, MONA+antiprenex")
 
     for monafile in files:
@@ -137,9 +136,9 @@ def parse_mona_time(line):
     return None
 
 
-def print_config():
+def print_config(formulas):
     print("Timeout: {0}".format(TIMEOUT))
-    print("Number of formulas: {0}".format(FORMULAS))
+    print("Number of formulas: {0}".format(formulas))
 
 
 def format_output(parse):
