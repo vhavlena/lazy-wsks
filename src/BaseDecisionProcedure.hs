@@ -288,6 +288,9 @@ meetBoolFormulaStat f (FormulaStat v1 s1) (FormulaStat v2 s2) = FormulaStat (f v
 meet1BoolFormulaStat :: (Bool -> Bool -> Bool) -> FormulaStat -> FormulaStat -> FormulaStat
 meet1BoolFormulaStat f (FormulaStat v1 s1) (FormulaStat v2 s2) = FormulaStat (f v1 v2) (s1 + s2 + 1)
 
+incFormulaStat :: FormulaStat -> FormulaStat
+incFormulaStat (FormulaStat v1 s1) = FormulaStat v1 (s1+1)
+
 mapFormulaStat :: (Bool -> Bool) -> FormulaStat -> FormulaStat
 mapFormulaStat f (FormulaStat val s) = FormulaStat (f val) s
 

@@ -45,12 +45,12 @@ botInLazy (TIntersect t1 t2) =
   if not $ validity fs1 then fs1
   else meet1BoolFormulaStat (&&) fs1 (botInLazy t2) where
     fs1 = botInLazy t1
-botInLazy (TCompl t) = mapFormulaStat (not) $ botInLazy t
-botInLazy (TSet tset) =
+botInLazy (TCompl t) = incFormulaStat $ mapFormulaStat (not) $ botInLazy t
+botInLazy (TSet tset) = incFormulaStat $
    foldr gather (defaultFormulaStat False) (Set.toList tset) where
       gather t b = meetBoolFormulaStat (||) (botInLazy t) b
-botInLazy (TProj _ t) = botInLazy t
-botInLazy (TStates aut _ st) = defaultFormulaStat $ CTA.containsRoot aut st
+botInLazy (TProj _ t) = incFormulaStat $ botInLazy t
+botInLazy (TStates aut _ st) = incFormulaStat $ defaultFormulaStat $ CTA.containsRoot aut st
 -- botInLazy term@(TMinusClosure t _ sset) m | Dbg.trace ("botInLazy: " ++ show (step term True) ++ "\n;\n" ++ show (if isExpandedLight (step term True)  then botInSub (step term True) True else True) ++ "\n ... ") False = undefined
 botInLazy term@(TMinusClosure t _ sset) =
   if memcheck then fstat
