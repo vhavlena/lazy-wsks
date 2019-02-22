@@ -63,7 +63,7 @@ instance (Ord m, Ord n) => Ord (ComTA m n) where
 
 
 stateSize :: ComState a -> Int
-stateSize (SetSt s) = max (Set.size s) 1
+stateSize (SetSt s) = Set.size s
 stateSize _ = 1
 
 --------------------------------------------------------------------------------------------------------------

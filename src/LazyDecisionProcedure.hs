@@ -39,11 +39,11 @@ botInLazy (TTrue) = defaultFormulaStat True
 botInLazy (TFalse) = defaultFormulaStat False
 botInLazy (TUnion t1 t2) =
   if validity fs1 then fs1
-  else meetBoolFormulaStat (||) fs1 (botInLazy t2) where
+  else meet1BoolFormulaStat (||) fs1 (botInLazy t2) where
     fs1 = botInLazy t1
 botInLazy (TIntersect t1 t2) =
   if not $ validity fs1 then fs1
-  else meetBoolFormulaStat (&&) fs1 (botInLazy t2) where
+  else meet1BoolFormulaStat (&&) fs1 (botInLazy t2) where
     fs1 = botInLazy t1
 botInLazy (TCompl t) = mapFormulaStat (not) $ botInLazy t
 botInLazy (TSet tset) =

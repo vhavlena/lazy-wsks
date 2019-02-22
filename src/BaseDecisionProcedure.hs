@@ -285,6 +285,9 @@ defaultFormulaStat val = FormulaStat val 0
 meetBoolFormulaStat :: (Bool -> Bool -> Bool) -> FormulaStat -> FormulaStat -> FormulaStat
 meetBoolFormulaStat f (FormulaStat v1 s1) (FormulaStat v2 s2) = FormulaStat (f v1 v2) (s1 + s2)
 
+meet1BoolFormulaStat :: (Bool -> Bool -> Bool) -> FormulaStat -> FormulaStat -> FormulaStat
+meet1BoolFormulaStat f (FormulaStat v1 s1) (FormulaStat v2 s2) = FormulaStat (f v1 v2) (s1 + s2 + 1)
+
 mapFormulaStat :: (Bool -> Bool) -> FormulaStat -> FormulaStat
 mapFormulaStat f (FormulaStat val s) = FormulaStat (f val) s
 
@@ -295,10 +298,10 @@ termSize (TIntersect t1 t2) = 1 + (termSize t1) + (termSize t2)
 termSize (TCompl t) = 1 + (termSize t)
 termSize (TProj _ t) = 1 + (termSize t)
 termSize (TSet s) = --Set.size s
-  Set.foldr (gather) 0 s where
+  1 + (Set.foldr (gather) 0 s) where
     gather t v = v + (termSize t)
 termSize (TMinusClosure t _ _) = 1 + (termSize t)
-termSize (TStates _ _ s) = Set.foldr (gather) 0 s where
+termSize (TStates _ _ s) = 1 + (Set.foldr (gather) 0 s) where
   gather t v = v + (CTA.stateSize t)
 termSize TTrue = 1
 termSize TFalse = 1
