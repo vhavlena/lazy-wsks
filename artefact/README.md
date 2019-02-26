@@ -1,6 +1,9 @@
 # Artefact evaluation
 
-* Install all required packages (from `install.sh`).
+To run the tool install all necessary packages mentioned in the main README
+file. Or [download virtual
+machine](http://www.fit.vutbr.cz/~lengal/public/trusty.ova) and install all
+required packages (from `install.sh`).
 
 CADE benchmarks:
 * [ws2s] tree-constant
