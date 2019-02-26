@@ -1,5 +1,6 @@
 src/obj/*
 src/Main
+src/LazyWSkS
 automata/*
 results/*
 .DS_Store

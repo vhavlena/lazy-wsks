@@ -8,16 +8,16 @@ TEST_FLAGS=-odir obj -hidir obj
 DEBUG_FLAGS=-odir obj -hidir obj -prof -fprof-auto -rtsopts
 
 all:
-	ghc $(TEST_FLAGS) --make Main.hs
+	ghc $(TEST_FLAGS) --make LazyWSkS.hs
 
 debug:
-	ghc $(DEBUG_FLAGS) --make Main.hs
+	ghc $(DEBUG_FLAGS) --make LazyWSkS.hs
 
 release:
-	ghc $(RELEASE_FLAGS) --make Main.hs
+	ghc $(RELEASE_FLAGS) --make LazyWSkS.hs
 
 test:
-	cd .. && python3 experimental/testcheck.py src/Main examples/
+	cd .. && python3 experimental/testcheck.py src/LazyWSkS examples/
 
 clean:
 	rm obj/*.o obj/*.hi

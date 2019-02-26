@@ -1,5 +1,5 @@
 {-|
-Module      : Main
+Module      : LazyWSkS
 Description : Main file for WSkS decision procedure.
 Author      : Vojtech Havlena, 2018
 License     : GPL-3

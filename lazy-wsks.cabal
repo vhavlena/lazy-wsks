@@ -8,4 +8,4 @@ build-depends:
   temporary,
   process
 hs-source-dirs: src
-main-is:  Main.hs
+main-is:  LazyWSkS.hs
