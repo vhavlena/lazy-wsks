@@ -1,5 +1,6 @@
 src/obj/*
 src/Main
+src/Antiprenexor
 src/LazyWSkS
 automata/*
 results/*

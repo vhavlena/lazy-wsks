@@ -116,6 +116,8 @@ main = do
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
        putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+       stop <- getCurrentTime
+       putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      (Validity file par) -> do
        mona <- MoPa.parseFile file
        let fnc = if par == Prenex then simplifyFile else antiprenexFile

@@ -23,6 +23,7 @@ import qualified Logic as Lo
 import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
 import qualified Debug.Trace as Dbg
+import qualified LabelledGraph as Lg
 
 
 --------------------------------------------------------------------------------------------------------------
@@ -269,6 +270,29 @@ removeWhereDecl (MonaDeclFormula f) = MonaDeclFormula $ removeWhereFormula f
 removeWhereDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeWhereFormula f)
 removeWhereDecl a = a  -- TODO: need to be refined
 
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the predicate and macros triming
+--------------------------------------------------------------------------------------------------------------
+
+getCalls :: MonaFormula -> [String]
+getCalls (MonaFormulaPredCall name _) = return name
+getCalls (MonaFormulaAtomic atom) = []
+getCalls (MonaFormulaVar var) = []
+getCalls (MonaFormulaNeg f) = getCalls f
+getCalls (MonaFormulaDisj f1 f2) = (getCalls f1) ++ (getCalls f2)
+getCalls (MonaFormulaConj f1 f2) = (getCalls f1) ++ (getCalls f2)
+getCalls (MonaFormulaImpl f1 f2) = (getCalls f1) ++ (getCalls f2)
+getCalls (MonaFormulaEquiv f1 f2) = (getCalls f1) ++ (getCalls f2)
+getCalls (MonaFormulaEx0 vars f) = getCalls f
+getCalls (MonaFormulaEx1 decl f) = (getListCalls decl) ++ (getCalls f)
+getCalls (MonaFormulaEx2 decl f) = (getListCalls decl) ++ (getCalls f)
+getCalls (MonaFormulaAll0 vars f) = getCalls f
+getCalls (MonaFormulaAll1 decl f) = (getListCalls decl) ++ (getCalls f)
+getCalls (MonaFormulaAll2 decl f) = (getListCalls decl) ++ (getCalls f)
+
+getListCalls :: [(String, Maybe MonaFormula)] -> [String]
+getListCalls lst = (catMaybes $ map (snd) lst) >>= getCalls
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.

@@ -16,6 +16,9 @@ debug:
 release:
 	ghc $(RELEASE_FLAGS) --make LazyWSkS.hs
 
+antiprenex:
+	ghc $(DEBUG_FLAGS) --make Antiprenexor.hs
+
 test:
 	cd .. && python3 experimental/testcheck.py src/LazyWSkS examples/
 
