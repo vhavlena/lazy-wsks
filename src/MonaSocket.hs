@@ -17,6 +17,7 @@ import Data.List
 
 import MonaFormulaOperation
 import MonaParser
+import MonaFormulaOperationSubst
 import qualified MonaAutomataParser as MAP
 import MonaAutomataWrapper
 import TreeAutomaton

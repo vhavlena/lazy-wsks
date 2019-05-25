@@ -14,6 +14,7 @@ import Data.Maybe
 
 import MonaParser
 import MonaFormulaOperation
+import MonaFormulaOperationSubst
 import MonaFormulaAntiprenex
 
 import qualified Logic as Lo

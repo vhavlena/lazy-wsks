@@ -18,6 +18,7 @@ import qualified LazyDecisionProcedure as LDP
 import qualified StrictDecisionProcedure as SDP
 import qualified Logic as Lo
 import qualified FormulaOperation as FO
+import qualified MonaFormulaOperationSubst as FOS
 import qualified Examples as Ex
 import qualified MonaWrapper as MoWr
 import qualified MonaParser as MoPa
@@ -95,7 +96,7 @@ formulaOperationsDebug f = do
 
 -- |Wrap for renaming bound variables in Mona file.
 renameBVFileWrap :: MoPa.MonaFile -> MoPa.MonaFile
-renameBVFileWrap = if renameBoundVars then renameBVFile else id
+renameBVFileWrap = if renameBoundVars then FOS.renameBVFile else id
 
 
 -- |Show help.

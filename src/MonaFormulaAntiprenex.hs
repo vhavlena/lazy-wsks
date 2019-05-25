@@ -13,6 +13,7 @@ import Data.Maybe
 
 import MonaParser
 import MonaFormulaOperation
+import MonaFormulaOperationSubst
 
 import qualified Logic as Lo
 import qualified FormulaOperation as Fo
