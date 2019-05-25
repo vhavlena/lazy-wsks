@@ -275,24 +275,55 @@ removeWhereDecl a = a  -- TODO: need to be refined
 -- Part with the predicate and macros triming
 --------------------------------------------------------------------------------------------------------------
 
-getCalls :: MonaFormula -> [String]
-getCalls (MonaFormulaPredCall name _) = return name
-getCalls (MonaFormulaAtomic atom) = []
-getCalls (MonaFormulaVar var) = []
-getCalls (MonaFormulaNeg f) = getCalls f
-getCalls (MonaFormulaDisj f1 f2) = (getCalls f1) ++ (getCalls f2)
-getCalls (MonaFormulaConj f1 f2) = (getCalls f1) ++ (getCalls f2)
-getCalls (MonaFormulaImpl f1 f2) = (getCalls f1) ++ (getCalls f2)
-getCalls (MonaFormulaEquiv f1 f2) = (getCalls f1) ++ (getCalls f2)
-getCalls (MonaFormulaEx0 vars f) = getCalls f
-getCalls (MonaFormulaEx1 decl f) = (getListCalls decl) ++ (getCalls f)
-getCalls (MonaFormulaEx2 decl f) = (getListCalls decl) ++ (getCalls f)
-getCalls (MonaFormulaAll0 vars f) = getCalls f
-getCalls (MonaFormulaAll1 decl f) = (getListCalls decl) ++ (getCalls f)
-getCalls (MonaFormulaAll2 decl f) = (getListCalls decl) ++ (getCalls f)
+getCallsFromula :: MonaFormula -> [String]
+getCallsFromula (MonaFormulaPredCall name _) = return name
+getCallsFromula (MonaFormulaAtomic atom) = []
+getCallsFromula (MonaFormulaVar var) = []
+getCallsFromula (MonaFormulaNeg f) = getCallsFromula f
+getCallsFromula (MonaFormulaDisj f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaConj f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaImpl f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaEquiv f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaEx0 vars f) = getCallsFromula f
+getCallsFromula (MonaFormulaEx1 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaEx2 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaAll0 vars f) = getCallsFromula f
+getCallsFromula (MonaFormulaAll1 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaAll2 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+
 
 getListCalls :: [(String, Maybe MonaFormula)] -> [String]
-getListCalls lst = (catMaybes $ map (snd) lst) >>= getCalls
+getListCalls lst = (catMaybes $ map (snd) lst) >>= getCallsFromula
+
+
+buildCallGraph :: MonaFile -> Lg.LabGraph String
+buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
+  graphDecl [] = []
+  graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
+  graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+
+
+gd :: MonaFile -> [(String, [String])]
+gd (MonaFile _ decls) = graphDecl decls where
+  graphDecl [] = []
+  graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
+  graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+
+
+removeRedundantPreds :: MonaFile -> MonaFile
+removeRedundantPreds mf@(MonaFile dom decls) = MonaFile dom $ filter flt decls where
+  reach = Lg.reachableLabelGraph "root" $ buildCallGraph mf
+  flt (MonaDeclFormula _) = True
+  flt (MonaDeclPred name _ f) = name `elem` reach
+  flt (MonaDeclVar0 _) = True
+  flt (MonaDeclVar1 _) = True
+  flt (MonaDeclVar2 _) = True
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.
@@ -300,6 +331,7 @@ getListCalls lst = (catMaybes $ map (snd) lst) >>= getCalls
 
 removeForAllFormula :: MonaFormula -> MonaFormula
 removeForAllFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+removeForAllFormula (MonaFormulaPredCall name f) = MonaFormulaPredCall name f
 removeForAllFormula (MonaFormulaVar var) = MonaFormulaVar var
 removeForAllFormula (MonaFormulaNeg f) = MonaFormulaNeg (removeForAllFormula f)
 removeForAllFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (removeForAllFormula f1) (removeForAllFormula f2)

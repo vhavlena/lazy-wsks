@@ -67,9 +67,7 @@ showHelp :: IO ()
 showHelp = do
   prname <- getProgName
   putStrLn $ "Usage: ./" ++ prname ++ " [file] [args]"
-  putStrLn $ "where [args] is one of\n  [--help] show this help\n  [-p] for " ++
-    "supress of formula antiprenexing\n  [--prenex] only for converting "++
-    "formula to antiprenexed MONA formula"
+  putStrLn $ "where [args] is one of\n  [--help] show this help"
 
 
 -- |Main function
@@ -79,10 +77,11 @@ main = do
    case (parseArgs args) of
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
-       putStrLn $ show $ antiprenexFile $ removeForAllFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+       putStrLn $ show $ removeRedundantPreds $ renameBVFileWrap $ unwindQuantifFile mona
+       --putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Help -> showHelp
      Error -> do
-       prname <- getProgName
-       putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
+       putStrLn $ "Bad input params"
+       showHelp

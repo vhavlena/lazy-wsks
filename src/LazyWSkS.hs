@@ -130,5 +130,5 @@ main = do
              putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Help -> showHelp
      Error -> do
-       prname <- getProgName
-       putStrLn $ "Bad input params, file with WS2S formula required\n./" ++ prname ++ " [file]"
+       putStrLn $ "Bad input params"
+       showHelp

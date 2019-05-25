@@ -6,6 +6,7 @@ build-depends:
   time,
   parsec,
   temporary,
-  process
+  process,
+  bimap
 hs-source-dirs: src
 main-is:  LazyWSkS.hs
