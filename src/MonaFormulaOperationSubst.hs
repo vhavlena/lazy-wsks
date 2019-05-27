@@ -19,6 +19,7 @@ import Data.Maybe
 
 import MonaParser
 
+import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
@@ -236,8 +237,8 @@ varsFormula (MonaFormulaDisj f1 f2) = varsFormula (MonaFormulaConj f1 f2)
 varsFormula (MonaFormulaImpl f1 f2) = varsFormula (MonaFormulaConj f1 f2)
 varsFormula (MonaFormulaEquiv f1 f2) = varsFormula (MonaFormulaConj f1 f2)
 varsFormula (MonaFormulaEx0 [var] f) = var:(varsFormula f)
-varsFormula (MonaFormulaEx1 [var] f) = (fst var):(varsFormula f)
-varsFormula (MonaFormulaEx2 [var] f) = (fst var):(varsFormula f)
+varsFormula (MonaFormulaEx1 [var] f) = (fst var):(mapVarDecl (varsFormula) var) ++ (varsFormula f)
+varsFormula (MonaFormulaEx2 [var] f) = (fst var):(mapVarDecl (varsFormula) var) ++ (varsFormula f)
 varsFormula (MonaFormulaAll0 v f) = varsFormula (MonaFormulaEx0 v f)
 varsFormula (MonaFormulaAll1 v f) = varsFormula (MonaFormulaEx1 v f)
 varsFormula (MonaFormulaAll2 v f) = varsFormula (MonaFormulaEx2 v f)
@@ -254,9 +255,13 @@ freeVarsFormula (MonaFormulaDisj f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2
 freeVarsFormula (MonaFormulaImpl f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
 freeVarsFormula (MonaFormulaEquiv f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
 freeVarsFormula (MonaFormulaEx0 [var] f) = delete var $ freeVarsFormula f
-freeVarsFormula (MonaFormulaEx1 [var] f) = delete (fst var) $ freeVarsFormula f
-freeVarsFormula (MonaFormulaEx2 [var] f) = delete (fst var) $ freeVarsFormula f
+freeVarsFormula (MonaFormulaEx1 [var] f) = delete (fst var) $ (mapVarDecl (freeVarsFormula) var) ++ (freeVarsFormula f)
+freeVarsFormula (MonaFormulaEx2 [var] f) = delete (fst var) $ (mapVarDecl (freeVarsFormula) var) ++ (freeVarsFormula f)
 freeVarsFormula (MonaFormulaAll0 v f) = freeVarsFormula (MonaFormulaEx0 v f)
 freeVarsFormula (MonaFormulaAll1 v f) = freeVarsFormula (MonaFormulaEx1 v f)
 freeVarsFormula (MonaFormulaAll2 v f) = freeVarsFormula (MonaFormulaEx2 v f)
 freeVarsFormula _ = error "freeVarsFormula: unimplemented" -- TODO: incomplete
+
+
+mapVarDecl :: (MonaFormula -> [a]) -> (String, Maybe MonaFormula) -> [a]
+mapVarDecl f var = Aux.mapLstMaybe f (snd var)

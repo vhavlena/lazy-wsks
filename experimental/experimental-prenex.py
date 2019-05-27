@@ -50,7 +50,7 @@ def main():
 
         try:
             f = open("test.mona", "w")
-            output_anti = subprocess.check_output([lazybin, filename], timeout=TIMEOUT, stdout=f).decode("utf-8")
+            output_anti = subprocess.check_output([lazybin, filename], timeout=TIMEOUT).decode("utf-8")
             anti_fle, anti_time = parse_prenex(output_anti)
             f.write(anti_fle)
             f.close()
@@ -115,7 +115,7 @@ def format_output(parse):
 
 
 def print_output(filename, lazy_parse, mona_parse, anti_time):
-    mona_parse[1] += anti_time
+    mona_parse = mona_parse[0], mona_parse[1] + anti_time
     print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
 
 

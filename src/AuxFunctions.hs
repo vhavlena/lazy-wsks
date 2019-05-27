@@ -13,11 +13,13 @@ module AuxFunctions (
    , crossProdLst
    , updateAt
    , strToUniqInt
+   , mapLstMaybe
 ) where
 
 
 import Data.List
 import Data.Char
+import Data.Maybe
 import qualified Data.Set as Set
 
 -- |Insert a value into list to a given position (indices start at 0).
@@ -68,3 +70,8 @@ mergeListsLst a b = [x:y | x <- a, y <- b ]
 
 strToUniqInt :: String -> Int
 strToUniqInt str = foldr (\a b -> b * 256 + (ord a)) 0 str
+
+
+mapLstMaybe :: (a -> [b]) -> Maybe a -> [b]
+mapLstMaybe _ Nothing = []
+mapLstMaybe f (Just x) = f x
