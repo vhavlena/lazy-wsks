@@ -1,6 +1,6 @@
 #
 # Makefile for WSkS decision procedure written in Haskell
-# Author: Vojtech Havlena, 2018
+# Author: Vojtech Havlena, 2019
 #
 
 RELEASE_FLAGS=-O2 -odir obj -hidir obj
@@ -18,6 +18,9 @@ release:
 
 antiprenex:
 	ghc $(DEBUG_FLAGS) --make Antiprenexor.hs
+
+antiprenex-release:
+	ghc $(RELEASE_FLAGS) --make Antiprenexor.hs
 
 test:
 	cd .. && python3 experimental/testcheck.py src/LazyWSkS examples/

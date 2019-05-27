@@ -50,25 +50,28 @@ def main():
 
         try:
             f = open("test.mona", "w")
-            subprocess.call([lazybin, filename, "--prenex"], timeout=TIMEOUT, stdout=f)
+            output_anti = subprocess.check_output([lazybin, filename], timeout=TIMEOUT, stdout=f).decode("utf-8")
+            anti_fle, anti_time = parse_prenex(output_anti)
+            f.write(anti_fle)
+            f.close()
             mona_output_anti = subprocess.check_output([monabin, "test.mona"], timeout=TIMEOUT).decode("utf-8")
             mona_parse_anti = parse_mona(mona_output_anti)
-            f.close()
+            os.remove("test.mona")
         except subprocess.TimeoutExpired:
             mona_parse_anti = None, None
         except subprocess.CalledProcessError as e:
             mona_parse_anti = None, None
 
-        print_output(filename, mona_parse, mona_parse_anti)
+        print_output(filename, mona_parse, mona_parse_anti, anti_time)
 
 
-def parse_lazy(output):
+def parse_prenex(output):
     lines = output.split('\n')
     lines = list(filter(None, lines)) #Remove empty lines
-    valid = lines[VALIDLINE] == "valid"
     match = re.search("Time: ([0-9]+.[0-9]+)s", lines[TIMELINE])
-    time = round(float(match.group(1)), 2)
-    return valid, time
+    formula = "\n".join(lines[:-1])
+    time = round(float(match.group(1)), 3)
+    return formula, time
 
 
 def parse_mona(output):
@@ -111,7 +114,8 @@ def format_output(parse):
     return "{0} {1}".format("N/A" if parse[0] is None else parse[0], "TO" if parse[1] is None else parse[1])
 
 
-def print_output(filename, lazy_parse, mona_parse):
+def print_output(filename, lazy_parse, mona_parse, anti_time):
+    mona_parse[1] += anti_time
     print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
 
 
