@@ -49,9 +49,15 @@ flushQuantifChain [] f = f
 --flushQuantifChain ((ForAll0Chain x):xs) f = MonaFormulaAll0 [fst x] (flushQuantifChain xs f)
 --flushQuantifChain ((ForAll1Chain x):xs) f = MonaFormulaAll1 [x] (flushQuantifChain xs f)
 --flushQuantifChain ((ForAll2Chain x):xs) f = MonaFormulaAll2 [x] (flushQuantifChain xs f)
-flushQuantifChain ((Exists0Chain x):xs) f = MonaFormulaEx0 [fst x] (flushQuantifChain xs f)
-flushQuantifChain ((Exists1Chain x):xs) f = MonaFormulaEx1 [x] (flushQuantifChain xs f)
-flushQuantifChain ((Exists2Chain x):xs) f = MonaFormulaEx2 [x] (flushQuantifChain xs f)
+flushQuantifChain ((Exists0Chain x):xs) f = filterQuantifiers (MonaFormulaEx0 [fst x]) (fst x) f $ (flushQuantifChain xs f)
+flushQuantifChain ((Exists1Chain x):xs) f = filterQuantifiers (MonaFormulaEx1 [x]) (fst x) f $ (flushQuantifChain xs f)
+flushQuantifChain ((Exists2Chain x):xs) f = filterQuantifiers (MonaFormulaEx2 [x]) (fst x) f $ (flushQuantifChain xs f)
+
+
+filterQuantifiers :: (MonaFormula -> MonaFormula) -> String -> MonaFormula -> (MonaFormula -> MonaFormula)
+filterQuantifiers con var f
+  | var `elem` (freeVarsFormula f) = con
+  | otherwise = id
 
 
 getChainVarName :: QuantifVarChain -> String
@@ -65,7 +71,7 @@ getChainVarName (Exists2Chain a) = fst a
 
 -- |Propagate quantifiers to binary formula operator (conjunction, disjunction).
 propagateTo :: (MonaFormula -> MonaFormula -> MonaFormula) -> MonaFormula -> MonaFormula -> [QuantifVarChain] -> MonaFormula
-propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where
+propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where --TODO: ex1 x where ..., y where ..., --> does not consider free variables in where declaration
   vars1 = freeVarsFormula f1
   vars2 = freeVarsFormula f2
   fv1 = filter (\a -> elem (getChainVarName a) vars1) chain
