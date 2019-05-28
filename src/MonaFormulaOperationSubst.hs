@@ -202,6 +202,8 @@ freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermMinus t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 freeVarsTerm (MonaTermUp t) = freeVarsTerm t
 freeVarsTerm (MonaTermRoot) = []
+freeVarsTerm (MonaTermBool atom) = freeVarsAtom atom
+freeVarsTerm (MonaTermBoolCall _ t) = concat $ map (freeVarsTerm) t
 
 
 freeVarsAtom :: MonaAtom -> [Lo.Var]

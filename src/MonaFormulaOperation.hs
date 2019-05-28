@@ -96,6 +96,8 @@ replaceCallsDecl done (x:xs) = conv:(replaceCallsDecl (done ++ [conv]) xs) where
 -- |Replace pred calls in a given formula with already flattened declarations. No
 -- cyclic dependency is allowed.
 replaceCallsFormulas :: [MonaDeclaration] -> MonaFormula -> MonaFormula
+replaceCallsFormulas decls (MonaFormulaAtomic (MonaAtomTerm (MonaTermBoolCall name params))) =
+  fromJust $ find (filterMacro name) decls >>= replacePred params
 replaceCallsFormulas decls f@(MonaFormulaAtomic _) = f
 replaceCallsFormulas decls f@(MonaFormulaVar _) = f
 replaceCallsFormulas decls (MonaFormulaNeg f) = MonaFormulaNeg (replaceCallsFormulas decls f)
@@ -182,20 +184,31 @@ removeWhereDecl a = a  -- TODO: need to be refined
 --------------------------------------------------------------------------------------------------------------
 
 getCallsFromula :: MonaFormula -> [String]
-getCallsFromula (MonaFormulaPredCall name _) = return name
-getCallsFromula (MonaFormulaAtomic atom) = []
+getCallsFromula (MonaFormulaPredCall name terms) = nub $ name:(concat $ map (getCallsTerm) terms)
+getCallsFromula (MonaFormulaAtomic atom) = getCallsAtom atom
 getCallsFromula (MonaFormulaVar var) = []
-getCallsFromula (MonaFormulaNeg f) = getCallsFromula f
-getCallsFromula (MonaFormulaDisj f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaConj f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaImpl f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaEquiv f1 f2) = (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaNeg f) = nub $ getCallsFromula f
+getCallsFromula (MonaFormulaDisj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaConj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaImpl f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
+getCallsFromula (MonaFormulaEquiv f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
 getCallsFromula (MonaFormulaEx0 vars f) = getCallsFromula f
-getCallsFromula (MonaFormulaEx1 decl f) = (getListCalls decl) ++ (getCallsFromula f)
-getCallsFromula (MonaFormulaEx2 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaEx1 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaEx2 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
 getCallsFromula (MonaFormulaAll0 vars f) = getCallsFromula f
-getCallsFromula (MonaFormulaAll1 decl f) = (getListCalls decl) ++ (getCallsFromula f)
-getCallsFromula (MonaFormulaAll2 decl f) = (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaAll1 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula (MonaFormulaAll2 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
+
+
+getCallsAtom :: MonaAtom -> [String]
+getCallsAtom (MonaAtomTerm term) = getCallsTerm term
+getCallsAtom _ = [] --TODO: incomplete
+
+
+getCallsTerm :: MonaTerm -> [String]
+getCallsTerm (MonaTermBoolCall name terms) = name:(concat $ map (getCallsTerm) terms)
+getCallsTerm _ = [] --TODO: incomplete
+
 
 
 getListCalls :: [(String, Maybe MonaFormula)] -> [String]

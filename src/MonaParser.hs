@@ -146,6 +146,8 @@ data MonaTerm
   | MonaTermUp MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
   | MonaTermRoot
+  | MonaTermBool MonaAtom
+  | MonaTermBoolCall String [MonaTerm]
   deriving (Eq)
 
 instance Show MonaTerm where
@@ -156,6 +158,8 @@ instance Show MonaTerm where
   show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (show t2)
   show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (show t2)
   show (MonaTermUp t) = (pars $ show t) ++ "^"
+  show (MonaTermBool atom) = show atom
+  show (MonaTermBoolCall name terms) = name ++ "(" ++ (show terms) ++ ")"
 
 
 -- put something inside parenthesis
@@ -180,6 +184,23 @@ termP = m_parens termParser
     <|> fmap MonaTermVar m_identifier
     <|> fmap MonaTermConst m_natural
     <|>  (m_reserved "root" >> return MonaTermRoot)
+
+
+-- parses terms
+termParamParser :: Parser MonaTerm
+termParamParser = buildExpressionParser termOpTable termParam <?> "term"
+
+
+termParam :: Parser MonaTerm
+termParam = m_parens termParamParser
+    <|> fmap MonaTermBool atomicFormulaParser
+    <|> try (do { predname <- m_identifier
+                ; args <- m_parens $ m_commaSep termParam
+                ; return (MonaTermBoolCall predname $ args)
+                })
+    <|> fmap MonaTermVar m_identifier
+    <|> fmap MonaTermConst m_natural
+    <|> (m_reserved "root" >> return MonaTermRoot)
 
 
 -- sanitizes terms
@@ -356,7 +377,7 @@ formulaTerm = m_parens formulaParser
                  ; return (MonaFormulaAll2 varWhereList phi)
                  }
           <|> try (do { predname <- m_identifier
-                      ; args <- m_parens $ m_commaSep termP
+                      ; args <- m_parens $ m_commaSep termParam
                       ; return (MonaFormulaPredCall predname $ args)
                       })
           <|> fmap MonaFormulaVar m_identifier

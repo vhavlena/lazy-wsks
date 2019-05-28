@@ -21,7 +21,7 @@ TIMEOUT = 100 #in seconds
 FORMULAS = 20
 
 def main():
-    if len(sys.argv) != 4:
+    if len(sys.argv) < 4:
         help_err()
         sys.exit()
 
@@ -36,7 +36,7 @@ def main():
         sys.exit()
 
     texout = False
-    FORMULAS = 5
+    FORMULAS = 20
 
     for o, a in opts:
         if o in ("-t", "--tex"):
