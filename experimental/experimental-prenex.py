@@ -7,6 +7,7 @@
 """
 
 import sys
+import getopt
 import subprocess
 import string
 import re
@@ -21,12 +22,27 @@ FORMULAS = 20
 
 def main():
     if len(sys.argv) != 4:
-        sys.stderr.write("Bad input arguments. \nFormat: ./experimental-prenex [lazy-bin]  [mona-bin] [formula folder]\n")
+        help_err()
         sys.exit()
 
     lazybin = sys.argv[1]
     monabin = sys.argv[2]
     formulafolder = sys.argv[3]
+
+    try:
+        opts, args = getopt.getopt(sys.argv[4:], "tf:", ["tex", "formulas="])
+    except getopt.GetoptError as err:
+        help_err()
+        sys.exit()
+
+    texout = False
+    FORMULAS = 5
+
+    for o, a in opts:
+        if o in ("-t", "--tex"):
+            texout = True
+        if o in ("-f", "--formulas"):
+            FORMULAS = int(a)
 
     files = [f for f in os.listdir(formulafolder) \
         if os.path.isfile(os.path.join(formulafolder, f)) and \
@@ -36,6 +52,10 @@ def main():
 
     print_config()
     print("Formula: MONA, MONA+antiprenex")
+    tex = "Timeout: {0}\n".format(TIMEOUT)
+    tex += "\\begin{table}[h]\n\\begin{tabular}{llll}\n"
+    tex += "\\textbf{Formula File} & \\textbf{Mona} & \\textbf{Mona+antiprenex} \\\\\n\\toprule \n"
+
 
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
@@ -62,7 +82,14 @@ def main():
         except subprocess.CalledProcessError as e:
             mona_parse_anti = None, None
 
-        print_output(filename, mona_parse, mona_parse_anti, anti_time)
+        mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1] + anti_time, 2)
+        print_output(filename, mona_parse, mona_parse_anti)
+        tex = tex + "\\emph{{{0}}} & {1} & {2} \\\\\n".format(filename, \
+            format_output(mona_parse), format_output(mona_parse_anti))
+
+    tex += "\\end{tabular}\n\\end{table}"
+    if texout:
+        print(tex)
 
 
 def parse_prenex(output):
@@ -70,7 +97,7 @@ def parse_prenex(output):
     lines = list(filter(None, lines)) #Remove empty lines
     match = re.search("Time: ([0-9]+.[0-9]+)s", lines[TIMELINE])
     formula = "\n".join(lines[:-1])
-    time = round(float(match.group(1)), 3)
+    time = float(match.group(1))
     return formula, time
 
 
@@ -114,9 +141,12 @@ def format_output(parse):
     return "{0} {1}".format("N/A" if parse[0] is None else parse[0], "TO" if parse[1] is None else parse[1])
 
 
-def print_output(filename, lazy_parse, mona_parse, anti_time):
-    mona_parse = mona_parse[0], mona_parse[1] + anti_time
+def print_output(filename, lazy_parse, mona_parse):
     print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
+
+
+def help_err():
+    sys.stderr.write("Bad input arguments. \nFormat: ./experimental-prenex [lazy-bin]  [mona-bin] [formula folder]\n")
 
 
 if __name__ == "__main__":
