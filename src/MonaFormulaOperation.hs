@@ -60,10 +60,12 @@ unwindQuantifMacroParam a = return a
 -- |Unwind quantifiers of a declaration, i.e, ex1 x,y --> ex1 x: ex1 y
 unwindQuantifDecl :: MonaDeclaration -> [MonaDeclaration]
 unwindQuantifDecl (MonaDeclFormula f) = [MonaDeclFormula $ unwindQuantifFormula f]
+unwindQuantifDecl (MonaDeclAssert f) = [MonaDeclAssert $ unwindQuantifFormula f]
 unwindQuantifDecl (MonaDeclVar0 vars) = map (\a -> MonaDeclVar0 [a]) vars
 unwindQuantifDecl (MonaDeclVar1 vars) = map (\a -> MonaDeclVar1 [a]) vars
 unwindQuantifDecl (MonaDeclVar2 vars) = map (\a -> MonaDeclVar2 [a]) vars
 unwindQuantifDecl (MonaDeclPred name params f) = [MonaDeclPred name (params >>= unwindQuantifMacroParam) (unwindQuantifFormula f)]
+unwindQuantifDecl (MonaDeclMacro name params f) = [MonaDeclMacro name (params >>= unwindQuantifMacroParam) (unwindQuantifFormula f)]
 unwindQuantifDecl a = return a                                           -- TODO: need to be refined
 
 
@@ -93,9 +95,11 @@ replaceCallsDecl _ [] = []
 replaceCallsDecl done (x:xs) = conv:(replaceCallsDecl (done ++ [conv]) xs) where
     conv = case x of
       MonaDeclPred name pars fle -> MonaDeclPred name pars (replaceCallsFormulas done fle)
+      MonaDeclMacro name pars fle -> MonaDeclMacro name pars (replaceCallsFormulas done fle)
       MonaDeclFormula fle -> MonaDeclFormula $ replaceCallsFormulas done fle
       MonaDeclVar1 vardecl -> MonaDeclVar1 $ applyVarDecl (replaceCallsFormulas done) vardecl
       MonaDeclVar2 vardecl -> MonaDeclVar2 $ applyVarDecl (replaceCallsFormulas done) vardecl
+      MonaDeclAssert fle -> MonaDeclAssert $ replaceCallsFormulas done fle
       a -> error $ "Unsupported formula: " ++ (show a)
 
 
@@ -134,6 +138,7 @@ replaceCallsFormulas decls (MonaFormulaPredCall name params) =
 -- |Replace a predicate call (given arguments) with predicate body.
 replacePred :: [MonaTerm] -> MonaDeclaration -> Maybe MonaFormula
 replacePred args (MonaDeclPred _ params formula) = return $ substituteVars (zip (expandPredParams params) args) formula
+replacePred args (MonaDeclMacro _ params formula) = return $ substituteVars (zip (expandPredParams params) args) formula
 
 
 -- |Expand variables in predicate declaration into singleton variable declaration -- ex2 X,Y --> ex2 X, ex2 Y
@@ -146,7 +151,8 @@ expandPredParams xs = xs >>= expand where
 
 -- |Filter mona declarations that have a specified name.
 filterMacro :: String -> MonaDeclaration -> Bool
-filterMacro name f@(MonaDeclPred nm _ _) = nm == name
+filterMacro name (MonaDeclPred nm _ _) = nm == name
+filterMacro name (MonaDeclMacro nm _ _) = nm == name
 filterMacro name _ = False
 
 
@@ -227,9 +233,11 @@ buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
   graphDecl [] = []
   graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
   graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclMacro name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
   graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
   graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
   graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclAssert f):xs) = ("root", getCallsFromula f):(graphDecl xs)
 
 
 gdDebug :: MonaFile -> [(String, [String])]
@@ -237,6 +245,7 @@ gdDebug (MonaFile _ decls) = graphDecl decls where
   graphDecl [] = []
   graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
   graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclMacro name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
   graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
   graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
   graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
@@ -247,9 +256,11 @@ removeRedundantPreds mf@(MonaFile dom decls) = MonaFile dom $ filter flt decls w
   reach = Lg.reachableLabelGraph "root" $ buildCallGraph mf
   flt (MonaDeclFormula _) = True
   flt (MonaDeclPred name _ f) = name `elem` reach
+  flt (MonaDeclMacro name _ f) = name `elem` reach
   flt (MonaDeclVar0 _) = True
   flt (MonaDeclVar1 _) = True
   flt (MonaDeclVar2 _) = True
+  flt (MonaDeclAssert _) = True
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.

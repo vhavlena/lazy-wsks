@@ -106,6 +106,7 @@ def = emptyDef{ commentStart = "/*"
                 , "sometype"
                 , "min"
                 , "max"
+                , "assert"
                 , "pconst"
                 , "union"
                 , "inter"
@@ -150,6 +151,7 @@ data MonaTerm
   | MonaTermEmpty
   | MonaTermBool MonaAtom
   | MonaTermBoolCall String [MonaTerm]
+  | MonaTermPConst Integer
   deriving (Eq)
 
 instance Show MonaTerm where
@@ -162,6 +164,8 @@ instance Show MonaTerm where
   show (MonaTermUp t) = (pars $ show t) ++ "^"
   show (MonaTermBool atom) = show atom
   show (MonaTermBoolCall name terms) = name ++ "(" ++ (prArr "," terms) ++ ")"
+  show (MonaTermPConst n) = "pconst(" ++ (show n) ++ ")"
+  show (MonaTermEmpty) = "empty"
 
 
 -- put something inside parenthesis
@@ -183,6 +187,10 @@ termOpTable = [ [ Infix (m_reservedOp "+" >> return MonaTermPlus) AssocLeft
 
 termP :: Parser MonaTerm
 termP = m_parens termParser
+    <|> try (do { m_reserved "pconst"
+                ; n <- m_parens $ m_natural
+                ; return (MonaTermPConst n)
+                })
     <|> fmap MonaTermVar m_identifier
     <|> fmap MonaTermConst m_natural
     <|>  (m_reserved "root" >> return MonaTermRoot)
@@ -197,6 +205,10 @@ termParamParser = buildExpressionParser termOpTable termParam <?> "term"
 termParam :: Parser MonaTerm
 termParam = m_parens termParamParser
     <|> fmap MonaTermBool atomicFormulaParser
+    <|> try (do { m_reserved "pconst"
+                ; n <- m_parens $ m_natural
+                ; return (MonaTermPConst n)
+                })
     <|> try (do { predname <- m_identifier
                 ; args <- m_parens $ m_commaSep termParam
                 ; return (MonaTermBoolCall predname $ args)
@@ -408,6 +420,7 @@ data MonaDeclaration
   | MonaDeclMacro String [MonaMacroParam] MonaFormula
   | MonaDeclPred String [MonaMacroParam] MonaFormula
   | MonaDeclExport String MonaFormula
+  | MonaDeclAssert MonaFormula
 
 instance Show MonaDeclaration where
   show (MonaDeclFormula phi) = show phi
@@ -420,6 +433,7 @@ instance Show MonaDeclaration where
   show (MonaDeclMacro name params phi) = "macro " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
   show (MonaDeclPred name params phi) = "pred " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
   show (MonaDeclExport name phi) = "export(\"" ++ name ++ "\", " ++ (show phi) ++ ")"
+  show (MonaDeclAssert phi) = "assert " ++ (show phi)
 
 
 showVarWhereClause :: [(String, Maybe MonaFormula)] -> String
@@ -474,6 +488,10 @@ declarationParser = do { m_reserved "var0"
                        ; m_reservedOp "="
                        ; phi <- formulaParser
                        ; return (MonaDeclDefWhere2 varname phi)
+                       }
+                <|> do { m_reserved "assert"
+                       ; phi <- formulaParser
+                       ; return (MonaDeclAssert phi)
                        }
                 <|> do { m_reserved "macro"
                        ; name <- m_identifier

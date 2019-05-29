@@ -138,9 +138,12 @@ renameBVDecl _ [] _ = []
 renameBVDecl done (x:xs) vars = conv:(renameBVDecl (done ++ [conv]) xs (vars ++ v)) where
     conv = case x of
       MonaDeclPred name pars fle -> MonaDeclPred name pars (renameBVFormula vars fle)
+      MonaDeclMacro name pars fle -> MonaDeclMacro name pars (renameBVFormula vars fle)
       MonaDeclFormula fle -> MonaDeclFormula $ renameBVFormula vars fle
+      MonaDeclVar0 vardecl -> MonaDeclVar0 vardecl -- We do not rename free variables
       MonaDeclVar1 vardecl -> MonaDeclVar1 vardecl -- We do not rename free variables
       MonaDeclVar2 vardecl -> MonaDeclVar2 vardecl
+      MonaDeclAssert fle -> MonaDeclAssert $ renameBVFormula vars fle
       a -> error $ "Unsupported formula: " ++ (show a)
     v = varsDecl conv
 
@@ -176,9 +179,6 @@ renameBVFormula vars (MonaFormulaAll2 [decl] f) = handleQuantifRename vars (fst 
 renameBVFormula vars t = error $ "renameBVFormula: " ++ show t
 
 
-
-
-
 handleQuantifRename :: [Lo.Var] -> Lo.Var -> MonaFormula -> a -> ([a] -> MonaFormula -> MonaFormula) -> ((String, Maybe MonaFormula) -> a) -> MonaFormula
 handleQuantifRename vars var f decl cons proj =
   if (elem var vars) then cons [decl] (renameBVFormula (var:vars) f)
@@ -210,6 +210,7 @@ freeVarsTerm (MonaTermUp t) = freeVarsTerm t
 freeVarsTerm (MonaTermRoot) = []
 freeVarsTerm (MonaTermBool atom) = freeVarsAtom atom
 freeVarsTerm (MonaTermBoolCall _ t) = concat $ map (freeVarsTerm) t
+freeVarsTerm (MonaTermPConst _) =  []
 
 
 
@@ -231,10 +232,12 @@ freeVarsAtom MonaAtomFalse = []
 
 
 varsDecl (MonaDeclPred _ _ f) = varsFormula f
+varsDecl (MonaDeclMacro _ _ f) = varsFormula f
 varsDecl (MonaDeclVar0 vars) = vars
 varsDecl (MonaDeclVar1 decl) = nub $ map (fst) decl
 varsDecl (MonaDeclVar2 decl) = nub $ map (fst) decl
 varsDecl (MonaDeclFormula f) = varsFormula f
+varsDecl (MonaDeclAssert f) = varsFormula f
 
 
 varsFormula :: MonaFormula -> [Lo.Var]
