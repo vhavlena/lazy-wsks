@@ -27,7 +27,7 @@ import qualified MonaSocket as MS
 
 
 -- |Rename bound vars.
-renameBoundVars = False
+renameBoundVars = True
 
 -- |Parameters of the decision procedure.
 data ProcedureArgs =
@@ -79,7 +79,7 @@ main = do
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
        --putStrLn $ show $ gdDebug $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
-       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ removeRedundantPreds $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Help -> showHelp

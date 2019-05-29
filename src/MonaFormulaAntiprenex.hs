@@ -94,6 +94,7 @@ antiprenexFreeVar (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar f ((ForAll
 antiprenexFreeVar (MonaFormulaAll1 [var] f) chain = antiprenexFreeVar f ((ForAll1Chain var):chain)
 antiprenexFreeVar (MonaFormulaAll2 [var] f) chain = antiprenexFreeVar f ((ForAll2Chain var):chain)
 antiprenexFreeVar atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
+antiprenexFreeVar atom@(MonaFormulaPredCall _ _) chain = flushQuantifChain chain atom
 antiprenexFreeVar atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
 antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
 
@@ -144,6 +145,7 @@ convertToBaseAtom atom = MonaFormulaAtomic atom
 
 convertToBaseFormula :: MonaFormula -> MonaFormula
 convertToBaseFormula (MonaFormulaAtomic atom) = convertToBaseAtom atom
+convertToBaseFormula f@(MonaFormulaPredCall _ _) = f
 convertToBaseFormula (MonaFormulaVar var) = MonaFormulaVar var
 convertToBaseFormula (MonaFormulaNeg f) = MonaFormulaNeg (convertToBaseFormula f)
 convertToBaseFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (convertToBaseFormula f1) (convertToBaseFormula f2)
@@ -160,6 +162,7 @@ convertToBaseFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (convertToBas
 
 moveNegToLeavesFormula :: MonaFormula -> MonaFormula
 moveNegToLeavesFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+moveNegToLeavesFormula f@(MonaFormulaPredCall _ _) = f
 moveNegToLeavesFormula (MonaFormulaVar var) = MonaFormulaVar var
 moveNegToLeavesFormula (MonaFormulaNeg (MonaFormulaConj f1 f2)) = moveNegToLeavesFormula $ MonaFormulaDisj (MonaFormulaNeg f1) (MonaFormulaNeg f2)
 moveNegToLeavesFormula (MonaFormulaNeg (MonaFormulaDisj f1 f2)) = moveNegToLeavesFormula $ MonaFormulaConj (MonaFormulaNeg f1) (MonaFormulaNeg f2)
@@ -173,6 +176,7 @@ moveNegToLeavesFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (moveNegToL
 
 simplifyNegFormula :: MonaFormula -> MonaFormula
 simplifyNegFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+simplifyNegFormula f@(MonaFormulaPredCall _ _) = f
 simplifyNegFormula (MonaFormulaVar var) = MonaFormulaVar var
 simplifyNegFormula (MonaFormulaNeg (MonaFormulaNeg f)) = simplifyNegFormula f
 simplifyNegFormula (MonaFormulaNeg f) = MonaFormulaNeg (simplifyNegFormula f)
@@ -199,6 +203,7 @@ balanceFormula (MonaFormulaAll1 decl f) = MonaFormulaAll1 decl (balanceFormula f
 balanceFormula (MonaFormulaAll2 decl f) = MonaFormulaAll2 decl (balanceFormula f)
 balanceFormula (MonaFormulaVar var) = MonaFormulaVar var
 balanceFormula f@(MonaFormulaAtomic _) = f
+balanceFormula f@(MonaFormulaPredCall _ _) = f
 
 
 rebuildFormula :: (MonaFormula -> MonaFormula -> MonaFormula) -> [MonaFormula] -> MonaFormula

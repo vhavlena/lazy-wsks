@@ -76,6 +76,12 @@ unwindQuantifFile (MonaFile dom decls) = MonaFile dom (decls >>= unwindQuantifDe
 -- Part with formula flattening (removing predicate calls).
 --------------------------------------------------------------------------------------------------------------
 
+replaceAllCallsFile :: MonaFile -> MonaFile
+replaceAllCallsFile file
+  | Lg.isReachEmptyLabelGraph "root" $ buildCallGraph file = file
+  | otherwise = replaceAllCallsFile $ replaceCallsFile file
+
+
 -- |Replace calls of predicates with its body.
 replaceCallsFile :: MonaFile -> MonaFile
 replaceCallsFile (MonaFile dom decls) = MonaFile dom (replaceCallsDecl [] decls)
@@ -151,6 +157,7 @@ filterMacro name _ = False
 -- |Assumes singleton quatified variables (i.e. after unwindQuantif function).
 removeWhereFormula :: MonaFormula -> MonaFormula
 removeWhereFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+removeWhereFormula f@(MonaFormulaPredCall _ _) = f
 removeWhereFormula (MonaFormulaVar var) = MonaFormulaVar var
 removeWhereFormula (MonaFormulaNeg f) = MonaFormulaNeg (removeWhereFormula f)
 removeWhereFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (removeWhereFormula f1) (removeWhereFormula f2)

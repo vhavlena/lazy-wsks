@@ -11,6 +11,7 @@ import Control.Applicative ((<*))
 
 import Data.List
 
+import AuxFunctions
 import Text.Parsec
 import Text.Parsec.Char
 import Text.Parsec.Expr
@@ -146,6 +147,7 @@ data MonaTerm
   | MonaTermUp MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
   | MonaTermRoot
+  | MonaTermEmpty
   | MonaTermBool MonaAtom
   | MonaTermBoolCall String [MonaTerm]
   deriving (Eq)
@@ -159,7 +161,7 @@ instance Show MonaTerm where
   show (MonaTermMinus t1 t2) = (pars $ show t1) ++ " - " ++ (show t2)
   show (MonaTermUp t) = (pars $ show t) ++ "^"
   show (MonaTermBool atom) = show atom
-  show (MonaTermBoolCall name terms) = name ++ "(" ++ (show terms) ++ ")"
+  show (MonaTermBoolCall name terms) = name ++ "(" ++ (prArr "," terms) ++ ")"
 
 
 -- put something inside parenthesis
@@ -184,6 +186,7 @@ termP = m_parens termParser
     <|> fmap MonaTermVar m_identifier
     <|> fmap MonaTermConst m_natural
     <|>  (m_reserved "root" >> return MonaTermRoot)
+    <|>  (m_reserved "empty" >> return MonaTermEmpty)
 
 
 -- parses terms
@@ -233,7 +236,7 @@ instance Show MonaAtom where
   show (MonaAtomNeq t1 t2) = (show t1) ++ " ~= " ++ (show t2)
   show (MonaAtomGe t1 t2) = (show t1) ++ " > " ++ (show t2)
   show (MonaAtomGeq t1 t2) = (show t1) ++ " >= " ++ (show t2)
-  show (MonaAtomIn t1 t2) = (show t1) ++ " in " ++ (show t2)
+  show (MonaAtomIn t1 t2) = pars ((pars $ show t1) ++ " in " ++ (show t2))
   show (MonaAtomNotIn t1 t2) = (show t1) ++ " notin " ++ (show t2)
   show (MonaAtomSub t1 t2) = (show t1) ++ " sub " ++ (show t2)
   show (MonaAtomTerm t) = show t
@@ -281,7 +284,7 @@ instance Show MonaFormula where
     "all1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
   show (MonaFormulaAll2 varWhereCl phi) =
     "all2 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
-  show (MonaFormulaPredCall name terms) = name ++ "(" ++ (show terms) ++ ")"
+  show (MonaFormulaPredCall name terms) = name ++ "(" ++ (prArr "," terms) ++ ")"
 
 
 -- parses a binary atom

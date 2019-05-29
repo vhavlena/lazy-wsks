@@ -22,3 +22,7 @@ builLabelGraph lst = LabGraph (buildG (0, (Bi.size labMap) - 1) edges) labMap wh
 
 reachableLabelGraph :: (Ord a) => a -> LabGraph a -> [a]
 reachableLabelGraph ver (LabGraph gph lbl) = map (lbl Bi.!) $ reachable gph (lbl Bi.!> ver)
+
+
+isReachEmptyLabelGraph :: (Ord a) => a -> LabGraph a -> Bool
+isReachEmptyLabelGraph ver lab = length (reachableLabelGraph ver lab) == 1

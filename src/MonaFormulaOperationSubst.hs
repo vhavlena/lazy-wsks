@@ -98,6 +98,8 @@ substituteTerms repl (MonaTermPlus t1 t2) = MonaTermPlus (substituteTerms repl t
 substituteTerms repl (MonaTermMinus t1 t2) = MonaTermMinus (substituteTerms repl t1) (substituteTerms repl t2)
 substituteTerms repl (MonaTermCat t1 t2) = MonaTermCat (substituteTerms repl t1) (substituteTerms repl t2)
 substituteTerms repl (MonaTermUp t) = MonaTermUp (substituteTerms repl t)
+substituteTerms repl (MonaTermBoolCall name terms) = MonaTermBoolCall name $ map (substituteTerms repl) terms
+substituteTerms repl (MonaTermBool atom) = MonaTermBool $ substituteAtoms repl atom
 substituteTerms repl t = t
 
 
@@ -137,8 +139,8 @@ renameBVDecl done (x:xs) vars = conv:(renameBVDecl (done ++ [conv]) xs (vars ++ 
     conv = case x of
       MonaDeclPred name pars fle -> MonaDeclPred name pars (renameBVFormula vars fle)
       MonaDeclFormula fle -> MonaDeclFormula $ renameBVFormula vars fle
-      MonaDeclVar1 vardecl -> MonaDeclVar1 $ renameBVForDecl vardecl vars
-      MonaDeclVar2 vardecl -> MonaDeclVar2 $ renameBVForDecl vardecl vars
+      MonaDeclVar1 vardecl -> MonaDeclVar1 vardecl -- We do not rename free variables
+      MonaDeclVar2 vardecl -> MonaDeclVar2 vardecl
       a -> error $ "Unsupported formula: " ++ (show a)
     v = varsDecl conv
 
@@ -174,6 +176,9 @@ renameBVFormula vars (MonaFormulaAll2 [decl] f) = handleQuantifRename vars (fst 
 renameBVFormula vars t = error $ "renameBVFormula: " ++ show t
 
 
+
+
+
 handleQuantifRename :: [Lo.Var] -> Lo.Var -> MonaFormula -> a -> ([a] -> MonaFormula -> MonaFormula) -> ((String, Maybe MonaFormula) -> a) -> MonaFormula
 handleQuantifRename vars var f decl cons proj =
   if (elem var vars) then cons [decl] (renameBVFormula (var:vars) f)
@@ -196,6 +201,7 @@ getNewVarName lst i =
 
 freeVarsTerm :: MonaTerm -> [Lo.Var]
 freeVarsTerm (MonaTermVar var) = [var]
+freeVarsTerm MonaTermEmpty = []
 freeVarsTerm (MonaTermConst num) = []
 freeVarsTerm (MonaTermPlus t1 t2) = nub $ (freeVarsTerm t1) ++ (freeVarsTerm t2)
 freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
@@ -204,6 +210,7 @@ freeVarsTerm (MonaTermUp t) = freeVarsTerm t
 freeVarsTerm (MonaTermRoot) = []
 freeVarsTerm (MonaTermBool atom) = freeVarsAtom atom
 freeVarsTerm (MonaTermBoolCall _ t) = concat $ map (freeVarsTerm) t
+
 
 
 freeVarsAtom :: MonaAtom -> [Lo.Var]
@@ -250,6 +257,7 @@ varsFormula t = error $ "varsFormula: unimplemented: " ++ show t  -- TODO: incom
 
 freeVarsFormula :: MonaFormula -> [Lo.Var]
 freeVarsFormula (MonaFormulaAtomic atom) = freeVarsAtom atom
+freeVarsFormula f@(MonaFormulaPredCall _ terms) = varsFormula f
 freeVarsFormula (MonaFormulaVar var) = [var]
 freeVarsFormula (MonaFormulaNeg f) = freeVarsFormula f
 freeVarsFormula (MonaFormulaConj f1 f2) = nub $ (freeVarsFormula f1) ++ (freeVarsFormula f2)
