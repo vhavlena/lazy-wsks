@@ -2,7 +2,7 @@
 # MONA Presburger predicates
 
 # auxiliary predicates
-pred xor(var0 x,y) = x&~y | ~x&y;
+pred xor(var0 x,y) = x& ~y | ~x&y;
 pred at_least_two(var0 x,y,z) = x&y | x&z | y&z;
 
 # addition relation (p "+" q = r)
