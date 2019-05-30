@@ -171,14 +171,19 @@ removeWhereFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (removeWhereFormula
 removeWhereFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (removeWhereFormula f1) (removeWhereFormula f2)
 removeWhereFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (removeWhereFormula f1) (removeWhereFormula f2)
 removeWhereFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (removeWhereFormula f)
-removeWhereFormula (MonaFormulaEx1 decl f) = expandWhereQuantif (MonaFormulaEx1) decl (removeWhereFormula f)
-removeWhereFormula (MonaFormulaEx2 decl f) = expandWhereQuantif (MonaFormulaEx2) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaEx1 decl f) = expandWhereExQuantif (MonaFormulaEx1) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaEx2 decl f) = expandWhereExQuantif (MonaFormulaEx2) decl (removeWhereFormula f)
 removeWhereFormula (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (removeWhereFormula f)
-removeWhereFormula (MonaFormulaAll1 decl f) = expandWhereQuantif (MonaFormulaAll1) decl (removeWhereFormula f)
-removeWhereFormula (MonaFormulaAll2 decl f) = expandWhereQuantif (MonaFormulaAll2) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaAll1 decl f) = expandWhereAllQuantif (MonaFormulaAll1) decl (removeWhereFormula f)
+removeWhereFormula (MonaFormulaAll2 decl f) = expandWhereAllQuantif (MonaFormulaAll2) decl (removeWhereFormula f)
 
-expandWhereQuantif cons [(var, fwh)] f = cons [(var, Nothing)] (expand fwh f) where
+expandWhereExQuantif cons [(var, fwh)] f = cons [(var, Nothing)] (expand fwh f) where
   expand (Just f1) f2 = MonaFormulaConj f1 f2
+  expand Nothing f2 = f2
+
+
+expandWhereAllQuantif cons [(var, fwh)] f = cons [(var, Nothing)] (expand fwh f) where
+  expand (Just f1) f2 = MonaFormulaImpl f1 f2
   expand Nothing f2 = f2
 
 

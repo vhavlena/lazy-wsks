@@ -82,7 +82,10 @@ def main():
         except subprocess.CalledProcessError as e:
             mona_parse_anti = None, None
 
-        mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1] + anti_time, 2)
+        if mona_parse_anti[1] is None:
+            mona_parse_anti = mona_parse_anti[0], None
+        else:
+            mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1] + anti_time, 2)
         print_output(filename, mona_parse, mona_parse_anti)
         tex = tex + "\\emph{{{0}}} & {1} & {2} \\\\\n".format(filename, \
             format_output(mona_parse), format_output(mona_parse_anti))
