@@ -78,7 +78,7 @@ main = do
    case (parseArgs args) of
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
-       --putStrLn $ show $ removeRedundantPreds $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+       --putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
        putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)

@@ -1,3 +1,9 @@
+{-|
+Module      : LabelledGraph
+Description : Operations with labelled oriented graph (each node has a label).
+Author      : Vojtech Havlena, 2019
+License     : GPL-3
+-}
 
 module LabelledGraph where
 

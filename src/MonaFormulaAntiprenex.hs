@@ -104,7 +104,8 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula = antiprenexEmpty . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . balanceFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula
+antiprenexFormula = antiprenexEmpty . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
+  bal = id -- balanceFormula
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
