@@ -85,10 +85,10 @@ def main():
         if mona_parse_anti[1] is None:
             mona_parse_anti = mona_parse_anti[0], None
         else:
-            mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1] + anti_time, 2)
+            mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1], 2), round(anti_time, 2)
         print_output(filename, mona_parse, mona_parse_anti)
         tex = tex + "\\emph{{{0}}} & {1} & {2} \\\\\n".format(filename, \
-            format_output(mona_parse), format_output(mona_parse_anti))
+            format_output(mona_parse), format_output_anti(mona_parse_anti))
 
     tex += "\\end{tabular}\n\\end{table}"
     if texout:
@@ -141,11 +141,15 @@ def print_config():
 
 
 def format_output(parse):
-    return "{0} {1}".format("N/A" if parse[0] is None else parse[0], "TO" if parse[1] is None else parse[1])
+    return "{0}".format("TO" if parse[1] is None else parse[1])
+
+
+def format_output_anti(parse):
+    return "{0}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
 
 
 def print_output(filename, lazy_parse, mona_parse):
-    print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output(mona_parse)))
+    print("{0}: {1}\t {2}".format(filename, format_output(lazy_parse), format_output_anti(mona_parse)))
 
 
 def help_err():
