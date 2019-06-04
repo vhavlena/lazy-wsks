@@ -11,6 +11,7 @@ module MonaFormulaAntiprenex where
 import Data.List
 import Data.Maybe
 
+import AntiprenexConfig
 import MonaParser
 import MonaFormulaOperation
 import MonaFormulaOperationSubst
@@ -105,7 +106,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 antiprenexFormula :: MonaFormula -> MonaFormula
 antiprenexFormula = antiprenexEmpty . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
-  bal = id -- balanceFormula
+  bal = if balanceFormulaConfig then balanceFormula else id -- balanceFormula
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration

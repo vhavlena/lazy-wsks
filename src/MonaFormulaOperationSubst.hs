@@ -100,6 +100,9 @@ substituteTerms repl (MonaTermCat t1 t2) = MonaTermCat (substituteTerms repl t1)
 substituteTerms repl (MonaTermUp t) = MonaTermUp (substituteTerms repl t)
 substituteTerms repl (MonaTermBoolCall name terms) = MonaTermBoolCall name $ map (substituteTerms repl) terms
 substituteTerms repl (MonaTermBool atom) = MonaTermBool $ substituteAtoms repl atom
+substituteTerms repl (MonaTermUnion t1 t2) = MonaTermUnion (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermDifference t1 t2) = MonaTermDifference (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermSet t) = MonaTermSet (substituteTerms repl t)
 substituteTerms repl t = t
 
 
@@ -211,6 +214,9 @@ freeVarsTerm (MonaTermRoot) = []
 freeVarsTerm (MonaTermBool atom) = freeVarsAtom atom
 freeVarsTerm (MonaTermBoolCall _ t) = concat $ map (freeVarsTerm) t
 freeVarsTerm (MonaTermPConst _) =  []
+freeVarsTerm (MonaTermUnion t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
+freeVarsTerm (MonaTermSet t) = freeVarsTerm t
+freeVarsTerm (MonaTermDifference t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 
 
 
@@ -231,13 +237,17 @@ freeVarsAtom MonaAtomTrue = []
 freeVarsAtom MonaAtomFalse = []
 
 
-varsDecl (MonaDeclPred _ _ f) = varsFormula f
-varsDecl (MonaDeclMacro _ _ f) = varsFormula f
-varsDecl (MonaDeclVar0 vars) = vars
-varsDecl (MonaDeclVar1 decl) = nub $ map (fst) decl
-varsDecl (MonaDeclVar2 decl) = nub $ map (fst) decl
-varsDecl (MonaDeclFormula f) = varsFormula f
-varsDecl (MonaDeclAssert f) = varsFormula f
+varsDecl (MonaDeclPred _ _ f) = boundVarsFormula f --varsFormula f
+varsDecl (MonaDeclMacro _ _ f) = boundVarsFormula f -- varsFormula f
+varsDecl (MonaDeclVar0 vars) = [] -- vars
+varsDecl (MonaDeclVar1 decl) = [] -- nub $ map (fst) decl
+varsDecl (MonaDeclVar2 decl) = [] -- nub $ map (fst) decl
+varsDecl (MonaDeclFormula f) = boundVarsFormula f -- varsFormula f
+varsDecl (MonaDeclAssert f) = boundVarsFormula f -- varsFormula f
+
+
+boundVarsFormula :: MonaFormula -> [Lo.Var]
+boundVarsFormula f = (varsFormula f) \\ (freeVarsFormula f)
 
 
 varsFormula :: MonaFormula -> [Lo.Var]

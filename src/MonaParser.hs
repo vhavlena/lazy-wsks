@@ -63,6 +63,7 @@ def = emptyDef{ commentStart = "/*"
                 , ","     --
                 , "."
                 , "^"
+                , "\\"
                 --, ".1"    -- Right successor
                 --, ".0"    -- Right successor
                 ]
@@ -126,6 +127,7 @@ def = emptyDef{ commentStart = "/*"
 
 -- generate parsers
 TokenParser{ parens = m_parens
+           , braces = m_braces
            , identifier = m_identifier
            , reservedOp = m_reservedOp
            , reserved = m_reserved
@@ -152,6 +154,9 @@ data MonaTerm
   | MonaTermBool MonaAtom
   | MonaTermBoolCall String [MonaTerm]
   | MonaTermPConst Integer
+  | MonaTermUnion MonaTerm MonaTerm
+  | MonaTermDifference MonaTerm MonaTerm
+  | MonaTermSet MonaTerm
   deriving (Eq)
 
 instance Show MonaTerm where
@@ -166,6 +171,9 @@ instance Show MonaTerm where
   show (MonaTermBoolCall name terms) = name ++ "(" ++ (prArr "," terms) ++ ")"
   show (MonaTermPConst n) = "pconst(" ++ (show n) ++ ")"
   show (MonaTermEmpty) = "empty"
+  show (MonaTermUnion t1 t2) = (pars $ show t1) ++ " union " ++ (pars $ show t2)
+  show (MonaTermDifference t1 t2) = (pars $ show t1) ++ " \\ " ++ (pars $ show t2)
+  show (MonaTermSet t) = "{" ++ (show t) ++  "}"
 
 
 -- put something inside parenthesis
@@ -182,11 +190,16 @@ termOpTable = [ [ Infix (m_reservedOp "+" >> return MonaTermPlus) AssocLeft
                 , Infix (m_reservedOp "." >> return MonaTermCat) AssocLeft
                 , Postfix (m_reservedOp "^" >> return MonaTermUp)
                 , Infix (m_reservedOp "-" >> return MonaTermMinus) AssocLeft
+                , Infix (m_reservedOp "union" >> return MonaTermUnion) AssocLeft
+                , Infix (m_reservedOp "\\" >> return MonaTermDifference) AssocLeft
                 ]
               ]
 
 termP :: Parser MonaTerm
 termP = m_parens termParser
+    <|> try (do { t <- m_braces termParamParser
+                ; return $ MonaTermSet t
+              })
     <|> try (do { m_reserved "pconst"
                 ; n <- m_parens $ m_natural
                 ; return (MonaTermPConst n)
@@ -213,9 +226,10 @@ termParam = m_parens termParamParser
                 ; args <- m_parens $ m_commaSep termParam
                 ; return (MonaTermBoolCall predname $ args)
                 })
-    <|> fmap MonaTermVar m_identifier
-    <|> fmap MonaTermConst m_natural
-    <|> (m_reserved "root" >> return MonaTermRoot)
+    <|> termParser
+    -- <|> fmap MonaTermVar m_identifier
+    -- <|> fmap MonaTermConst m_natural
+    -- <|> (m_reserved "root" >> return MonaTermRoot)
 
 
 -- sanitizes terms
@@ -284,17 +298,17 @@ instance Show MonaFormula where
   show (MonaFormulaConj f1 f2) = "(" ++ (show f1) ++ ") & (" ++ (show f2) ++ ")"
   show (MonaFormulaImpl f1 f2) = (show f1) ++ " => " ++ (show f2)
   show (MonaFormulaEquiv f1 f2) = (show f1) ++ " <=> " ++ (show f2)
-  show (MonaFormulaEx0 varList phi) =
+  show (MonaFormulaEx0 varList phi) = pars $
     "ex0 " ++ (unwords varList) ++ ": " ++ (show phi)
-  show (MonaFormulaEx1 varWhereCl phi) =
+  show (MonaFormulaEx1 varWhereCl phi) = pars $
     "ex1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
-  show (MonaFormulaEx2 varWhereCl phi) =
+  show (MonaFormulaEx2 varWhereCl phi) = pars $
     "ex2 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
-  show (MonaFormulaAll0 varList phi) =
+  show (MonaFormulaAll0 varList phi) = pars $
     "all0 " ++ (unwords varList) ++ ": " ++ (show phi)
-  show (MonaFormulaAll1 varWhereCl phi) =
+  show (MonaFormulaAll1 varWhereCl phi) = pars $
     "all1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
-  show (MonaFormulaAll2 varWhereCl phi) =
+  show (MonaFormulaAll2 varWhereCl phi) = pars $
     "all2 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
   show (MonaFormulaPredCall name terms) = name ++ "(" ++ (prArr "," terms) ++ ")"
 

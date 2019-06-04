@@ -78,12 +78,12 @@ def main():
             mona_parse_anti = parse_mona(mona_output_anti)
             os.remove("test.mona")
         except subprocess.TimeoutExpired:
-            mona_parse_anti = None, None
+            mona_parse_anti = None, None, None
         except subprocess.CalledProcessError as e:
-            mona_parse_anti = None, None
+            mona_parse_anti = None, None, None
 
         if mona_parse_anti[1] is None:
-            mona_parse_anti = mona_parse_anti[0], None
+            mona_parse_anti = mona_parse_anti[0], None, None
         else:
             mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1], 2), round(anti_time, 2)
         print_output(filename, mona_parse, mona_parse_anti)

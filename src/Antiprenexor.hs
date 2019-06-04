@@ -12,6 +12,7 @@ import Data.Time
 import MonaFormulaOperation
 import MonaFormulaAntiprenex
 
+import AntiprenexConfig
 import qualified BaseDecisionProcedure as BP
 import qualified Data.Map as Map
 import qualified LazyDecisionProcedure as LDP
@@ -25,9 +26,6 @@ import qualified MonaParser as MoPa
 import qualified BasicAutomata as BA
 import qualified MonaSocket as MS
 
-
--- |Rename bound vars.
-renameBoundVars = True
 
 -- |Parameters of the decision procedure.
 data ProcedureArgs =
@@ -78,7 +76,7 @@ main = do
    case (parseArgs args) of
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
-       --putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
+       --putStrLn $ show $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
