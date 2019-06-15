@@ -121,6 +121,8 @@ def = emptyDef{ commentStart = "/*"
                 , "const"
                 , "sing"
                 , "cat1"
+                , "..."
+                , "lastpos"
                 ]
               }
 
@@ -151,17 +153,20 @@ data MonaTerm
   | MonaTermMinus MonaTerm MonaTerm
   | MonaTermRoot
   | MonaTermEmpty
+  | MonaTermDots
   | MonaTermBool MonaAtom
   | MonaTermBoolCall String [MonaTerm]
   | MonaTermPConst Integer
   | MonaTermUnion MonaTerm MonaTerm
+  | MonaTermInter MonaTerm MonaTerm
   | MonaTermDifference MonaTerm MonaTerm
-  | MonaTermSet MonaTerm
+  | MonaTermSet [MonaTerm]
   deriving (Eq)
 
 instance Show MonaTerm where
   show (MonaTermVar str) = str
   show (MonaTermRoot) = "root"
+  show (MonaTermDots) = "..."
   show (MonaTermConst n) = show n
   show (MonaTermPlus t1 t2) = (pars $ show t1) ++ " + " ++ (show t2)
   show (MonaTermCat t1 t2) = (pars $ show t1) ++ " . " ++ (show t2)
@@ -172,8 +177,9 @@ instance Show MonaTerm where
   show (MonaTermPConst n) = "pconst(" ++ (show n) ++ ")"
   show (MonaTermEmpty) = "empty"
   show (MonaTermUnion t1 t2) = (pars $ show t1) ++ " union " ++ (pars $ show t2)
+  show (MonaTermInter t1 t2) = (pars $ show t1) ++ " inter " ++ (pars $ show t2)
   show (MonaTermDifference t1 t2) = (pars $ show t1) ++ " \\ " ++ (pars $ show t2)
-  show (MonaTermSet t) = "{" ++ (show t) ++  "}"
+  show (MonaTermSet t) = "{" ++ (prArr "," t) ++  "}"
 
 
 -- put something inside parenthesis
@@ -191,13 +197,14 @@ termOpTable = [ [ Infix (m_reservedOp "+" >> return MonaTermPlus) AssocLeft
                 , Postfix (m_reservedOp "^" >> return MonaTermUp)
                 , Infix (m_reservedOp "-" >> return MonaTermMinus) AssocLeft
                 , Infix (m_reservedOp "union" >> return MonaTermUnion) AssocLeft
+                , Infix (m_reservedOp "inter" >> return MonaTermInter) AssocLeft
                 , Infix (m_reservedOp "\\" >> return MonaTermDifference) AssocLeft
                 ]
               ]
 
 termP :: Parser MonaTerm
 termP = m_parens termParser
-    <|> try (do { t <- m_braces termParamParser
+    <|> try (do { t <- m_braces $ m_commaSep termParam
                 ; return $ MonaTermSet t
               })
     <|> try (do { m_reserved "pconst"
@@ -208,6 +215,7 @@ termP = m_parens termParser
     <|> fmap MonaTermConst m_natural
     <|>  (m_reserved "root" >> return MonaTermRoot)
     <|>  (m_reserved "empty" >> return MonaTermEmpty)
+    <|>  (m_reserved "..." >> return MonaTermDots)
 
 
 -- parses terms
@@ -294,10 +302,10 @@ instance Show MonaFormula where
   show (MonaFormulaAtomic atom) = show atom
   show (MonaFormulaVar str) = str
   show (MonaFormulaNeg phi) = "~(" ++ (show phi) ++ ")"
-  show (MonaFormulaDisj f1 f2) = "(" ++ (show f1) ++ ") | (" ++ (show f2) ++ ")"
-  show (MonaFormulaConj f1 f2) = "(" ++ (show f1) ++ ") & (" ++ (show f2) ++ ")"
-  show (MonaFormulaImpl f1 f2) = (show f1) ++ " => " ++ (show f2)
-  show (MonaFormulaEquiv f1 f2) = (show f1) ++ " <=> " ++ (show f2)
+  show (MonaFormulaDisj f1 f2) = "((" ++ (show f1) ++ ") | (" ++ (show f2) ++ "))"
+  show (MonaFormulaConj f1 f2) = "((" ++ (show f1) ++ ") & (" ++ (show f2) ++ "))"
+  show (MonaFormulaImpl f1 f2) = "((" ++ (show f1) ++ ") => (" ++ (show f2) ++ "))"
+  show (MonaFormulaEquiv f1 f2) = "((" ++ (show f1) ++ ") <=> (" ++ (show f2) ++ "))"
   show (MonaFormulaEx0 varList phi) = pars $
     "ex0 " ++ (unwords varList) ++ ": " ++ (show phi)
   show (MonaFormulaEx1 varWhereCl phi) = pars $
@@ -429,6 +437,7 @@ data MonaDeclaration
   | MonaDeclVar1 [(String, Maybe MonaFormula)]
   | MonaDeclVar2 [(String, Maybe MonaFormula)]
   | MonaDeclAllpos String
+  | MonaDeclLastpos String
   | MonaDeclDefWhere1 String MonaFormula
   | MonaDeclDefWhere2 String MonaFormula
   | MonaDeclMacro String [MonaMacroParam] MonaFormula
@@ -442,6 +451,7 @@ instance Show MonaDeclaration where
   show (MonaDeclVar1 varWhereList) = "var1 " ++ showVarWhereClause varWhereList
   show (MonaDeclVar2 varWhereList) = "var2 " ++ showVarWhereClause varWhereList
   show (MonaDeclAllpos var) = "allpos " ++ var
+  show (MonaDeclLastpos var) = "lastpos " ++ var
   show (MonaDeclDefWhere1 var phi) = "defaultwhere1(" ++ var ++ ") = " ++ (show phi)
   show (MonaDeclDefWhere2 var phi) = "defaultwhere2(" ++ var ++ ") = " ++ (show phi)
   show (MonaDeclMacro name params phi) = "macro " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
@@ -490,6 +500,10 @@ declarationParser = do { m_reserved "var0"
                 <|> do { m_reserved "allpos"
                        ; varname <- m_identifier
                        ; return (MonaDeclAllpos varname)
+                       }
+                <|> do { m_reserved "lastpos"
+                       ; varname <- m_identifier
+                       ; return (MonaDeclLastpos varname)
                        }
                 <|> do { m_reserved "defaultwhere1"
                        ; varname <- m_parens m_identifier

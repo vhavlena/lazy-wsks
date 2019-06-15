@@ -100,6 +100,8 @@ replaceCallsDecl done (x:xs) = conv:(replaceCallsDecl (done ++ [conv]) xs) where
       MonaDeclVar1 vardecl -> MonaDeclVar1 $ applyVarDecl (replaceCallsFormulas done) vardecl
       MonaDeclVar2 vardecl -> MonaDeclVar2 $ applyVarDecl (replaceCallsFormulas done) vardecl
       MonaDeclAssert fle -> MonaDeclAssert $ replaceCallsFormulas done fle
+      MonaDeclAllpos x -> MonaDeclAllpos x
+      MonaDeclLastpos x -> MonaDeclLastpos x
       a -> error $ "Unsupported formula: " ++ (show a)
 
 
@@ -243,6 +245,8 @@ buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
   graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
   graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
   graphDecl ((MonaDeclAssert f):xs) = ("root", getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclAllpos _):xs) = graphDecl xs
+  graphDecl ((MonaDeclLastpos _):xs) = graphDecl xs
 
 
 gdDebug :: MonaFile -> [(String, [String])]
@@ -266,6 +270,8 @@ removeRedundantPreds mf@(MonaFile dom decls) = MonaFile dom $ filter flt decls w
   flt (MonaDeclVar1 _) = True
   flt (MonaDeclVar2 _) = True
   flt (MonaDeclAssert _) = True
+  flt (MonaDeclAllpos _) = True
+  flt (MonaDeclLastpos _) = True
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.

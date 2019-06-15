@@ -102,7 +102,7 @@ substituteTerms repl (MonaTermBoolCall name terms) = MonaTermBoolCall name $ map
 substituteTerms repl (MonaTermBool atom) = MonaTermBool $ substituteAtoms repl atom
 substituteTerms repl (MonaTermUnion t1 t2) = MonaTermUnion (substituteTerms repl t1) (substituteTerms repl t2)
 substituteTerms repl (MonaTermDifference t1 t2) = MonaTermDifference (substituteTerms repl t1) (substituteTerms repl t2)
-substituteTerms repl (MonaTermSet t) = MonaTermSet (substituteTerms repl t)
+substituteTerms repl (MonaTermSet t) = MonaTermSet $ map (substituteTerms repl) t
 substituteTerms repl t = t
 
 
@@ -147,6 +147,8 @@ renameBVDecl done (x:xs) vars = conv:(renameBVDecl (done ++ [conv]) xs (vars ++ 
       MonaDeclVar1 vardecl -> MonaDeclVar1 vardecl -- We do not rename free variables
       MonaDeclVar2 vardecl -> MonaDeclVar2 vardecl
       MonaDeclAssert fle -> MonaDeclAssert $ renameBVFormula vars fle
+      MonaDeclAllpos var -> MonaDeclAllpos var
+      MonaDeclLastpos var -> MonaDeclLastpos var
       a -> error $ "Unsupported formula: " ++ (show a)
     v = varsDecl conv
 
@@ -205,6 +207,7 @@ getNewVarName lst i =
 freeVarsTerm :: MonaTerm -> [Lo.Var]
 freeVarsTerm (MonaTermVar var) = [var]
 freeVarsTerm MonaTermEmpty = []
+freeVarsTerm MonaTermDots = []
 freeVarsTerm (MonaTermConst num) = []
 freeVarsTerm (MonaTermPlus t1 t2) = nub $ (freeVarsTerm t1) ++ (freeVarsTerm t2)
 freeVarsTerm (MonaTermCat t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
@@ -215,7 +218,8 @@ freeVarsTerm (MonaTermBool atom) = freeVarsAtom atom
 freeVarsTerm (MonaTermBoolCall _ t) = concat $ map (freeVarsTerm) t
 freeVarsTerm (MonaTermPConst _) =  []
 freeVarsTerm (MonaTermUnion t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
-freeVarsTerm (MonaTermSet t) = freeVarsTerm t
+freeVarsTerm (MonaTermInter t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
+freeVarsTerm (MonaTermSet t) = concat $ map (freeVarsTerm) t
 freeVarsTerm (MonaTermDifference t1 t2) = freeVarsTerm $ MonaTermPlus t1 t2
 
 
@@ -242,6 +246,8 @@ varsDecl (MonaDeclMacro _ _ f) = boundVarsFormula f -- varsFormula f
 varsDecl (MonaDeclVar0 vars) = [] -- vars
 varsDecl (MonaDeclVar1 decl) = [] -- nub $ map (fst) decl
 varsDecl (MonaDeclVar2 decl) = [] -- nub $ map (fst) decl
+varsDecl (MonaDeclLastpos _) = []
+varsDecl (MonaDeclAllpos _) = []
 varsDecl (MonaDeclFormula f) = boundVarsFormula f -- varsFormula f
 varsDecl (MonaDeclAssert f) = boundVarsFormula f -- varsFormula f
 
