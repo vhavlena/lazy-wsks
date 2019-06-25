@@ -270,7 +270,7 @@ instance Show MonaAtom where
   show (MonaAtomNeq t1 t2) = (show t1) ++ " ~= " ++ (show t2)
   show (MonaAtomGe t1 t2) = (show t1) ++ " > " ++ (show t2)
   show (MonaAtomGeq t1 t2) = (show t1) ++ " >= " ++ (show t2)
-  show (MonaAtomIn t1 t2) = pars ((pars $ show t1) ++ " in " ++ (show t2))
+  show (MonaAtomIn t1 t2) = pars ((show t1) ++ " in " ++ (show t2))
   show (MonaAtomNotIn t1 t2) = (show t1) ++ " notin " ++ (show t2)
   show (MonaAtomSub t1 t2) = (show t1) ++ " sub " ++ (show t2)
   show (MonaAtomTerm t) = show t

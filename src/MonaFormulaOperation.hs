@@ -199,6 +199,34 @@ removeWhereDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeW
 removeWhereDecl a = a  -- TODO: need to be refined
 
 
+-- |Assumes singleton quatified variables (i.e. after unwindQuantif function).
+removeWhereAllFormula :: MonaFormula -> MonaFormula
+removeWhereAllFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+removeWhereAllFormula f@(MonaFormulaPredCall _ _) = f
+removeWhereAllFormula (MonaFormulaVar var) = MonaFormulaVar var
+removeWhereAllFormula (MonaFormulaNeg f) = MonaFormulaNeg (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (removeWhereAllFormula f1) (removeWhereAllFormula f2)
+removeWhereAllFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (removeWhereAllFormula f1) (removeWhereAllFormula f2)
+removeWhereAllFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (removeWhereAllFormula f1) (removeWhereAllFormula f2)
+removeWhereAllFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (removeWhereAllFormula f1) (removeWhereAllFormula f2)
+removeWhereAllFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaEx1 decl f) = expandWhereExQuantif (MonaFormulaEx1) decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaEx2 decl f) = expandWhereExQuantif (MonaFormulaEx2) decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaAll1 decl f) = expandWhereAllQuantif (MonaFormulaAll1) decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaAll2 decl f) = expandWhereAllQuantif (MonaFormulaAll2) decl (removeWhereAllFormula f)
+
+
+removeWhereAllFile :: MonaFile -> MonaFile
+removeWhereAllFile (MonaFile dom decls) = MonaFile dom (map (removeWhereAllDecl) decls)
+
+
+removeWhereAllDecl :: MonaDeclaration -> MonaDeclaration
+removeWhereAllDecl (MonaDeclFormula f) = MonaDeclFormula $ removeWhereAllFormula f
+removeWhereAllDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeWhereAllFormula f)
+removeWhereAllDecl a = a  -- TODO: need to be refined
+
+
 --------------------------------------------------------------------------------------------------------------
 -- Part with the predicate and macros triming
 --------------------------------------------------------------------------------------------------------------

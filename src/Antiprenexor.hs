@@ -29,13 +29,13 @@ import qualified MonaSocket as MS
 
 -- |Parameters of the decision procedure.
 data ProcedureArgs =
-  Prenex
+  Where
   | None
   deriving (Eq)
 
 -- |Program arguments.
 data ProgArgs =
-  Antiprenex FilePath
+  Antiprenex ProcedureArgs FilePath
   | Help
   | Error
 
@@ -44,8 +44,14 @@ data ProgArgs =
 parseArgs :: [String] -> ProgArgs
 parseArgs args
   | (length args) == 1 && (last args) == "--help" = Help
-  | (length args) == 1 = Antiprenex (head args)
+  | (length args) >= 1 = Antiprenex (parseProcedureArgs $ tail args) (head args)
   | otherwise = Error
+
+
+parseProcedureArgs :: [String] -> ProcedureArgs
+parseProcedureArgs args
+  | (length args) == 1 && (last args) == "-w" = Where
+  | otherwise = None
 
 
 -- |Show formula and its simplicication for debug purposes.
@@ -66,7 +72,7 @@ showHelp :: IO ()
 showHelp = do
   prname <- getProgName
   putStrLn $ "Usage: ./" ++ prname ++ " [file] [args]"
-  putStrLn $ "where [args] is one of\n  [--help] show this help"
+  putStrLn $ "where [args] is one of\n  [--help] show this help\n  [-w] remove where in universal quatification"
 
 
 -- |Main function
@@ -74,10 +80,14 @@ main = do
    args <- getArgs
    start <- getCurrentTime
    case (parseArgs args) of
-     (Antiprenex file) -> do
+     (Antiprenex arg file) -> do
        mona <- MoPa.parseFile file
-       --putStrLn $ show $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
-       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+
+       case arg of
+         Where -> putStrLn $ show $ removeWhereAllFile $ unwindQuantifFile mona
+         None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+
+       --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Help -> showHelp
