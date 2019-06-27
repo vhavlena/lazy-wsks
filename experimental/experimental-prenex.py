@@ -20,6 +20,9 @@ TIMELINE = -1
 TIMEOUT = 100 #in seconds
 FORMULAS = 20
 
+PREPROFILE = "test-wgjcm3.mona"
+ANTIPREFILE = "test-wgjcm4.mona"
+
 def main():
     if len(sys.argv) < 4:
         help_err()
@@ -61,22 +64,20 @@ def main():
         filename = os.path.join(formulafolder, monafile)
 
         try:
-            mona_output = subprocess.check_output([monabin, filename], timeout=TIMEOUT).decode("utf-8")
+            prenex_file(PREPROFILE, filename, ["-w"])
+            mona_output = subprocess.check_output([monabin, PREPROFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
+            os.remove(PREPROFILE)
         except subprocess.TimeoutExpired:
             mona_parse = None, None
         except subprocess.CalledProcessError as e:
             mona_parse = None, None
 
         try:
-            f = open("test.mona", "w")
-            output_anti = subprocess.check_output([lazybin, filename], timeout=TIMEOUT).decode("utf-8")
-            anti_fle, anti_time = parse_prenex(output_anti)
-            f.write(anti_fle)
-            f.close()
-            mona_output_anti = subprocess.check_output([monabin, "test.mona"], timeout=TIMEOUT).decode("utf-8")
+            prenex_file(ANTIPREFILE, filename, [])
+            mona_output_anti = subprocess.check_output([monabin, ANTIPREFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse_anti = parse_mona(mona_output_anti)
-            os.remove("test.mona")
+            os.remove(ANTIPREFILE)
         except subprocess.TimeoutExpired:
             mona_parse_anti = None, None, None
         except subprocess.CalledProcessError as e:
@@ -93,6 +94,14 @@ def main():
     tex += "\\end{tabular}\n\\end{table}"
     if texout:
         print(tex)
+
+
+def prenex_file(store, read, input):
+    f = open(file, "w")
+    output_anti = subprocess.check_output([lazybin, read]+input, timeout=TIMEOUT).decode("utf-8")
+    anti_fle, anti_time = parse_prenex(output_anti)
+    f.write(anti_fle)
+    f.close()
 
 
 def parse_prenex(output):

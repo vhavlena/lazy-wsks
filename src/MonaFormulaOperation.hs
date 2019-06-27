@@ -210,11 +210,17 @@ removeWhereAllFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (removeWhereAllF
 removeWhereAllFormula (MonaFormulaImpl f1 f2) = MonaFormulaImpl (removeWhereAllFormula f1) (removeWhereAllFormula f2)
 removeWhereAllFormula (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (removeWhereAllFormula f1) (removeWhereAllFormula f2)
 removeWhereAllFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (removeWhereAllFormula f)
-removeWhereAllFormula (MonaFormulaEx1 decl f) = expandWhereExQuantif (MonaFormulaEx1) decl (removeWhereAllFormula f)
-removeWhereAllFormula (MonaFormulaEx2 decl f) = expandWhereExQuantif (MonaFormulaEx2) decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (removeWhereAllFormula f)
 removeWhereAllFormula (MonaFormulaAll0 vars f) = MonaFormulaAll0 vars (removeWhereAllFormula f)
-removeWhereAllFormula (MonaFormulaAll1 decl f) = expandWhereAllQuantif (MonaFormulaAll1) decl (removeWhereAllFormula f)
-removeWhereAllFormula (MonaFormulaAll2 decl f) = expandWhereAllQuantif (MonaFormulaAll2) decl (removeWhereAllFormula f)
+removeWhereAllFormula (MonaFormulaAll1 decl f)
+  | isRestricted decl = MonaFormulaNeg $ MonaFormulaEx1 decl (MonaFormulaNeg $ removeWhereAllFormula f)
+  | otherwise = MonaFormulaAll1 decl $ removeWhereAllFormula f
+removeWhereAllFormula (MonaFormulaAll2 decl f)
+  | isRestricted decl = MonaFormulaNeg $ MonaFormulaEx2 decl (MonaFormulaNeg $ removeWhereAllFormula f)
+  | otherwise = MonaFormulaAll2 decl $ removeWhereAllFormula f
+
+isRestricted [(var, fwh)] = isJust fwh
 
 
 removeWhereAllFile :: MonaFile -> MonaFile
