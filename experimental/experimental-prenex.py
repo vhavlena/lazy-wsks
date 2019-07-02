@@ -64,7 +64,7 @@ def main():
         filename = os.path.join(formulafolder, monafile)
 
         try:
-            prenex_file(PREPROFILE, filename, ["-w"])
+            anti_time = prenex_file(PREPROFILE, [lazybin, filename, "-w"])
             mona_output = subprocess.check_output([monabin, PREPROFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
             os.remove(PREPROFILE)
@@ -74,7 +74,7 @@ def main():
             mona_parse = None, None
 
         try:
-            prenex_file(ANTIPREFILE, filename, [])
+            anti_time = prenex_file(ANTIPREFILE, [lazybin, filename])
             mona_output_anti = subprocess.check_output([monabin, ANTIPREFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse_anti = parse_mona(mona_output_anti)
             os.remove(ANTIPREFILE)
@@ -96,12 +96,13 @@ def main():
         print(tex)
 
 
-def prenex_file(store, read, input):
-    f = open(file, "w")
-    output_anti = subprocess.check_output([lazybin, read]+input, timeout=TIMEOUT).decode("utf-8")
+def prenex_file(store, input):
+    f = open(store, "w")
+    output_anti = subprocess.check_output(input, timeout=TIMEOUT).decode("utf-8")
     anti_fle, anti_time = parse_prenex(output_anti)
     f.write(anti_fle)
     f.close()
+    return anti_time
 
 
 def parse_prenex(output):
