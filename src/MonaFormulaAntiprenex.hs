@@ -111,10 +111,14 @@ antiprenexFormula = antiprenexEmpty . simplifyNegFormula . moveNegToLeavesFormul
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
 convertDecl g (MonaDeclFormula f) = MonaDeclFormula $ g f
+convertDecl g (MonaDeclVar0 decl) = MonaDeclVar0 decl
 convertDecl g (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . g)]
 convertDecl g (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . g)]
 convertDecl g (MonaDeclPred name params f) = MonaDeclPred name params (g f) -- TODO: params are not converted
-convertDecl _ a = a -- TODO: incomplete
+convertDecl g (MonaDeclAssert f) = MonaDeclAssert $ g f
+convertDecl g (MonaDeclConst atom) = MonaDeclConst atom -- TODO: antiprenexing is skipped
+convertDecl g (MonaDeclLastpos var) = MonaDeclLastpos var
+--convertDecl _ a = a -- TODO: incomplete
 
 antiprenexFile :: MonaFile -> MonaFile
 antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls

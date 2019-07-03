@@ -259,6 +259,7 @@ data MonaAtom
   | MonaAtomSing MonaTerm
   | MonaAtomEps MonaTerm
   | MonaAtomTerm MonaTerm
+  | MonaAtomIsEmpty MonaTerm
   | MonaAtomTrue
   | MonaAtomFalse
   deriving (Eq)
@@ -276,6 +277,7 @@ instance Show MonaAtom where
   show (MonaAtomTerm t) = show t
   show (MonaAtomSing t) = "sing( " ++ (show t) ++ " )"
   show (MonaAtomEps t) = "eps( " ++ (show t) ++ " )"
+  show (MonaAtomIsEmpty t) = "empty(" ++ (show t) ++ ")"
   show MonaAtomTrue = "true"
   show MonaAtomFalse = "false"
 
@@ -383,6 +385,10 @@ formulaTerm = m_parens formulaParser
                  ; var <- m_identifier
                  ; return (MonaFormulaAtomic $ MonaAtomSing $ MonaTermVar var )
                  }
+          <|> do { m_reserved "empty"
+                 ; term <- termParser
+                 ; return (MonaFormulaAtomic $ MonaAtomIsEmpty term )
+                 }
           <|> do { m_reserved "eps"
                 ; var <- m_identifier
                 ; return (MonaFormulaAtomic $ MonaAtomEps $ MonaTermVar var )
@@ -444,6 +450,7 @@ data MonaDeclaration
   | MonaDeclPred String [MonaMacroParam] MonaFormula
   | MonaDeclExport String MonaFormula
   | MonaDeclAssert MonaFormula
+  | MonaDeclConst MonaAtom
 
 instance Show MonaDeclaration where
   show (MonaDeclFormula phi) = show phi
@@ -458,6 +465,7 @@ instance Show MonaDeclaration where
   show (MonaDeclPred name params phi) = "pred " ++ name ++ "(" ++ (commatize $ map show params) ++ ") = " ++ (show phi)
   show (MonaDeclExport name phi) = "export(\"" ++ name ++ "\", " ++ (show phi) ++ ")"
   show (MonaDeclAssert phi) = "assert " ++ (show phi)
+  show (MonaDeclConst atom) = "const "++ (show atom)
 
 
 showVarWhereClause :: [(String, Maybe MonaFormula)] -> String
@@ -520,6 +528,10 @@ declarationParser = do { m_reserved "var0"
                 <|> do { m_reserved "assert"
                        ; phi <- formulaParser
                        ; return (MonaDeclAssert phi)
+                       }
+                <|> do { m_reserved "const"
+                       ; atom <- atomicFormulaParser
+                       ; return (MonaDeclConst atom)
                        }
                 <|> do { m_reserved "macro"
                        ; name <- m_identifier

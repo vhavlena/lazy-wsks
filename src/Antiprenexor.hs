@@ -30,6 +30,7 @@ import qualified MonaSocket as MS
 -- |Parameters of the decision procedure.
 data ProcedureArgs =
   Where
+  | Pred
   | None
   deriving (Eq)
 
@@ -51,6 +52,7 @@ parseArgs args
 parseProcedureArgs :: [String] -> ProcedureArgs
 parseProcedureArgs args
   | (length args) == 1 && (last args) == "-w" = Where
+  | (length args) == 1 && (last args) == "-p" = Pred
   | otherwise = None
 
 
@@ -72,7 +74,7 @@ showHelp :: IO ()
 showHelp = do
   prname <- getProgName
   putStrLn $ "Usage: ./" ++ prname ++ " [file] [args]"
-  putStrLn $ "where [args] is one of\n  [--help] show this help\n  [-w] remove where in universal quatification"
+  putStrLn $ "where [args] is one of\n  [--help] show this help\n  [-w] remove where in quatification\n  [-p] do not replace predicate and macros calls"
 
 
 -- |Main function
@@ -84,8 +86,9 @@ main = do
        mona <- MoPa.parseFile file
 
        case arg of
-         Where -> putStrLn $ show $ removeWhereAllFile $ unwindQuantifFile mona
-         None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ removeWhereAllFile $ unwindQuantifFile mona
+         Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
+         None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+         Pred -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona
 
        --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime

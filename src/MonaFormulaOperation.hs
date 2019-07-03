@@ -97,11 +97,14 @@ replaceCallsDecl done (x:xs) = conv:(replaceCallsDecl (done ++ [conv]) xs) where
       MonaDeclPred name pars fle -> MonaDeclPred name pars (replaceCallsFormulas done fle)
       MonaDeclMacro name pars fle -> MonaDeclMacro name pars (replaceCallsFormulas done fle)
       MonaDeclFormula fle -> MonaDeclFormula $ replaceCallsFormulas done fle
+      MonaDeclVar0 vardecl -> MonaDeclVar0 vardecl
       MonaDeclVar1 vardecl -> MonaDeclVar1 $ applyVarDecl (replaceCallsFormulas done) vardecl
       MonaDeclVar2 vardecl -> MonaDeclVar2 $ applyVarDecl (replaceCallsFormulas done) vardecl
       MonaDeclAssert fle -> MonaDeclAssert $ replaceCallsFormulas done fle
       MonaDeclAllpos x -> MonaDeclAllpos x
       MonaDeclLastpos x -> MonaDeclLastpos x
+      MonaDeclConst atom -> MonaDeclConst $ at' where
+        MonaFormulaAtomic at' = replaceCallsFormulas done $ MonaFormulaAtomic atom
       a -> error $ "Unsupported formula: " ++ (show a)
 
 
@@ -281,6 +284,7 @@ buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
   graphDecl ((MonaDeclAssert f):xs) = ("root", getCallsFromula f):(graphDecl xs)
   graphDecl ((MonaDeclAllpos _):xs) = graphDecl xs
   graphDecl ((MonaDeclLastpos _):xs) = graphDecl xs
+  graphDecl ((MonaDeclConst atom):xs) = ("root", getCallsAtom atom):(graphDecl xs)
 
 
 gdDebug :: MonaFile -> [(String, [String])]
@@ -306,6 +310,7 @@ removeRedundantPreds mf@(MonaFile dom decls) = MonaFile dom $ filter flt decls w
   flt (MonaDeclAssert _) = True
   flt (MonaDeclAllpos _) = True
   flt (MonaDeclLastpos _) = True
+  flt (MonaDeclConst _) = True
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.
@@ -334,7 +339,10 @@ removeForAllDecl (MonaDeclVar0 [var]) = MonaDeclVar0 [var]
 removeForAllDecl (MonaDeclVar1 [(var,f)]) = MonaDeclVar1 [(var, f >>= return . removeForAllFormula)]
 removeForAllDecl (MonaDeclVar2 [(var,f)]) = MonaDeclVar2 [(var, f >>= return . removeForAllFormula)]
 removeForAllDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeForAllFormula f)  -- TODO: not considering complex declarations of parameters
-removeForAllDecl a = a -- TODO: incomplete
+removeForAllDecl (MonaDeclAssert f) = MonaDeclAssert $ removeForAllFormula f
+removeForAllDecl (MonaDeclConst atom) = MonaDeclConst atom
+removeForAllDecl (MonaDeclLastpos var) = MonaDeclLastpos var
+--removeForAllDecl a = a -- TODO: incomplete
 
 
 removeForAllFile :: MonaFile -> MonaFile

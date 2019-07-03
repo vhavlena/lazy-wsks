@@ -87,6 +87,7 @@ substituteAtoms repl (MonaAtomSub t1 t2) = MonaAtomSub (substituteTerms repl t1)
 substituteAtoms repl (MonaAtomSing t) = MonaAtomSing $ substituteTerms repl t
 substituteAtoms repl (MonaAtomEps t) = MonaAtomEps $ substituteTerms repl t
 substituteAtoms repl (MonaAtomTerm t) = MonaAtomTerm $ substituteTerms repl t
+substituteAtoms repl (MonaAtomIsEmpty t) = MonaAtomIsEmpty $ substituteTerms repl t
 substituteAtoms _ MonaAtomTrue = MonaAtomTrue
 substituteAtoms _ MonaAtomFalse = MonaAtomFalse
 
@@ -149,6 +150,7 @@ renameBVDecl done (x:xs) vars = conv:(renameBVDecl (done ++ [conv]) xs (vars ++ 
       MonaDeclAssert fle -> MonaDeclAssert $ renameBVFormula vars fle
       MonaDeclAllpos var -> MonaDeclAllpos var
       MonaDeclLastpos var -> MonaDeclLastpos var
+      MonaDeclConst atom -> MonaDeclConst atom
       a -> error $ "Unsupported formula: " ++ (show a)
     v = varsDecl conv
 
@@ -237,6 +239,7 @@ freeVarsAtom (MonaAtomSub t1 t2) = freeVarsAtom (MonaAtomLe t1 t2)
 freeVarsAtom (MonaAtomEps t) = freeVarsTerm t
 freeVarsAtom (MonaAtomSing t) = freeVarsTerm t
 freeVarsAtom (MonaAtomTerm t) = freeVarsTerm t
+freeVarsAtom (MonaAtomIsEmpty t) = freeVarsTerm t
 freeVarsAtom MonaAtomTrue = []
 freeVarsAtom MonaAtomFalse = []
 
@@ -250,6 +253,7 @@ varsDecl (MonaDeclLastpos _) = []
 varsDecl (MonaDeclAllpos _) = []
 varsDecl (MonaDeclFormula f) = boundVarsFormula f -- varsFormula f
 varsDecl (MonaDeclAssert f) = boundVarsFormula f -- varsFormula f
+varsDecl (MonaDeclConst atom) = []
 
 
 boundVarsFormula :: MonaFormula -> [Lo.Var]
