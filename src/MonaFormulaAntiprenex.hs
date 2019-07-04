@@ -77,7 +77,7 @@ propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeV
   vars2 = freeVarsFormula f2
   fv1 = filter (\a -> elem (getChainVarName a) vars1) chain
   fv2 = filter (\a -> elem (getChainVarName a) vars2) chain
-  remChain = intersect fv1 fv2
+  remChain = reverse $ intersect fv1 fv2
   rem1 = fv1 \\ remChain
   rem2 = fv2 \\ remChain
 
@@ -88,7 +88,7 @@ antiprenexFreeVar :: MonaFormula -> [QuantifVarChain] -> MonaFormula
 antiprenexFreeVar (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar f [])
 antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar f1 chain) (antiprenexFreeVar f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
-antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
+antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
 antiprenexFreeVar (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar f ((Exists1Chain var):chain)
 antiprenexFreeVar (MonaFormulaEx2 [var] f) chain = antiprenexFreeVar f ((Exists2Chain var):chain)
 antiprenexFreeVar (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar f ((ForAll0Chain (var, Nothing)):chain)
