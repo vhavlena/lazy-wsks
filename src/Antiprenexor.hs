@@ -88,7 +88,7 @@ main = do
        case arg of
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
          None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
-         Pred -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona
+         Pred -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile mona
 
        --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime

@@ -115,6 +115,7 @@ convertDecl g (MonaDeclVar0 decl) = MonaDeclVar0 decl
 convertDecl g (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . g)]
 convertDecl g (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . g)]
 convertDecl g (MonaDeclPred name params f) = MonaDeclPred name params (g f) -- TODO: params are not converted
+convertDecl g (MonaDeclMacro name params f) = MonaDeclMacro name params (g f)
 convertDecl g (MonaDeclAssert f) = MonaDeclAssert $ g f
 convertDecl g (MonaDeclConst atom) = MonaDeclConst atom -- TODO: antiprenexing is skipped
 convertDecl g (MonaDeclLastpos var) = MonaDeclLastpos var

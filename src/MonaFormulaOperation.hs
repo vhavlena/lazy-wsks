@@ -339,6 +339,7 @@ removeForAllDecl (MonaDeclVar0 [var]) = MonaDeclVar0 [var]
 removeForAllDecl (MonaDeclVar1 [(var,f)]) = MonaDeclVar1 [(var, f >>= return . removeForAllFormula)]
 removeForAllDecl (MonaDeclVar2 [(var,f)]) = MonaDeclVar2 [(var, f >>= return . removeForAllFormula)]
 removeForAllDecl (MonaDeclPred name params f) = MonaDeclPred name params (removeForAllFormula f)  -- TODO: not considering complex declarations of parameters
+removeForAllDecl (MonaDeclMacro name params f) = MonaDeclMacro name params (removeForAllFormula f)
 removeForAllDecl (MonaDeclAssert f) = MonaDeclAssert $ removeForAllFormula f
 removeForAllDecl (MonaDeclConst atom) = MonaDeclConst atom
 removeForAllDecl (MonaDeclLastpos var) = MonaDeclLastpos var
