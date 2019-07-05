@@ -102,6 +102,7 @@ substituteTerms repl (MonaTermUp t) = MonaTermUp (substituteTerms repl t)
 substituteTerms repl (MonaTermBoolCall name terms) = MonaTermBoolCall name $ map (substituteTerms repl) terms
 substituteTerms repl (MonaTermBool atom) = MonaTermBool $ substituteAtoms repl atom
 substituteTerms repl (MonaTermUnion t1 t2) = MonaTermUnion (substituteTerms repl t1) (substituteTerms repl t2)
+substituteTerms repl (MonaTermInter t1 t2) = MonaTermInter (substituteTerms repl t1) (substituteTerms repl t2)
 substituteTerms repl (MonaTermDifference t1 t2) = MonaTermDifference (substituteTerms repl t1) (substituteTerms repl t2)
 substituteTerms repl (MonaTermSet t) = MonaTermSet $ map (substituteTerms repl) t
 substituteTerms repl t = t

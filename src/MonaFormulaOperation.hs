@@ -16,6 +16,7 @@ import Text.Parsec.String
 import Text.Parsec.Token
 import Data.List
 import Data.Maybe
+import Debug.Trace
 
 import MonaParser
 import MonaFormulaOperationSubst
@@ -113,8 +114,15 @@ replaceCallsDecl done (x:xs) = conv:(replaceCallsDecl (done ++ [conv]) xs) where
 replaceCallsFormulas :: [MonaDeclaration] -> MonaFormula -> MonaFormula
 replaceCallsFormulas decls (MonaFormulaAtomic (MonaAtomTerm (MonaTermBoolCall name params))) =
   fromJust $ find (filterMacro name) decls >>= replacePred params
+replaceCallsFormulas decls f@(MonaFormulaAtomic (MonaAtomTerm (MonaTermVar name)))  = fromJust ret where
+  ret = case find (filterMacro name) decls of
+    Just x -> replacePred [] x
+    Nothing -> Just f
 replaceCallsFormulas decls f@(MonaFormulaAtomic _) = f
-replaceCallsFormulas decls f@(MonaFormulaVar _) = f
+replaceCallsFormulas decls f@(MonaFormulaVar name) = fromJust ret where
+  ret = case find (filterMacro name) decls of
+    Just x -> replacePred [] x
+    Nothing -> Just f
 replaceCallsFormulas decls (MonaFormulaNeg f) = MonaFormulaNeg (replaceCallsFormulas decls f)
 replaceCallsFormulas decls (MonaFormulaDisj f1 f2) =
     MonaFormulaDisj (replaceCallsFormulas decls f1) (replaceCallsFormulas decls f2)
@@ -243,7 +251,7 @@ removeWhereAllDecl a = a  -- TODO: need to be refined
 getCallsFromula :: MonaFormula -> [String]
 getCallsFromula (MonaFormulaPredCall name terms) = nub $ name:(concat $ map (getCallsTerm) terms)
 getCallsFromula (MonaFormulaAtomic atom) = getCallsAtom atom
-getCallsFromula (MonaFormulaVar var) = []
+getCallsFromula (MonaFormulaVar var) = [var]
 getCallsFromula (MonaFormulaNeg f) = nub $ getCallsFromula f
 getCallsFromula (MonaFormulaDisj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
 getCallsFromula (MonaFormulaConj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
@@ -259,13 +267,22 @@ getCallsFromula (MonaFormulaAll2 decl f) = nub $ (getListCalls decl) ++ (getCall
 
 getCallsAtom :: MonaAtom -> [String]
 getCallsAtom (MonaAtomTerm term) = getCallsTerm term
-getCallsAtom _ = [] --TODO: incomplete
+getCallsAtom atom = freeVarsAtom atom
 
 
 getCallsTerm :: MonaTerm -> [String]
 getCallsTerm (MonaTermBoolCall name terms) = name:(concat $ map (getCallsTerm) terms)
-getCallsTerm _ = [] --TODO: incomplete
+getCallsTerm t = freeVarsTerm t
 
+
+getPredsMacros :: [MonaDeclaration] -> [String]
+getPredsMacros = map (getPredMacroName) . filter (isPredMacro) where
+  isPredMacro (MonaDeclPred _ _ _) = True
+  isPredMacro (MonaDeclMacro _ _ _) = True
+  isPredMacro _ = False
+  getPredMacroName (MonaDeclPred name _ _) = name
+  getPredMacroName (MonaDeclMacro name _ _) = name
+  getPredMacroName _ = error "wrong filter"
 
 
 getListCalls :: [(String, Maybe MonaFormula)] -> [String]
@@ -275,16 +292,19 @@ getListCalls lst = (catMaybes $ map (snd) lst) >>= getCallsFromula
 buildCallGraph :: MonaFile -> Lg.LabGraph String
 buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
   graphDecl [] = []
-  graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
-  graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
-  graphDecl ((MonaDeclMacro name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclFormula f):xs) = ("root", callsFormula f):(graphDecl xs)
+  graphDecl ((MonaDeclPred name _ f):xs) = (name, callsFormula f):(graphDecl xs)
+  graphDecl ((MonaDeclMacro name _ f):xs) = (name, callsFormula f):(graphDecl xs)
   graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
-  graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
-  graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
-  graphDecl ((MonaDeclAssert f):xs) = ("root", getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclVar1 dec):xs) = ("root", paramsCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclVar2 dec):xs) = ("root", paramsCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclAssert f):xs) = ("root", callsFormula f):(graphDecl xs)
   graphDecl ((MonaDeclAllpos _):xs) = graphDecl xs
   graphDecl ((MonaDeclLastpos _):xs) = graphDecl xs
   graphDecl ((MonaDeclConst atom):xs) = ("root", getCallsAtom atom):(graphDecl xs)
+  allMP = getPredsMacros decls
+  callsFormula f = intersect allMP $ getCallsFromula f
+  paramsCalls dec = intersect allMP $ getListCalls dec
 
 
 gdDebug :: MonaFile -> [(String, [String])]
@@ -311,6 +331,7 @@ removeRedundantPreds mf@(MonaFile dom decls) = MonaFile dom $ filter flt decls w
   flt (MonaDeclAllpos _) = True
   flt (MonaDeclLastpos _) = True
   flt (MonaDeclConst _) = True
+
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with removing universal quantification.
