@@ -77,8 +77,9 @@ def main():
         mona_parse_anti_pred = run_mona(ANTIPREFILE, monabin, [lazybin, filename, "-p"])
 
         print_output(filename, mona_parse, mona_parse_anti, mona_parse_anti_pred)
-        tex = tex + "\\emph{{{0}}} & {1} & {2} \\\\\n".format(filename, \
-            format_output(mona_parse), format_output_anti(mona_parse_anti))
+        tex = tex + "\\emph{{{0}}} & {1} & {2} & {3} \\\\\n".format(filename, \
+            format_output(mona_parse), format_output_anti(mona_parse_anti), \
+            format_output_anti(mona_parse_anti_pred))
 
     tex += "\\end{tabular}\n\\end{table}"
     if texout:
