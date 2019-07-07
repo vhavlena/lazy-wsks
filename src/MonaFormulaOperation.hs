@@ -248,31 +248,31 @@ removeWhereAllDecl a = a  -- TODO: need to be refined
 -- Part with the predicate and macros triming
 --------------------------------------------------------------------------------------------------------------
 
-getCallsFromula :: MonaFormula -> [String]
-getCallsFromula (MonaFormulaPredCall name terms) = nub $ name:(concat $ map (getCallsTerm) terms)
-getCallsFromula (MonaFormulaAtomic atom) = getCallsAtom atom
-getCallsFromula (MonaFormulaVar var) = [var]
-getCallsFromula (MonaFormulaNeg f) = nub $ getCallsFromula f
-getCallsFromula (MonaFormulaDisj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaConj f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaImpl f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaEquiv f1 f2) = nub $ (getCallsFromula f1) ++ (getCallsFromula f2)
-getCallsFromula (MonaFormulaEx0 vars f) = getCallsFromula f
-getCallsFromula (MonaFormulaEx1 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
-getCallsFromula (MonaFormulaEx2 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
-getCallsFromula (MonaFormulaAll0 vars f) = getCallsFromula f
-getCallsFromula (MonaFormulaAll1 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
-getCallsFromula (MonaFormulaAll2 decl f) = nub $ (getListCalls decl) ++ (getCallsFromula f)
+getCallsFromula :: [String] -> MonaFormula -> [String]
+getCallsFromula int (MonaFormulaPredCall name terms) = nub $ name:(concat $ map (getCallsTerm int) terms)
+getCallsFromula int (MonaFormulaAtomic atom) = getCallsAtom int atom
+getCallsFromula int (MonaFormulaVar var) = intersect [var] int
+getCallsFromula int (MonaFormulaNeg f) = nub $ getCallsFromula int f
+getCallsFromula int (MonaFormulaDisj f1 f2) = nub $ (getCallsFromula int f1) ++ (getCallsFromula int f2)
+getCallsFromula int (MonaFormulaConj f1 f2) = nub $ (getCallsFromula int f1) ++ (getCallsFromula int f2)
+getCallsFromula int (MonaFormulaImpl f1 f2) = nub $ (getCallsFromula int f1) ++ (getCallsFromula int f2)
+getCallsFromula int (MonaFormulaEquiv f1 f2) = nub $ (getCallsFromula int f1) ++ (getCallsFromula int f2)
+getCallsFromula int (MonaFormulaEx0 vars f) = getCallsFromula int f
+getCallsFromula int (MonaFormulaEx1 decl f) = nub $ (getListCalls int decl) ++ (getCallsFromula int f)
+getCallsFromula int (MonaFormulaEx2 decl f) = nub $ (getListCalls int decl) ++ (getCallsFromula int f)
+getCallsFromula int (MonaFormulaAll0 vars f) = getCallsFromula int f
+getCallsFromula int (MonaFormulaAll1 decl f) = nub $ (getListCalls int decl) ++ (getCallsFromula int f)
+getCallsFromula int (MonaFormulaAll2 decl f) = nub $ (getListCalls int decl) ++ (getCallsFromula int f)
 
 
-getCallsAtom :: MonaAtom -> [String]
-getCallsAtom (MonaAtomTerm term) = getCallsTerm term
-getCallsAtom atom = freeVarsAtom atom
+getCallsAtom :: [String] -> MonaAtom -> [String]
+getCallsAtom int (MonaAtomTerm term) = getCallsTerm int term
+getCallsAtom int atom = intersect (freeVarsAtom atom) int
 
 
-getCallsTerm :: MonaTerm -> [String]
-getCallsTerm (MonaTermBoolCall name terms) = name:(concat $ map (getCallsTerm) terms)
-getCallsTerm t = freeVarsTerm t
+getCallsTerm :: [String] -> MonaTerm -> [String]
+getCallsTerm int (MonaTermBoolCall name terms) = name:(concat $ map (getCallsTerm int) terms)
+getCallsTerm int t = intersect (freeVarsTerm t) int
 
 
 getPredsMacros :: [MonaDeclaration] -> [String]
@@ -285,8 +285,8 @@ getPredsMacros = map (getPredMacroName) . filter (isPredMacro) where
   getPredMacroName _ = error "wrong filter"
 
 
-getListCalls :: [(String, Maybe MonaFormula)] -> [String]
-getListCalls lst = (catMaybes $ map (snd) lst) >>= getCallsFromula
+getListCalls :: [String] -> [(String, Maybe MonaFormula)] -> [String]
+getListCalls int lst = (catMaybes $ map (snd) lst) >>= getCallsFromula int
 
 
 buildCallGraph :: MonaFile -> Lg.LabGraph String
@@ -301,21 +301,22 @@ buildCallGraph (MonaFile _ decls) = Lg.builLabelGraph $ graphDecl decls where
   graphDecl ((MonaDeclAssert f):xs) = ("root", callsFormula f):(graphDecl xs)
   graphDecl ((MonaDeclAllpos _):xs) = graphDecl xs
   graphDecl ((MonaDeclLastpos _):xs) = graphDecl xs
-  graphDecl ((MonaDeclConst atom):xs) = ("root", getCallsAtom atom):(graphDecl xs)
+  graphDecl ((MonaDeclConst atom):xs) = ("root", getCallsAtom allMP atom):(graphDecl xs)
   allMP = getPredsMacros decls
-  callsFormula f = intersect allMP $ getCallsFromula f
-  paramsCalls dec = intersect allMP $ getListCalls dec
+  callsFormula f = getCallsFromula allMP f
+  paramsCalls dec = getListCalls allMP dec
 
 
 gdDebug :: MonaFile -> [(String, [String])]
 gdDebug (MonaFile _ decls) = graphDecl decls where
   graphDecl [] = []
-  graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula f):(graphDecl xs)
-  graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
-  graphDecl ((MonaDeclMacro name _ f):xs) = (name, getCallsFromula f):(graphDecl xs)
+  graphDecl ((MonaDeclFormula f):xs) = ("root", getCallsFromula allMP f):(graphDecl xs)
+  graphDecl ((MonaDeclPred name _ f):xs) = (name, getCallsFromula allMP f):(graphDecl xs)
+  graphDecl ((MonaDeclMacro name _ f):xs) = (name, getCallsFromula allMP f):(graphDecl xs)
   graphDecl ((MonaDeclVar0 _):xs) = graphDecl xs
-  graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
-  graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls dec):(graphDecl xs)
+  graphDecl ((MonaDeclVar1 dec):xs) = ("root", getListCalls allMP dec):(graphDecl xs)
+  graphDecl ((MonaDeclVar2 dec):xs) = ("root", getListCalls allMP dec):(graphDecl xs)
+  allMP = getPredsMacros decls
 
 
 removeRedundantPreds :: MonaFile -> MonaFile
