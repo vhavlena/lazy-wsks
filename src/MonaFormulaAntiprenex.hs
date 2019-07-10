@@ -16,9 +16,11 @@ import MonaParser
 import MonaFormulaOperation
 import MonaFormulaOperationSubst
 
+import qualified Relation as Rel
 import qualified Logic as Lo
 import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Debug.Trace as Dbg
 
 
@@ -243,3 +245,37 @@ getConjList v = [v]
 getDisjList :: MonaFormula -> [MonaFormula]
 getDisjList (MonaFormulaDisj f1 f2) = (getDisjList f1) ++ (getDisjList f2)
 getDisjList v = [v]
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the informed balancing
+--------------------------------------------------------------------------------------------------------------
+
+type VarFleMap = Map.Map String (Set.Set MonaFormula)
+type VarConstr = [(String, String)]
+
+getSubFV :: [MonaFormula] -> [(MonaFormula, [String])]
+getSubFV = map (\x -> (x, freeVarsFormula x))
+
+
+getVarSubFleMap :: [(MonaFormula, [String])] -> VarFleMap
+getVarSubFleMap = Map.fromListWith (Set.union) . concat . map (switch) where
+  switch (f, vars) = [(v, Set.singleton f) | v <- vars]
+
+
+getComparableVars :: [String] -> VarFleMap -> Rel.Relation String String
+getComparableVars vars mp = Set.fromList [(x,y) | x <- vars, y <- vars,
+  let phi1 = (mp Map.! x), let phi2 = (mp Map.! y),
+  Set.disjoint phi1 phi2, phi1 /= phi2]
+
+
+getIncomparableVars :: [String] -> Rel.Relation String String -> Rel.Relation String String
+getIncomparableVars vars comp = cp Set.\\ (Set.union (Rel.symClosure comp) (Rel.idRel vset))  where
+  vset = Set.fromList vars
+  cp = Set.cartesianProduct vset vset
+
+
+getConstraints :: [String] -> VarFleMap -> [VarConstr]
+getConstraints vars mp = sequence $ map (dupl) constr where
+  dupl (x,y) = [(x,y), (y,x)]
+  constr = Set.toList $ getComparableVars vars mp
