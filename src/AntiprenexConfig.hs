@@ -12,3 +12,6 @@ renameBoundVars = True
 
 -- |Formula balancing (conjunction and disjunction)
 balanceFormulaConfig = True
+
+-- |Number of distribution steps
+distrSteps = 2 :: Int

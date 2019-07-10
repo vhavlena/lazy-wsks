@@ -109,6 +109,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 antiprenexFormula :: MonaFormula -> MonaFormula
 antiprenexFormula = antiprenexEmpty . distributeFormula . antiprenexEmpty . distributeFormula  . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig then balanceFormula else id -- balanceFormula
+  distr f = (iterate (antiprenexEmpty . distributeFormula) f) !! distrSteps
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
