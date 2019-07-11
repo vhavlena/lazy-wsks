@@ -294,6 +294,7 @@ data MonaFormula
   | MonaFormulaEx0 [String] MonaFormula
   | MonaFormulaEx1 [(String, Maybe MonaFormula)] MonaFormula
   | MonaFormulaEx2 [(String, Maybe MonaFormula)] MonaFormula
+  | MonaFormulaExGen String MonaFormula
   | MonaFormulaAll0 [String] MonaFormula
   | MonaFormulaAll1 [(String, Maybe MonaFormula)] MonaFormula
   | MonaFormulaAll2 [(String, Maybe MonaFormula)] MonaFormula

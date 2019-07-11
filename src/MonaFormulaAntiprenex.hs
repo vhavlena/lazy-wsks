@@ -21,6 +21,7 @@ import qualified Logic as Lo
 import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.List as Lst
 import qualified Debug.Trace as Dbg
 
 
@@ -107,7 +108,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula = antiprenexEmpty . distributeFormula . antiprenexEmpty . distributeFormula  . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
+antiprenexFormula = distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig then balanceFormula else id -- balanceFormula
   distr f = (iterate (antiprenexEmpty . distributeFormula) f) !! distrSteps
 
@@ -259,9 +260,17 @@ getSubFV :: [MonaFormula] -> [(MonaFormula, [String])]
 getSubFV = map (\x -> (x, freeVarsFormula x))
 
 
+getSubFVInt :: [String] -> [MonaFormula] -> [(MonaFormula, [String])]
+getSubFVInt int = map (\x -> (x, intersect int $ freeVarsFormula x))
+
+
 getVarSubFleMap :: [(MonaFormula, [String])] -> VarFleMap
 getVarSubFleMap = Map.fromListWith (Set.union) . concat . map (switch) where
   switch (f, vars) = [(v, Set.singleton f) | v <- vars]
+
+
+getVarsFromConstr :: VarConstr -> [String]
+getVarsFromConstr = nub . concat . map (\(x,y) -> [x,y])
 
 
 getComparableVars :: [String] -> VarFleMap -> Rel.Relation String String
@@ -280,3 +289,27 @@ getConstraints :: [String] -> VarFleMap -> [VarConstr]
 getConstraints vars mp = sequence $ map (dupl) constr where
   dupl (x,y) = [(x,y), (y,x)]
   constr = Set.toList $ getComparableVars vars mp
+
+
+buildFormulaChain :: [String] -> [MonaFormula] -> MonaFormula
+buildFormulaChain chain fs = bfc chain fs where
+  bfc [] fs = rebuildFormula (MonaFormulaConj) fs
+  bfc (x:xs) fs = bfc xs fs' where
+    (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
+    fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the cost functions
+--------------------------------------------------------------------------------------------------------------
+
+formulaValue :: MonaFormula -> Int
+formulaValue (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue f)
+formulaValue (MonaFormulaConj f1 f2) = (formulaValue f1) + (formulaValue f2)
+formulaValue _ = 0
+
+
+formulaCountSubFle :: MonaFormula -> Int
+formulaCountSubFle (MonaFormulaExGen _ f) = formulaCountSubFle f
+formulaCountSubFle (MonaFormulaConj f1 f2) = (formulaCountSubFle f1) + (formulaCountSubFle f2)
+formulaCountSubFle _ = 1
