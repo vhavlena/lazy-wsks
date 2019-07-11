@@ -25,3 +25,7 @@ symClosure rel = Set.union rel $ symRel rel
 
 idRel :: (Ord a) => Set.Set a -> Relation a a
 idRel = Set.map (\x -> (x,x))
+
+
+getRelated :: (Ord a, Ord b) => Relation a b -> a -> Set.Set b
+getRelated st x = Set.map (snd) $ Set.filter (\(u,_) -> x == u) st

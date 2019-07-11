@@ -273,10 +273,15 @@ getVarsFromConstr :: VarConstr -> [String]
 getVarsFromConstr = nub . concat . map (\(x,y) -> [x,y])
 
 
-getComparableVars :: [String] -> VarFleMap -> Rel.Relation String String
-getComparableVars vars mp = Set.fromList [(x,y) | x <- vars, y <- vars,
+getComparableVarsTmp :: [String] -> VarFleMap -> Rel.Relation String String
+getComparableVarsTmp vars mp = Set.fromList [(x,y) | x <- vars, y <- vars,
   let phi1 = (mp Map.! x), let phi2 = (mp Map.! y),
   Set.disjoint phi1 phi2, phi1 /= phi2]
+
+
+getComparableVars :: [String] -> [MonaFormula] -> Rel.Relation String String
+getComparableVars vars fs = getComparableVarsTmp vars mp where
+  mp = getVarSubFleMap $ getSubFVInt vars fs
 
 
 getIncomparableVars :: [String] -> Rel.Relation String String -> Rel.Relation String String
@@ -288,7 +293,7 @@ getIncomparableVars vars comp = cp Set.\\ (Set.union (Rel.symClosure comp) (Rel.
 getConstraints :: [String] -> VarFleMap -> [VarConstr]
 getConstraints vars mp = sequence $ map (dupl) constr where
   dupl (x,y) = [(x,y), (y,x)]
-  constr = Set.toList $ getComparableVars vars mp
+  constr = Set.toList $ getComparableVarsTmp vars mp
 
 
 buildFormulaChain :: [String] -> [MonaFormula] -> MonaFormula
@@ -298,6 +303,25 @@ buildFormulaChain chain fs = bfc chain fs where
     (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
     fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
 
+
+builFormulaList :: [String] -> [MonaFormula] -> [MonaFormula]
+builFormulaList chain fs = bfc chain fs where
+  bfc [] fs = fs
+  bfc (x:xs) fs = bfc xs fs' where
+    (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
+    fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
+
+
+
+-- optimalBalance :: [String] -> [MonaFormula] -> [MonaFormula]
+-- optimalBalance vars fs = allComb vars fs rel where
+--   rel = getIncomparableVars vars fs
+--   allComb [] _ _ = []
+--   allComb (x:xs) fs rel = optimalBalance  where
+--     related = Set.toList $ Rel.getRelated x
+--     flist = builFormulaList related fs
+--     x' = xs Lst.\\ related
+--     lst = (optimalBalance x' flist):(allComb x' fs rel)
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the cost functions
