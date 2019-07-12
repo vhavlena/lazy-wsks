@@ -256,8 +256,8 @@ getDisjList v = [v]
 type VarFleMap = Map.Map String (Set.Set MonaFormula)
 type VarConstr = [(String, String)]
 
-getSubFV :: [MonaFormula] -> [(MonaFormula, [String])]
-getSubFV = map (\x -> (x, freeVarsFormula x))
+-- getSubFV :: [MonaFormula] -> [(MonaFormula, [String])]
+-- getSubFV = map (\x -> (x, freeVarsFormula x))
 
 
 getSubFVInt :: [String] -> [MonaFormula] -> [(MonaFormula, [String])]
@@ -269,14 +269,14 @@ getVarSubFleMap = Map.fromListWith (Set.union) . concat . map (switch) where
   switch (f, vars) = [(v, Set.singleton f) | v <- vars]
 
 
-getVarsFromConstr :: VarConstr -> [String]
-getVarsFromConstr = nub . concat . map (\(x,y) -> [x,y])
+-- getVarsFromConstr :: VarConstr -> [String]
+-- getVarsFromConstr = nub . concat . map (\(x,y) -> [x,y])
 
 
 getComparableVarsTmp :: [String] -> VarFleMap -> Rel.Relation String String
 getComparableVarsTmp vars mp = Set.fromList [(x,y) | x <- vars, y <- vars,
   let phi1 = (mp Map.! x), let phi2 = (mp Map.! y),
-  Set.disjoint phi1 phi2, phi1 /= phi2]
+  not $ Set.disjoint phi1 phi2, phi1 /= phi2]
 
 
 getComparableVars :: [String] -> [MonaFormula] -> Rel.Relation String String
@@ -290,18 +290,18 @@ getIncomparableVars vars comp = cp Set.\\ (Set.union (Rel.symClosure comp) (Rel.
   cp = Set.cartesianProduct vset vset
 
 
-getConstraints :: [String] -> VarFleMap -> [VarConstr]
-getConstraints vars mp = sequence $ map (dupl) constr where
-  dupl (x,y) = [(x,y), (y,x)]
-  constr = Set.toList $ getComparableVarsTmp vars mp
+-- getConstraints :: [String] -> VarFleMap -> [VarConstr]
+-- getConstraints vars mp = sequence $ map (dupl) constr where
+--   dupl (x,y) = [(x,y), (y,x)]
+--   constr = Set.toList $ getComparableVarsTmp vars mp
 
 
-buildFormulaChain :: [String] -> [MonaFormula] -> MonaFormula
-buildFormulaChain chain fs = bfc chain fs where
-  bfc [] fs = rebuildFormula (MonaFormulaConj) fs
-  bfc (x:xs) fs = bfc xs fs' where
-    (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
-    fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
+-- buildFormulaChain :: [String] -> [MonaFormula] -> MonaFormula
+-- buildFormulaChain chain fs = bfc chain fs where
+--   bfc [] fs = rebuildFormula (MonaFormulaConj) fs
+--   bfc (x:xs) fs = bfc xs fs' where
+--     (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
+--     fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
 
 
 builFormulaList :: [String] -> [MonaFormula] -> [MonaFormula]
@@ -313,15 +313,32 @@ builFormulaList chain fs = bfc chain fs where
 
 
 
--- optimalBalance :: [String] -> [MonaFormula] -> [MonaFormula]
--- optimalBalance vars fs = allComb vars fs rel where
---   rel = getIncomparableVars vars fs
---   allComb [] _ _ = []
---   allComb (x:xs) fs rel = optimalBalance  where
---     related = Set.toList $ Rel.getRelated x
---     flist = builFormulaList related fs
---     x' = xs Lst.\\ related
---     lst = (optimalBalance x' flist):(allComb x' fs rel)
+optimalBalance :: [String] -> [MonaFormula] -> MonaFormula
+optimalBalance vars = fst . allComb vars where
+  minF (f1, c1) (f2, c2) = if c1 <= c2 then (f1, c1) else (f2, c2)
+  allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
+  allComb [] fs = (f', formulaValue f') where
+    f' = rebuildFormula (MonaFormulaConj) fs
+  allComb vars@(x:xs) fs = minF (allComb xs' fs') (allComb xs'' fs)  where
+    comp = getComparableVars vars fs
+    rel = getIncomparableVars vars comp
+    related = x:(Set.toList $ Rel.getRelated rel x)
+    fs' = builFormulaList related fs
+    xs' = vars Lst.\\ related
+    xs'' = xs' ++ related
+
+
+flContainsDBG :: [String] -> MonaFormula
+flContainsDBG [x,y] = MonaFormulaAtomic $ MonaAtomSub (MonaTermVar x) (MonaTermVar y)
+flContainsDBG (x:y:xs) = MonaFormulaDisj (flContainsDBG [x,y]) $ flContainsDBG (y:xs)
+
+
+optimalBalanceDBG = do
+  let f = [flContainsDBG ["X1", "X2"], flContainsDBG ["X2", "X3"], flContainsDBG ["X3", "X1"], flContainsDBG ["X1", "X4"]]
+      vars = ["X1", "X2", "X3", "X4"]
+  putStrLn $ show $ builFormulaList ["X1"] f
+  putStrLn $ show $ getComparableVars vars f
+
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the cost functions

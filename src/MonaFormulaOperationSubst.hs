@@ -288,6 +288,7 @@ freeVarsFormula (MonaFormulaConj f1 f2) = nub $ (freeVarsFormula f1) ++ (freeVar
 freeVarsFormula (MonaFormulaDisj f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
 freeVarsFormula (MonaFormulaImpl f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
 freeVarsFormula (MonaFormulaEquiv f1 f2) = freeVarsFormula (MonaFormulaConj f1 f2)
+freeVarsFormula (MonaFormulaExGen var f) = delete var $ freeVarsFormula f
 freeVarsFormula (MonaFormulaEx0 [var] f) = delete var $ freeVarsFormula f
 freeVarsFormula (MonaFormulaEx1 [var] f) = delete (fst var) $ (mapVarDecl (freeVarsFormula) var) ++ (freeVarsFormula f)
 freeVarsFormula (MonaFormulaEx2 [var] f) = delete (fst var) $ (mapVarDecl (freeVarsFormula) var) ++ (freeVarsFormula f)

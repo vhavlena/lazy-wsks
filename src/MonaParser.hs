@@ -315,6 +315,8 @@ instance Show MonaFormula where
     "ex1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
   show (MonaFormulaEx2 varWhereCl phi) = pars $
     "ex2 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
+  show (MonaFormulaExGen var phi) = pars $
+    "allGen " ++ var ++ ": " ++ (show phi)
   show (MonaFormulaAll0 varList phi) = pars $
     "all0 " ++ (unwords varList) ++ ": " ++ (show phi)
   show (MonaFormulaAll1 varWhereCl phi) = pars $
