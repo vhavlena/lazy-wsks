@@ -315,17 +315,34 @@ builFormulaList chain fs = bfc chain fs where
 
 optimalBalance :: [String] -> [MonaFormula] -> MonaFormula
 optimalBalance vars = fst . allComb vars where
-  minF (f1, c1) (f2, c2) = if c1 <= c2 then (f1, c1) else (f2, c2)
+  minF [(f,c)] = (f,c)
+  minF ((f1, c1):xs) = if c1 <= c2 then (f1, c1) else (f2, c2) where
+    (f2, c2) = minF xs
   allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
   allComb [] fs = (f', formulaValue f') where
     f' = rebuildFormula (MonaFormulaConj) fs
-  allComb vars@(x:xs) fs = minF (allComb xs' fs') (allComb xs'' fs)  where
+  allComb vars fs = minF $ map (applyComb vars fs) lv  where
     comp = getComparableVars vars fs
     rel = getIncomparableVars vars comp
-    related = x:(Set.toList $ Rel.getRelated rel x)
-    fs' = builFormulaList related fs
+    lv = level vars fs rel
+
+  applyComb vars fs apvar = allComb vars' fs' where
+    fs' = builFormulaList apvar fs
+    vars' = vars Lst.\\ apvar
+
+
+
+    --Dbg.trace (show xs' ++ show xs'') $ minF (allComb xs' fs') (allComb xs'' fs)  where
+    -- comp = getComparableVars vars fs
+    -- rel = getIncomparableVars vars comp
+    -- related = x:(Set.toList $ Rel.getRelated rel x)
+    -- fs' = builFormulaList related fs
+    -- xs' = vars Lst.\\ related
+    -- xs'' = xs' ++ related
+  level [] _ _ = []
+  level vars@(x:xs) fs incomp = related:(level xs' fs incomp) where
+    related = x:(Set.toList $ Rel.getRelated incomp x)
     xs' = vars Lst.\\ related
-    xs'' = xs' ++ related
 
 
 flContainsDBG :: [String] -> MonaFormula
@@ -336,8 +353,11 @@ flContainsDBG (x:y:xs) = MonaFormulaDisj (flContainsDBG [x,y]) $ flContainsDBG (
 optimalBalanceDBG = do
   let f = [flContainsDBG ["X1", "X2"], flContainsDBG ["X2", "X3"], flContainsDBG ["X3", "X1"], flContainsDBG ["X1", "X4"]]
       vars = ["X1", "X2", "X3", "X4"]
+      comp = getComparableVars vars f
   putStrLn $ show $ builFormulaList ["X1"] f
-  putStrLn $ show $ getComparableVars vars f
+  putStrLn $ show $ comp
+  putStrLn $ show $ getIncomparableVars vars comp
+  putStrLn $ show $ optimalBalance vars f
 
 
 --------------------------------------------------------------------------------------------------------------
