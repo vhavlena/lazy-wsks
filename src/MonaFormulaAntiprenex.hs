@@ -47,7 +47,9 @@ propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeV
 antiprenexFreeVar :: MonaFormula -> [QuantifVarChain] -> MonaFormula
 antiprenexFreeVar (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar f [])
 --antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
-antiprenexFreeVar f@(MonaFormulaConj f1 f2) chain = balanceFormulaInf (antiprenexFreeVar) f chain
+antiprenexFreeVar f@(MonaFormulaConj f1 f2) chain = case balanceFormulaConfig of
+  BalInformed -> balanceFormulaInf (antiprenexFreeVar) f chain
+  BalFullTree -> propagateTo (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar f1 chain) (antiprenexFreeVar f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
 antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
 antiprenexFreeVar (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar f ((Exists1Chain var):chain)
@@ -67,7 +69,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 antiprenexFormula :: MonaFormula -> MonaFormula
 antiprenexFormula = distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
-  bal = if balanceFormulaConfig then balanceFormula else id -- balanceFormula
+  bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
   distr f = (iterate (antiprenexEmpty . distributeFormula) f) !! distrSteps
 
 
