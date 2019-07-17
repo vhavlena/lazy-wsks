@@ -210,9 +210,9 @@ balanceFormulaInf ::
   -> MonaFormula
 balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
-  vars = intersect (freeVarsFormula f) $ map (getChainVarName) chain
+  vars = map (getChainVarName) chain
   varmap = Map.fromList $ zip vars chain
-  balfor = optimalBalance vars fs
+  balfor = optimalBalance (intersect (freeVarsFormula f) vars) fs
 
   procAntiprenex mp f@(MonaFormulaConj f1 f2) ch = flushQuantifChain (reverse ch) $ MonaFormulaConj (procAntiprenex mp f1 []) (procAntiprenex mp f2 [])
   procAntiprenex mp (MonaFormulaExGen var f) ch = (procAntiprenex mp f (chainmember:ch)) where
