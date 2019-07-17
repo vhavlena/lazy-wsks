@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
- Script for automated experimental evaluation.
- @title experimental-prenex.py
- @author Vojtech Havlena, October 2018
+ Script for automated collecting statistics about the formula construction.
+ @title experimental-stat.py
+ @author Vojtech Havlena, July 2019
 """
 
 import sys
@@ -55,53 +55,39 @@ def main():
 
     print_config()
     print("Formula: MONA, MONA+antiprenex")
-    tex = "Timeout: {0}\n".format(TIMEOUT)
-    tex += "\\begin{table}[h]\n\\begin{tabular}{llll}\n"
-    tex += "\\textbf{Formula File} & \\textbf{Mona} & \\textbf{Mona+antiprenex} & \\textbf{Mona+antiprenex+pred} \\\\\n\\toprule \n"
-
 
     for monafile in files:
         filename = os.path.join(formulafolder, monafile)
 
         try:
             anti_time = prenex_file(PREPROFILE, [lazybin, filename, "-w"])
-            mona_output = subprocess.check_output([monabin, PREPROFILE], timeout=TIMEOUT).decode("utf-8")
+            mona_output = subprocess.check_output([monabin, "-s", PREPROFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
             os.remove(PREPROFILE)
         except subprocess.TimeoutExpired:
-            mona_parse = None, None
+            mona_parse = "TO"
         except subprocess.CalledProcessError as e:
-            mona_parse = None, None
+            mona_parse = "None"
 
         mona_parse_anti = run_mona(ANTIPREFILE, monabin, [lazybin, filename])
         mona_parse_anti_pred = run_mona(ANTIPREFILE, monabin, [lazybin, filename, "-p"])
 
-        filename = os.path.basename(filename)
-        print_output(filename, mona_parse, mona_parse_anti, mona_parse_anti_pred)
-        tex = tex + "\\emph{{{0}}} & {1} & {2} & {3} \\\\\n".format(filename, \
-            format_output(mona_parse), format_output_anti(mona_parse_anti), \
-            format_output_anti(mona_parse_anti_pred))
+        print_output(filename, "", mona_parse)
+        print_output(filename, "-a", mona_parse_anti)
+        print_output(filename, "-ap", mona_parse_anti_pred)
 
-    tex += "\\end{tabular}\n\\end{table}"
-    if texout:
-        print(tex)
 
 
 def run_mona(store, monabin, params):
     try:
         anti_time = prenex_file(store, params)
-        mona_output_anti = subprocess.check_output([monabin, store], timeout=TIMEOUT).decode("utf-8")
+        mona_output_anti = subprocess.check_output([monabin, "-s", store], timeout=TIMEOUT).decode("utf-8")
         mona_parse_anti = parse_mona(mona_output_anti)
         os.remove(store)
     except subprocess.TimeoutExpired:
-        mona_parse_anti = None, None, None
+        mona_parse_anti = "TO"
     except subprocess.CalledProcessError as e:
-        mona_parse_anti = None, None, None
-
-    if mona_parse_anti[1] is None:
-        mona_parse_anti = mona_parse_anti[0], None, None
-    else:
-        mona_parse_anti = mona_parse_anti[0], round(mona_parse_anti[1], 2), round(anti_time, 2)
+        mona_parse_anti = "None"
     return mona_parse_anti
 
 
@@ -123,17 +109,32 @@ def parse_prenex(output):
     return formula, time
 
 
+def format_op(op, params):
+    res = op
+    for par in params:
+        res = res + ";{0}".format(par)
+    return res
+
+
 def parse_mona(output):
-    valid = None
-    time = None
-    for line in output.split('\n'):
-        out = parse_mona_sat(line)
-        if out is not None:
-            valid = out
-        out = parse_mona_time(line)
-        if out is not None:
-            time = out
-    return valid, time
+    res = ""
+    lines = output.split('\n')
+    for i in range(len(lines)):
+        line = lines[i]
+        if line.startswith("Product &"):
+            parse = parse_mona_product(lines[i+3:i+5])
+            if parse is None:
+                parse = parse_mona_product(lines[i+1:i+3])
+            res = res + "{0}\n".format(format_op("&", parse))
+        if line.startswith("Product |"):
+            parse = parse_mona_product(lines[i+3:i+5])
+            if parse is None:
+                parse = parse_mona_product(lines[i+1:i+3])
+            res = res + "{0}\n".format(format_op("|", parse))
+        if line.startswith("Projecting"):
+            parse = parse_mona_projection(lines[i+3:i+5])
+            res = res + "{0}\n".format(format_op("proj", parse))
+    return res
 
 
 def parse_mona_sat(line):
@@ -146,12 +147,26 @@ def parse_mona_sat(line):
     return None
 
 
-def parse_mona_time(line):
-    match = re.search("Time: ([0-9][0-9]):([0-9][0-9]):([0-9][0-9].[0-9][0-9])", line)
-    if match is not None:
-        time = 3600*float(match.group(1)) + 60*float(match.group(2)) + float(match.group(3))
-        return time
-    return None
+def parse_mona_product(lines):
+    res = [None]*4
+    match = re.search("\\(([0-9]+),[0-9]+\\)x\\(([0-9]+),[0-9]+\\) -> \\(([0-9]+),[0-9]+\\)", lines[0])
+    if match is None:
+        return None
+    res[0], res[1], res[2] = int(match.group(1)), int(match.group(2)), int(match.group(3))
+    match = re.search("Minimizing \\([0-9]+,[0-9]+\\) -> \\(([0-9]+),[0-9]+\\)", lines[1])
+    if match is None:
+        return None
+    res[3] = int(match.group(1))
+    return res
+
+
+def parse_mona_projection(lines):
+    res = [None]*4
+    match = re.search("\\(([0-9]+),[0-9]+\\) -> \\(([0-9]+),[0-9]+\\)", lines[0])
+    res[0], res[1], res[2] = int(match.group(1)), -1, int(match.group(2))
+    match = re.search("Minimizing \\([0-9]+,[0-9]+\\) -> \\(([0-9]+),[0-9]+\\)", lines[1])
+    res[3] = int(match.group(1))
+    return res
 
 
 def print_config():
@@ -159,16 +174,13 @@ def print_config():
     print("Number of formulas: {0}".format(FORMULAS))
 
 
-def format_output(parse):
-    return "{0}".format("TO" if parse[1] is None else parse[1])
-
-
-def format_output_anti(parse):
-    return "{0}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
-
-
-def print_output(filename, lazy_parse, mona_parse, mona_parse_pred):
-    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(lazy_parse), format_output_anti(mona_parse), format_output_anti(mona_parse_pred)))
+def print_output(filename, suf, output):
+    base = os.path.basename(filename)
+    name = os.path.splitext(base)[0]
+    output = "operation;operand1;operand2;result;minresult\n" + output
+    f = open(name + suf + ".csv", "w")
+    f.write(output)
+    f.close()
 
 
 def help_err():
