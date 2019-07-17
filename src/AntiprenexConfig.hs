@@ -21,4 +21,4 @@ renameBoundVars = True
 balanceFormulaConfig = BalInformed
 
 -- |Number of distribution steps
-distrSteps = 2 :: Int
+distrSteps = 0 :: Int
