@@ -71,7 +71,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 antiprenexFormula :: MonaFormula -> MonaFormula
 antiprenexFormula = distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
-  distr f = (iterate (antiprenexEmpty . distributeFormula) f) !! distrSteps
+  distr f = (iterate (antiprenexEmpty . distributeFormula []) f) !! distrSteps
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
@@ -130,18 +130,22 @@ convertToBaseFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (convertToBas
 
 
 
-distributeFormula :: MonaFormula -> MonaFormula
-distributeFormula (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
-distributeFormula f@(MonaFormulaPredCall _ _) = f
-distributeFormula (MonaFormulaVar var) = MonaFormulaVar var
-distributeFormula (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormula f)
-distributeFormula (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormula f1) (distributeFormula f2)
-distributeFormula (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) = MonaFormulaDisj (distributeFormula (MonaFormulaConj f1 f2)) (distributeFormula (MonaFormulaConj f1 f3))
-distributeFormula (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) = MonaFormulaDisj (distributeFormula (MonaFormulaConj f2 f1)) (distributeFormula (MonaFormulaConj f3 f1))
-distributeFormula (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula f1) (distributeFormula f2)
-distributeFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormula f)
-distributeFormula (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormula f)
-distributeFormula (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula f)
+distributeFormula :: [String] -> MonaFormula -> MonaFormula
+distributeFormula _ (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+distributeFormula _ f@(MonaFormulaPredCall _ _) = f
+distributeFormula _ (MonaFormulaVar var) = MonaFormulaVar var
+distributeFormula _ (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormula [] f)
+distributeFormula c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormula c f1) (distributeFormula c f2)
+distributeFormula c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
+  if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f1 f2)) (distributeFormula c (MonaFormulaConj f1 f3))
+  else (MonaFormulaConj (distributeFormula [] f1) (distributeFormula [] (MonaFormulaDisj f2 f3)))
+distributeFormula c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
+  if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
+  else MonaFormulaConj (distributeFormula c (MonaFormulaDisj f2 f3)) (distributeFormula c f1)
+distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula c f1) (distributeFormula c f2)
+distributeFormula c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormula ("x":c) f)
+distributeFormula c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormula ("x":c) f)
+distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula ("x":c) f)
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with negation simplifying.

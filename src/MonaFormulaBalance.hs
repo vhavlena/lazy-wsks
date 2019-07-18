@@ -178,7 +178,7 @@ builFormulaList chain fs = bfc chain fs where
   bfc [] fs = fs
   bfc (x:xs) fs = bfc xs fs' where
     (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
-    fs' = (MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1):fs2
+    fs' = fs2 ++ [(MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1)]
 
 
 
@@ -210,6 +210,7 @@ balanceFormulaInf ::
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
+balanceFormulaInf rest f [] = f
 balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
   vars = map (getChainVarName) chain
@@ -233,7 +234,7 @@ balanceFormulaInfSplit rest f chain =  balIter rest f divc where
   balIter rest fl [] = balanceFormulaInf rest fl []
   balIter rest fl@(MonaFormulaConj _ _) [c] = balanceFormulaInf rest fl c
   balIter rest fl [c] = flushQuantifChain (reverse c) fl
-  balIter rest fl (c:xs) = Dbg.trace(show $ c) $ balIter rest (balanceFormulaInf rest fl (reverse c)) xs
+  balIter rest fl (c:xs) = balIter rest (balanceFormulaInf rest fl (reverse c)) xs
 
 
 --------------------------------------------------------------------------------------------------------------
@@ -252,6 +253,17 @@ formulaCountSubFle (MonaFormulaConj f1 f2) = (formulaCountSubFle f1) + (formulaC
 formulaCountSubFle _ = 1
 
 
+formulaValueStruct :: MonaFormula -> Int
+formulaValueStruct (MonaFormulaExGen _ f) = (formulaCountSubFleStruct f) + (formulaValueStruct f)
+formulaValueStruct (MonaFormulaConj f1 f2) = (formulaValueStruct f1) + (formulaValueStruct f2)
+formulaValueStruct _ = 0
+
+
+formulaCountSubFleStruct :: MonaFormula -> Int
+formulaCountSubFleStruct (MonaFormulaExGen _ f) = 4 + (formulaCountSubFleStruct f)
+formulaCountSubFleStruct (MonaFormulaConj f1 f2) = (formulaCountSubFleStruct f1) + (formulaCountSubFleStruct f2)
+formulaCountSubFleStruct f = subFormulas f
+
 --------------------------------------------------------------------------------------------------------------
 -- Part with the debug functions
 --------------------------------------------------------------------------------------------------------------
@@ -267,4 +279,4 @@ optimalBalanceDBG = do
       f3 = [flContainsDBG ["X1", "X2"]]
       vars1 = ["X1", "X2", "X3", "X4"]
       vars2 = ["X1", "X2"]
-  putStrLn $ show $ optimalBalance vars2 f3
+  putStrLn $ show $ optimalBalance vars1 f1

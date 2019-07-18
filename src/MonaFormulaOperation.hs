@@ -370,3 +370,21 @@ removeForAllDecl (MonaDeclLastpos var) = MonaDeclLastpos var
 
 removeForAllFile :: MonaFile -> MonaFile
 removeForAllFile (MonaFile dom decls) = MonaFile dom (map (removeForAllDecl) decls)
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with counting subformulas
+--------------------------------------------------------------------------------------------------------------
+
+subFormulas :: MonaFormula -> Int
+subFormulas (MonaFormulaAtomic atom) = length $ freeVarsAtom atom
+subFormulas (MonaFormulaPredCall name f) = 1
+subFormulas (MonaFormulaVar var) = 1
+subFormulas (MonaFormulaNeg f) = (subFormulas f)
+subFormulas (MonaFormulaDisj f1 f2) = 1 + (subFormulas f1) + (subFormulas f2)
+subFormulas (MonaFormulaConj f1 f2) = 1 + (subFormulas f1) + (subFormulas f2)
+--subFormulas (MonaFormulaImpl f1 f2) = MonaFormulaImpl (subFormulas f1) (subFormulas f2)
+--subFormulas (MonaFormulaEquiv f1 f2) = MonaFormulaEquiv (subFormulas f1) (subFormulas f2)
+subFormulas (MonaFormulaEx0 vars f) = 1 + (subFormulas f)
+subFormulas (MonaFormulaEx1 decl f) = 1 + (subFormulas f)
+subFormulas (MonaFormulaEx2 decl f) = 1 + (subFormulas f)
