@@ -11,6 +11,7 @@ module AntiprenexConfig where
 -- |Formula balancing alternatives
 data BalanceFormulaConfig =
   BalInformed
+  | BalInformedSplit
   | BalFullTree
   deriving (Eq)
 
@@ -18,7 +19,11 @@ data BalanceFormulaConfig =
 renameBoundVars = True
 
 -- |Formula balancing (conjunction and disjunction)
-balanceFormulaConfig = BalInformed
+balanceFormulaConfig = BalInformedSplit
 
 -- |Number of distribution steps
 distrSteps = 0 :: Int
+
+
+-- |Number of chunks for splitting in informed balancing
+balInforSplitChunks = 5 :: Int

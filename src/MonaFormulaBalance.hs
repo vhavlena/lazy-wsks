@@ -12,6 +12,7 @@ module MonaFormulaBalance(
   , flushQuantifChain
   , getChainVarName
   , balanceFormula
+  , balanceFormulaInfSplit
 ) where
 
 
@@ -29,6 +30,7 @@ import qualified FormulaOperation as Fo
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as Lst
+import qualified Data.List.Split as LstSpl
 import qualified Debug.Trace as Dbg
 
 
@@ -199,7 +201,7 @@ optimalBalance vars = fst . allComb vars where
 
   level [] _ _ = []
   level vars@(x:xs) fs incomp = related:(level xs' fs incomp) where
-    related = x:(Set.toList $ Rel.getRelated incomp x)
+    related = intersect vars $ x:(Set.toList $ Rel.getRelated incomp x)
     xs' = vars Lst.\\ related
 
 
@@ -214,10 +216,24 @@ balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   varmap = Map.fromList $ zip vars chain
   balfor = optimalBalance (intersect (freeVarsFormula f) vars) fs
 
-  procAntiprenex mp f@(MonaFormulaConj f1 f2) ch = flushQuantifChain (reverse ch) $ MonaFormulaConj (procAntiprenex mp f1 []) (procAntiprenex mp f2 [])
+  procAntiprenex mp f@(MonaFormulaConj f1 f2) ch = flushQuantifChain ch $ MonaFormulaConj (procAntiprenex mp f1 []) (procAntiprenex mp f2 [])
   procAntiprenex mp (MonaFormulaExGen var f) ch = (procAntiprenex mp f (chainmember:ch)) where
     chainmember = mp Map.! var
-  procAntiprenex _ f ch = flushQuantifChain (reverse ch) $ rest f ch
+  procAntiprenex _ f ch = rest f ch
+
+
+balanceFormulaInfSplit ::
+  (MonaFormula -> [QuantifVarChain] -> MonaFormula)
+  -> MonaFormula
+  -> [QuantifVarChain]
+  -> MonaFormula
+balanceFormulaInfSplit rest f chain =  balIter rest f divc where
+  divc = LstSpl.chunksOf balInforSplitChunks $ reverse chain
+
+  balIter rest fl [] = balanceFormulaInf rest fl []
+  balIter rest fl@(MonaFormulaConj _ _) [c] = balanceFormulaInf rest fl c
+  balIter rest fl [c] = flushQuantifChain (reverse c) fl
+  balIter rest fl (c:xs) = Dbg.trace(show $ c) $ balIter rest (balanceFormulaInf rest fl (reverse c)) xs
 
 
 --------------------------------------------------------------------------------------------------------------
@@ -248,6 +264,7 @@ flContainsDBG (x:y:xs) = MonaFormulaDisj (flContainsDBG [x,y]) $ flContainsDBG (
 optimalBalanceDBG = do
   let f1 = [flContainsDBG ["X1", "X2"], flContainsDBG ["X2", "X3"], flContainsDBG ["X3", "X1"], flContainsDBG ["X1", "X4"]]
       f2 = [flContainsDBG ["X1", "X2"], flContainsDBG ["X3", "X4"]]
+      f3 = [flContainsDBG ["X1", "X2"]]
       vars1 = ["X1", "X2", "X3", "X4"]
-      vars2 = ["X1", "X2", "X3", "X4"]
-  putStrLn $ show $ optimalBalance vars2 f2
+      vars2 = ["X1", "X2"]
+  putStrLn $ show $ optimalBalance vars2 f3
