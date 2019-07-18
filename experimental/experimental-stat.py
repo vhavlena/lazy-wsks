@@ -17,7 +17,7 @@ import resource
 
 VALIDLINE = -2
 TIMELINE = -1
-TIMEOUT = 100 #in seconds
+TIMEOUT = 300 #in seconds
 FORMULAS = 20
 
 PREPROFILE = "test-wgjcm3.mona"
@@ -61,7 +61,7 @@ def main():
 
         try:
             anti_time = prenex_file(PREPROFILE, [lazybin, filename, "-w"])
-            mona_output = subprocess.check_output([monabin, "-s", PREPROFILE], timeout=TIMEOUT).decode("utf-8")
+            mona_output = subprocess.check_output([monabin, "-i", PREPROFILE], timeout=TIMEOUT).decode("utf-8")
             mona_parse = parse_mona(mona_output)
             os.remove(PREPROFILE)
         except subprocess.TimeoutExpired:
@@ -81,7 +81,7 @@ def main():
 def run_mona(store, monabin, params):
     try:
         anti_time = prenex_file(store, params)
-        mona_output_anti = subprocess.check_output([monabin, "-s", store], timeout=TIMEOUT).decode("utf-8")
+        mona_output_anti = subprocess.check_output([monabin, "-i", store], timeout=TIMEOUT).decode("utf-8")
         mona_parse_anti = parse_mona(mona_output_anti)
         os.remove(store)
     except subprocess.TimeoutExpired:
@@ -122,19 +122,28 @@ def parse_mona(output):
     for i in range(len(lines)):
         line = lines[i]
         if line.startswith("Product &"):
-            parse = parse_mona_product(lines[i+3:i+5])
-            if parse is None:
-                parse = parse_mona_product(lines[i+1:i+3])
+            parse = proc_product(lines, i)
             res = res + "{0}\n".format(format_op("&", parse))
         if line.startswith("Product |"):
-            parse = parse_mona_product(lines[i+3:i+5])
-            if parse is None:
-                parse = parse_mona_product(lines[i+1:i+3])
+            parse = proc_product(lines, i)
             res = res + "{0}\n".format(format_op("|", parse))
         if line.startswith("Projecting"):
             parse = parse_mona_projection(lines[i+3:i+5])
+            fv = dfa_fv(lines[i+6:])
+            parse.append(','.join(fv))
             res = res + "{0}\n".format(format_op("proj", parse))
     return res
+
+
+def proc_product(lines, i):
+    parse = parse_mona_product(lines[i+3:i+5])
+    j = i+6
+    if parse is None:
+        parse = parse_mona_product(lines[i+1:i+3])
+        j = i+4
+    fv = dfa_fv(lines[j:])
+    parse.append(','.join(fv))
+    return parse
 
 
 def parse_mona_sat(line):
@@ -169,6 +178,36 @@ def parse_mona_projection(lines):
     return res
 
 
+def dfa_fv(lines):
+    fv = set()
+    for line in lines[5:]:
+        ret = parse_dfa_trans(line)
+        if ret is None:
+            break
+        _, sym, _ = ret
+        fv = fv.union(symbols_free_vars(sym))
+    return fv
+
+
+def parse_dfa_trans(line):
+    match = re.search("^State ([0-9]+): ([^->]*) -> state ([0-9]+)$", line)
+    if match is None:
+        return None
+    fr, label, to = int(match.group(1)), match.group(2), match.group(3)
+    if label.strip() == "":
+        syms = []
+    else:
+        syms = label.split(", ")
+    return fr, syms, to
+
+
+def symbols_free_vars(syms):
+    fv = set()
+    for sym in syms:
+        fv.add(sym.split("=")[0])
+    return fv
+
+
 def print_config():
     print("Timeout: {0}".format(TIMEOUT))
     print("Number of formulas: {0}".format(FORMULAS))
@@ -177,7 +216,7 @@ def print_config():
 def print_output(filename, suf, output):
     base = os.path.basename(filename)
     name = os.path.splitext(base)[0]
-    output = "operation;operand1;operand2;result;minresult\n" + output
+    output = "operation;operand1;operand2;result;minresult;fv\n" + output
     f = open(name + suf + ".csv", "w")
     f.write(output)
     f.close()

@@ -78,9 +78,16 @@ def main():
 
         filename = os.path.basename(filename)
         print_output(filename, mona_parse, mona_parse_anti, mona_parse_anti_pred)
+
+        if mona_parse[1] is None or mona_parse_anti[1] is None or mona_parse_anti_pred[1] is None:
+            blazy = bmp = bmpp = False
+        else:
+            blazy = True if mona_parse[1] < mona_parse_anti[1] and mona_parse[1] < mona_parse_anti_pred[1] else False
+            bmp = True if mona_parse_anti[1] < mona_parse[1] and mona_parse_anti[1] < mona_parse_anti_pred[1] else False
+            bmpp = True if mona_parse_anti_pred[1] <= mona_parse_anti[1] and mona_parse_anti_pred[1] <= mona_parse[1] else False
         tex = tex + "\\emph{{{0}}} & {1} & {2} & {3} \\\\\n".format(filename, \
-            format_output(mona_parse), format_output_anti(mona_parse_anti), \
-            format_output_anti(mona_parse_anti_pred))
+            format_output(mona_parse, blazy), format_output_anti(mona_parse_anti, bmp), \
+            format_output_anti(mona_parse_anti_pred, bmpp))
 
     tex += "\\end{tabular}\n\\end{table}"
     if texout:
@@ -159,16 +166,23 @@ def print_config():
     print("Number of formulas: {0}".format(FORMULAS))
 
 
-def format_output(parse):
-    return "{0}".format("TO" if parse[1] is None else parse[1])
+def format_output(parse, bold):
+    if bold:
+        return "\\textbf{{{0}}}".format("TO" if parse[1] is None else parse[1])
+    else:
+        return "{0}".format("TO" if parse[1] is None else parse[1])
 
 
-def format_output_anti(parse):
-    return "{0}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
+def format_output_anti(parse, bold):
+    if bold:
+        return "\\textbf{{{0}}}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
+    else:
+        return "{0}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
 
 
 def print_output(filename, lazy_parse, mona_parse, mona_parse_pred):
-    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(lazy_parse), format_output_anti(mona_parse), format_output_anti(mona_parse_pred)))
+    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(lazy_parse, False), \
+        format_output_anti(mona_parse, False), format_output_anti(mona_parse_pred, False)))
 
 
 def help_err():
