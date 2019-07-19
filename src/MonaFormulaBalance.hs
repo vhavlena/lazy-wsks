@@ -87,7 +87,7 @@ getChainVarName (Exists2Chain a) = fst a
 --------------------------------------------------------------------------------------------------------------
 
 balanceFormula :: MonaFormula -> MonaFormula
-balanceFormula f@(MonaFormulaConj _ _) = rebuildFormula (MonaFormulaConj) $ map (balanceFormula) (getConjList f)
+balanceFormula f@(MonaFormulaConj _ _) = rebuildFormulaOrd (MonaFormulaConj) $ map (balanceFormula) (getConjList f)
 balanceFormula f@(MonaFormulaDisj _ _) = rebuildFormula (MonaFormulaDisj) $ map (balanceFormula) (getDisjList f)
 balanceFormula (MonaFormulaNeg f) = MonaFormulaNeg $ balanceFormula f
 balanceFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (balanceFormula f)
@@ -107,6 +107,18 @@ rebuildFormula con xs = con (rebuildFormula con h) (rebuildFormula con t) where
   m = (length xs) `div` 2
   h = take m xs
   t = drop m xs
+
+
+rebuildFormulaOrd :: (MonaFormula -> MonaFormula -> MonaFormula) -> [MonaFormula] -> MonaFormula
+rebuildFormulaOrd _ [f] = f
+rebuildFormulaOrd con xs = if (length c2) == 0 then foldl1 (con) c1 else foldl (con) f1 c1 where
+  (c1, c2) = Lst.partition (distrSuit) xs
+  f1 = rebuildFormula con c2
+
+  distrSuit (MonaFormulaDisj _ _) = True
+  distrSuit _ = False
+
+
 
 
 getConjList :: MonaFormula -> [MonaFormula]
@@ -178,7 +190,7 @@ builFormulaList chain fs = bfc chain fs where
   bfc [] fs = fs
   bfc (x:xs) fs = bfc xs fs' where
     (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
-    fs' = fs2 ++ [(MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1)]
+    fs' = fs2 ++ [(MonaFormulaExGen x $ rebuildFormulaOrd (MonaFormulaConj) fs1)]
 
 
 
@@ -188,8 +200,8 @@ optimalBalance vars = fst . allComb vars where
   minF ((f1, c1):xs) = if c1 <= c2 then (f1, c1) else (f2, c2) where
     (f2, c2) = minF xs
   allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
-  allComb [] fs = (f', formulaValue f') where
-    f' = rebuildFormula (MonaFormulaConj) fs
+  allComb [] fs = (f', formulaValue 0 f') where
+    f' = rebuildFormulaOrd (MonaFormulaConj) fs
   allComb vars fs = minF $ map (applyComb vars fs) lv  where
     comp = getComparableVars vars fs
     rel = getIncomparableVars vars comp
@@ -210,7 +222,7 @@ balanceFormulaInf ::
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
-balanceFormulaInf rest f [] = rebuildFormula (MonaFormulaConj) $ getConjList f
+balanceFormulaInf rest f [] = rebuildFormulaOrd (MonaFormulaConj) $ getConjList f
 balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
   vars = map (getChainVarName) chain
@@ -228,7 +240,7 @@ balanceFormulaInfSplit ::
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
-balanceFormulaInfSplit rest f [] = rebuildFormula (MonaFormulaConj) $ getConjList f
+balanceFormulaInfSplit rest f [] = rebuildFormulaOrd (MonaFormulaConj) $ getConjList f
 balanceFormulaInfSplit rest f chain =  balIter rest f divc where
   divc = LstSpl.chunksOf balInforSplitChunks $ reverse chain
 
@@ -242,10 +254,10 @@ balanceFormulaInfSplit rest f chain =  balIter rest f divc where
 -- Part with the cost functions
 --------------------------------------------------------------------------------------------------------------
 
-formulaValue :: MonaFormula -> Int
-formulaValue (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue f)
-formulaValue (MonaFormulaConj f1 f2) = (formulaValue f1) + (formulaValue f2)
-formulaValue _ = 0
+formulaValue :: Int -> MonaFormula -> Int
+formulaValue d (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue (d) f)
+formulaValue d (MonaFormulaConj f1 f2) = (formulaValue (d+1) f1) + (formulaValue (d+1) f2)
+formulaValue d _ = 0 --1000*d
 
 
 formulaCountSubFle :: MonaFormula -> Int

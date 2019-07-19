@@ -142,7 +142,7 @@ distributeFormula c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
 distributeFormula c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
   if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
   else MonaFormulaConj (distributeFormula c (MonaFormulaDisj f2 f3)) (distributeFormula c f1)
-distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula c f1) (distributeFormula c f2)
+distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula [] f1) (distributeFormula [] f2)
 distributeFormula c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormula ("x":c) f)
 distributeFormula c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormula ("x":c) f)
 distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula ("x":c) f)
