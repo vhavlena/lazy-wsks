@@ -222,6 +222,7 @@ balanceFormulaInf ::
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
+balanceFormulaInf rest (MonaFormulaConj f1 f2) [] = MonaFormulaConj (balanceFormulaInf rest f1 []) (balanceFormulaInf rest f2 [])
 balanceFormulaInf rest f [] = rebuildFormulaOrd (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
 balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
@@ -240,7 +241,7 @@ balanceFormulaInfSplit ::
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
-balanceFormulaInfSplit rest f [] = rebuildFormulaOrd (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
+balanceFormulaInfSplit rest f [] = balanceFormulaInf rest f []
 balanceFormulaInfSplit rest f chain =  balIter rest f divc where
   divc = LstSpl.chunksOf balInforSplitChunks $ reverse chain
 
