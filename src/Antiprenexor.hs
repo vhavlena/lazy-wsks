@@ -32,6 +32,7 @@ data ProcedureArgs =
   Where
   | Pred
   | None
+  | Dbg
   deriving (Eq)
 
 -- |Program arguments.
@@ -53,6 +54,7 @@ parseProcedureArgs :: [String] -> ProcedureArgs
 parseProcedureArgs args
   | (length args) == 1 && (last args) == "-w" = Where
   | (length args) == 1 && (last args) == "-p" = Pred
+  | (length args) == 1 && (last args) == "-d" = Dbg
   | otherwise = None
 
 
@@ -86,6 +88,7 @@ main = do
        mona <- MoPa.parseFile file
 
        case arg of
+         Dbg -> putStrLn $ show $ removeRedundantPreds $ divideSharedFile $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
          None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Pred -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona

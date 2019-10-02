@@ -19,10 +19,10 @@ data BalanceFormulaConfig =
 renameBoundVars = True
 
 -- |Formula balancing (conjunction and disjunction)
-balanceFormulaConfig = BalFullTree
+balanceFormulaConfig = BalInformedSplit
 
 -- |Number of distribution steps
-distrSteps = 3 :: Int
+distrSteps = 1 :: Int
 
 
 -- |Number of chunks for splitting in informed balancing

@@ -13,7 +13,18 @@ import MonaParser
 import MonaFormulaOperationSubst
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Ord as Ord
 import qualified Debug.Trace as Dbg
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the types
+--------------------------------------------------------------------------------------------------------------
+
+type FVType = Map.Map String Int
+type SubFVType = Set.Set (String, Int)
+type SubformulaType = (MonaFormula, SubFVType)
 
 
 distributeFormula :: [String] -> MonaFormula -> MonaFormula
@@ -47,61 +58,123 @@ distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFor
 -- applyConc2 f (fr1, rr1) (fr2, rr2) = (f fr1 fr2, rr1 ++ rr2)
 --
 --
-getFormulaShare :: Map.Map String Int
-  -> [String]
-  -> MonaFormula
-  -> [MonaDeclaration]
-getFormulaShare _ _ (MonaFormulaAtomic atom) = []
-getFormulaShare _ _ f@(MonaFormulaPredCall _ _) = []
-getFormulaShare _ _ (MonaFormulaVar var) = []
-getFormulaShare mp _ (MonaFormulaNeg f) = getFormulaShare mp [] f
-getFormulaShare mp c (MonaFormulaDisj f1 f2) = (getFormulaShare mp c f1) ++ (getFormulaShare mp c f2)
-getFormulaShare mp c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
-  if (length c) /= 0 then (createPred mp "predTmp" f1):(getFormulaShare mp c (MonaFormulaConj f1 f2)) ++ (getFormulaShare mp c (MonaFormulaConj f1 f3))
-  else  (getFormulaShare mp [] f1) ++ (getFormulaShare mp [] (MonaFormulaDisj f2 f3))
-getFormulaShare mp c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
-  if (length c) /= 0 then (createPred mp "predTmp" f1):(getFormulaShare mp c (MonaFormulaConj f2 f1)) ++ (getFormulaShare mp c (MonaFormulaConj f3 f1))
-  else (getFormulaShare mp c (MonaFormulaDisj f2 f3)) ++ (getFormulaShare mp c f1)
-getFormulaShare mp c (MonaFormulaConj f1 f2) = (getFormulaShare mp [] f1) ++ (getFormulaShare mp [] f2)
-getFormulaShare mp c (MonaFormulaEx0 [var] f) = getFormulaShare (Map.insert var 0 mp) ("x":c) f
-getFormulaShare mp c (MonaFormulaEx1 [decl] f) = getFormulaShare (Map.insert (fst decl) 1 mp) ("x":c) f
-getFormulaShare mp c (MonaFormulaEx2 [decl] f) = getFormulaShare (Map.insert (fst decl) 2 mp) ("x":c) f
+-- getFormulaShare :: Map.Map String Int
+--   -> [String]
+--   -> MonaFormula
+--   -> [MonaDeclaration]
+-- getFormulaShare _ _ (MonaFormulaAtomic atom) = []
+-- getFormulaShare _ _ f@(MonaFormulaPredCall _ _) = []
+-- getFormulaShare _ _ (MonaFormulaVar var) = []
+-- getFormulaShare mp _ (MonaFormulaNeg f) = getFormulaShare mp [] f
+-- getFormulaShare mp c (MonaFormulaDisj f1 f2) = (getFormulaShare mp c f1) ++ (getFormulaShare mp c f2)
+-- getFormulaShare mp c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
+--   if (length c) /= 0 then (createPred mp "predTmp" f1):(getFormulaShare mp c (MonaFormulaConj f1 f2)) ++ (getFormulaShare mp c (MonaFormulaConj f1 f3))
+--   else  (getFormulaShare mp [] f1) ++ (getFormulaShare mp [] (MonaFormulaDisj f2 f3))
+-- getFormulaShare mp c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
+--   if (length c) /= 0 then (createPred mp "predTmp" f1):(getFormulaShare mp c (MonaFormulaConj f2 f1)) ++ (getFormulaShare mp c (MonaFormulaConj f3 f1))
+--   else (getFormulaShare mp c (MonaFormulaDisj f2 f3)) ++ (getFormulaShare mp c f1)
+-- getFormulaShare mp c (MonaFormulaConj f1 f2) = (getFormulaShare mp [] f1) ++ (getFormulaShare mp [] f2)
+-- getFormulaShare mp c (MonaFormulaEx0 [var] f) = getFormulaShare (Map.insert var 0 mp) ("x":c) f
+-- getFormulaShare mp c (MonaFormulaEx1 [decl] f) = getFormulaShare (Map.insert (fst decl) 1 mp) ("x":c) f
+-- getFormulaShare mp c (MonaFormulaEx2 [decl] f) = getFormulaShare (Map.insert (fst decl) 2 mp) ("x":c) f
 
 
-createPred :: Map.Map String Int -> String -> MonaFormula -> MonaDeclaration
-createPred mp name f = MonaDeclPred name params f where
-  fvs = freeVarsFormula f
-  params = map (\x -> conv x $ mp Map.! x) fvs
-  conv name 0 = MonaMacroParamVar0 [name]
-  conv name 1 = MonaMacroParamVar1 [(name, Nothing)]
-  conv name 2 = MonaMacroParamVar2 [(name, Nothing)]
+freeVarsType :: FVType -> MonaFormula -> SubFVType
+freeVarsType tm fl = Set.fromList $ map (\x -> (x, tm Map.! x)) $ freeVarsFormula fl
 
 
-replaceSharedFormula :: Map.Map MonaFormula String
-  -> [String]
-  -> MonaFormula
-  -> MonaFormula
-replaceSharedFormula _ _ (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
-replaceSharedFormula _ _ f@(MonaFormulaPredCall _ _) = f
-replaceSharedFormula _ _ (MonaFormulaVar var) = MonaFormulaVar var
-replaceSharedFormula mp _ (MonaFormulaNeg f) = MonaFormulaNeg (replaceSharedFormula mp [] f)
-replaceSharedFormula mp c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (replaceSharedFormula mp c f1) (replaceSharedFormula mp c f2)
-replaceSharedFormula mp c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
-  if (length c) /= 0 then MonaFormulaDisj (replaceSharedFormula mp c (MonaFormulaConj cl f2)) (replaceSharedFormula mp c (MonaFormulaConj cl f3))
-  else (MonaFormulaConj (replaceSharedFormula mp [] f1) (replaceSharedFormula mp [] (MonaFormulaDisj f2 f3))) where
-    cl = replaceFormulaPred f1 mp
-replaceSharedFormula mp c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
-  if (length c) /= 0 then MonaFormulaDisj (replaceSharedFormula mp c (MonaFormulaConj f2 cl)) (replaceSharedFormula mp c (MonaFormulaConj f3 cl))
-  else MonaFormulaConj (replaceSharedFormula mp c (MonaFormulaDisj f2 f3)) (replaceSharedFormula mp c f1) where
-    cl = replaceFormulaPred f1 mp
-replaceSharedFormula mp c (MonaFormulaConj f1 f2) = MonaFormulaConj (replaceSharedFormula mp [] f1) (replaceSharedFormula mp [] f2)
-replaceSharedFormula mp c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (replaceSharedFormula mp ("x":c) f)
-replaceSharedFormula mp c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (replaceSharedFormula mp ("x":c) f)
-replaceSharedFormula mp c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (replaceSharedFormula mp ("x":c) f)
+baseCaseMap :: FVType -> MonaFormula -> Map.Map SubformulaType Int
+baseCaseMap tm fl = Map.singleton (fl, freeVarsType tm fl) 1
 
 
-replaceFormulaPred :: MonaFormula -> Map.Map MonaFormula String -> MonaFormula
-replaceFormulaPred f mp = MonaFormulaPredCall name params  where
-  fvs = freeVarsFormula f
-  name = mp Map.! f
-  params = map (MonaTermVar) fvs
+createSubformulaMap :: FVType -> MonaFormula -> Map.Map SubformulaType Int
+createSubformulaMap tm a@(MonaFormulaAtomic atom) = Map.empty -- baseCaseMap tm a
+createSubformulaMap tm a@(MonaFormulaVar var) = Map.empty -- baseCaseMap tm a
+createSubformulaMap tm fl@(MonaFormulaNeg f) = Map.unionWith (+) (baseCaseMap tm fl) (createSubformulaMap tm f)
+createSubformulaMap tm fl@(MonaFormulaConj f1 f2) = Map.unionsWith (+) [(baseCaseMap tm fl), (createSubformulaMap tm f1), (createSubformulaMap tm f2)]
+createSubformulaMap tm fl@(MonaFormulaDisj f1 f2) = Map.unionsWith (+) [(baseCaseMap tm fl), (createSubformulaMap tm f1), (createSubformulaMap tm f2)]
+createSubformulaMap tm fl@(MonaFormulaEx0 [var] f) = Map.unionWith (+) (baseCaseMap tm fl) (createSubformulaMap (Map.insert var 0 tm) f)
+createSubformulaMap tm fl@(MonaFormulaEx1 [(var, Nothing)] f) = Map.unionWith (+) (baseCaseMap tm fl) (createSubformulaMap (Map.insert var 1 tm) f)
+createSubformulaMap tm fl@(MonaFormulaEx2 [(var, Nothing)] f) = Map.unionWith (+) (baseCaseMap tm fl) (createSubformulaMap (Map.insert var 2 tm) f)
+
+
+createPredicateMap :: [SubformulaType] -> Int -> (Map.Map SubformulaType MonaFormula, [MonaDeclaration])
+createPredicateMap lst i = (Map.fromList $ createPredCall i lst', createPredDecl i lst') where
+  lst' = map (\(x,y) -> (x,Set.toList y)) lst
+  createPredCall _ [] = []
+  createPredCall i ((fl,fv):xs) = ((fl,Set.fromList fv), MonaFormulaPredCall name (map (MonaTermVar . fst) fv)):(createPredCall (i+1) xs) where
+    name = "predTmp" ++ (show i)
+  createPredDecl _ [] = []
+  createPredDecl i ((fl,fv):xs) = (MonaDeclPred name (map (projFV) fv) fl):(createPredDecl (i+1) xs) where
+    name = "predTmp" ++ (show i)
+    projFV (var,0) = MonaMacroParamVar0 [var]
+    projFV (var,1) = MonaMacroParamVar1 [(var, Nothing)]
+    projFV (var,2) = MonaMacroParamVar2 [(var, Nothing)]
+
+
+lookupProceed :: FVType -> Map.Map SubformulaType MonaFormula -> MonaFormula -> MonaFormula
+lookupProceed tm mp fl = case (Map.lookup (fl, freeVarsType tm fl) mp) of
+    Nothing -> replaceSharedFormula tm mp fl
+    Just rfl -> rfl
+
+replaceSharedFormula :: FVType -> Map.Map SubformulaType MonaFormula -> MonaFormula -> MonaFormula
+replaceSharedFormula _ _ a@(MonaFormulaAtomic atom) = a
+replaceSharedFormula _ _ a@(MonaFormulaVar var) = a
+replaceSharedFormula tm fm (MonaFormulaNeg f) = MonaFormulaNeg $ lookupProceed tm fm f
+replaceSharedFormula tm fm (MonaFormulaConj f1 f2) = MonaFormulaConj (lookupProceed tm fm f1) (lookupProceed tm fm f2)
+replaceSharedFormula tm fm (MonaFormulaDisj f1 f2) = MonaFormulaDisj (lookupProceed tm fm f1) (lookupProceed tm fm f2)
+replaceSharedFormula tm fm (MonaFormulaEx0 [var] f) = MonaFormulaEx0 [var] $ lookupProceed (Map.insert var 0 tm) fm f
+replaceSharedFormula tm fm (MonaFormulaEx1 [(var, Nothing)] f) = MonaFormulaEx1 [(var, Nothing)] $ lookupProceed (Map.insert var 1 tm) fm f
+replaceSharedFormula tm fm (MonaFormulaEx2 [(var, Nothing)] f) = MonaFormulaEx2 [(var, Nothing)] $ lookupProceed (Map.insert var 2 tm) fm f
+
+
+divideSharedFormula :: FVType -> Int -> MonaFormula -> (MonaFormula, [MonaDeclaration])
+divideSharedFormula tm i f = (replaceSharedFormula tm mp f, decls) where
+  smp = createSubformulaMap tm f
+  fltSmp =  map (fst) $ take 50 $ sortOn (negate . formulaCountSubFle . fst . fst) $ filter (\x -> (snd x) >= 10) $ sortOn (negate . snd) $ Map.toList smp
+  (mp, decls) = createPredicateMap fltSmp i
+
+
+formulaCountSubFle :: MonaFormula -> Int
+formulaCountSubFle (MonaFormulaExGen _ f) = formulaCountSubFle f
+formulaCountSubFle (MonaFormulaConj f1 f2) = (formulaCountSubFle f1) + (formulaCountSubFle f2)
+formulaCountSubFle _ = 1
+
+
+-- createPred :: Map.Map String Int -> String -> MonaFormula -> MonaDeclaration
+-- createPred mp name f = MonaDeclPred name params f where
+--   fvs = freeVarsFormula f
+--   params = map (\x -> conv x $ mp Map.! x) fvs
+--   conv name 0 = MonaMacroParamVar0 [name]
+--   conv name 1 = MonaMacroParamVar1 [(name, Nothing)]
+--   conv name 2 = MonaMacroParamVar2 [(name, Nothing)]
+
+
+-- replaceSharedFormula :: Map.Map MonaFormula String
+--   -> [String]
+--   -> MonaFormula
+--   -> MonaFormula
+-- replaceSharedFormula _ _ (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+-- replaceSharedFormula _ _ f@(MonaFormulaPredCall _ _) = f
+-- replaceSharedFormula _ _ (MonaFormulaVar var) = MonaFormulaVar var
+-- replaceSharedFormula mp _ (MonaFormulaNeg f) = MonaFormulaNeg (replaceSharedFormula mp [] f)
+-- replaceSharedFormula mp c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (replaceSharedFormula mp c f1) (replaceSharedFormula mp c f2)
+-- replaceSharedFormula mp c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
+--   if (length c) /= 0 then MonaFormulaDisj (replaceSharedFormula mp c (MonaFormulaConj cl f2)) (replaceSharedFormula mp c (MonaFormulaConj cl f3))
+--   else (MonaFormulaConj (replaceSharedFormula mp [] f1) (replaceSharedFormula mp [] (MonaFormulaDisj f2 f3))) where
+--     cl = replaceFormulaPred f1 mp
+-- replaceSharedFormula mp c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
+--   if (length c) /= 0 then MonaFormulaDisj (replaceSharedFormula mp c (MonaFormulaConj f2 cl)) (replaceSharedFormula mp c (MonaFormulaConj f3 cl))
+--   else MonaFormulaConj (replaceSharedFormula mp c (MonaFormulaDisj f2 f3)) (replaceSharedFormula mp c f1) where
+--     cl = replaceFormulaPred f1 mp
+-- replaceSharedFormula mp c (MonaFormulaConj f1 f2) = MonaFormulaConj (replaceSharedFormula mp [] f1) (replaceSharedFormula mp [] f2)
+-- replaceSharedFormula mp c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (replaceSharedFormula mp ("x":c) f)
+-- replaceSharedFormula mp c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (replaceSharedFormula mp ("x":c) f)
+-- replaceSharedFormula mp c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (replaceSharedFormula mp ("x":c) f)
+
+
+-- replaceFormulaPred :: MonaFormula -> Map.Map MonaFormula String -> MonaFormula
+-- replaceFormulaPred f mp = MonaFormulaPredCall name params  where
+--   fvs = freeVarsFormula f
+--   name = mp Map.! f
+--   params = map (MonaTermVar) fvs

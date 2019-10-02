@@ -87,8 +87,28 @@ convertDecl g (MonaDeclConst atom) = MonaDeclConst atom -- TODO: antiprenexing i
 convertDecl g (MonaDeclLastpos var) = MonaDeclLastpos var
 --convertDecl _ a = a -- TODO: incomplete
 
+
 antiprenexFile :: MonaFile -> MonaFile
-antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls
+antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls where
+
+
+--------------------------------------------------------------------------------------------------------------
+-- Part with the shared subformula dividing
+--------------------------------------------------------------------------------------------------------------
+
+divideSharedFile :: MonaFile -> MonaFile
+divideSharedFile (MonaFile dom decls) = MonaFile dom $ divideSh (fvMap decls) 0 decls where
+  fvMap [] = Map.empty
+  fvMap ((MonaDeclVar0 decl):xs) = Map.union (fvMap xs) $ Map.fromList $ zip decl [0,0..]
+  fvMap ((MonaDeclVar1 decl):xs) = Map.union (fvMap xs) $ Map.fromList $ zip (map (fst) decl) [1,1..]
+  fvMap ((MonaDeclVar2 decl):xs) = Map.union (fvMap xs) $ Map.fromList $ zip (map (fst) decl) [2,2..]
+  fvMap (_:xs) = fvMap xs
+
+  divideSh _ _ [] = []
+  divideSh tm i ((MonaDeclFormula f):xs) = dcls' ++ ((MonaDeclFormula f'):(divideSh tm (i+(length dcls')) xs))
+    where
+      (f', dcls') = divideSharedFormula tm i f
+  divideSh tm i (d:xs) = d:(divideSh tm i xs)
 
 
 --------------------------------------------------------------------------------------------------------------

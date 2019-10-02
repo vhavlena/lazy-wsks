@@ -87,7 +87,7 @@ getChainVarName (Exists2Chain a) = fst a
 --------------------------------------------------------------------------------------------------------------
 
 balanceFormula :: MonaFormula -> MonaFormula
-balanceFormula f@(MonaFormulaConj _ _) = rebuildFormulaOrd (MonaFormulaConj) $ map (balanceFormula) (getConjList f)
+balanceFormula f@(MonaFormulaConj _ _) = rebuildFormula (MonaFormulaConj) $ map (balanceFormula) (getConjList f)
 balanceFormula f@(MonaFormulaDisj _ _) = rebuildFormula (MonaFormulaDisj) $ map (balanceFormula) (getDisjList f)
 balanceFormula (MonaFormulaNeg f) = MonaFormulaNeg $ balanceFormula f
 balanceFormula (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (balanceFormula f)
@@ -190,7 +190,7 @@ builFormulaList chain fs = bfc chain fs where
   bfc [] fs = fs
   bfc (x:xs) fs = bfc xs fs' where
     (fs1, fs2) = Lst.partition (\f -> x `elem` (freeVarsFormula f)) fs
-    fs' = fs2 ++ [(MonaFormulaExGen x $ rebuildFormulaOrd (MonaFormulaConj) fs1)]
+    fs' = fs2 ++ [(MonaFormulaExGen x $ rebuildFormula (MonaFormulaConj) fs1)]
 
 
 
@@ -201,7 +201,7 @@ optimalBalance vars = fst . allComb vars where
     (f2, c2) = minF xs
   allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
   allComb [] fs = (f', formulaValue 0 f') where
-    f' = rebuildFormulaOrd (MonaFormulaConj) fs
+    f' = rebuildFormula (MonaFormulaConj) fs
   allComb vars fs = minF $ map (applyComb vars fs) lv  where
     comp = getComparableVars vars fs
     rel = getIncomparableVars vars comp
@@ -223,7 +223,7 @@ balanceFormulaInf ::
   -> [QuantifVarChain]
   -> MonaFormula
 balanceFormulaInf rest (MonaFormulaConj f1 f2) [] = MonaFormulaConj (balanceFormulaInf rest f1 []) (balanceFormulaInf rest f2 [])
-balanceFormulaInf rest f [] = rebuildFormulaOrd (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
+balanceFormulaInf rest f [] = rebuildFormula (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
 balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
   vars = map (getChainVarName) chain
