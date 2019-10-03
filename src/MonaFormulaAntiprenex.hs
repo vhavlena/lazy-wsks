@@ -72,7 +72,8 @@ antiprenexEmpty f = antiprenexFreeVar f []
 antiprenexFormula :: MonaFormula -> MonaFormula
 antiprenexFormula = distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
-  distr f = (iterate (antiprenexEmpty . distributeFormula []) f) !! distrSteps
+  distrF = if distrConfig == DistrConservative then distributeFormula [] else distributeFormulaForce
+  distr f = (iterate (antiprenexEmpty . distrF) f) !! distrSteps
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
@@ -105,9 +106,10 @@ divideSharedFile (MonaFile dom decls) = MonaFile dom $ divideSh (fvMap decls) 0 
   fvMap (_:xs) = fvMap xs
 
   divideSh _ _ [] = []
-  divideSh tm i ((MonaDeclFormula f):xs) = dcls' ++ ((MonaDeclFormula f'):(divideSh tm (i+(length dcls')) xs))
-    where
-      (f', dcls') = divideSharedFormula tm i f
+  divideSh tm i ((MonaDeclFormula f):xs) = dcls' ++ ((MonaDeclFormula f'):(divideSh tm (i+(length dcls')) xs)) where
+    (f', dcls') = divideSharedFormula tm i f
+  divideSh tm i ((MonaDeclAssert f):xs) = dcls' ++ ((MonaDeclAssert f'):(divideSh tm (i+(length dcls')) xs)) where
+    (f', dcls') = divideSharedFormula tm i f
   divideSh tm i (d:xs) = d:(divideSh tm i xs)
 
 

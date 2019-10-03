@@ -15,6 +15,11 @@ data BalanceFormulaConfig =
   | BalFullTree
   deriving (Eq)
 
+data DistributionConfig =
+  DistrConservative
+  | DistrForce
+  deriving (Eq)
+
 -- |Rename bound vars.
 renameBoundVars = True
 
@@ -22,8 +27,12 @@ renameBoundVars = True
 balanceFormulaConfig = BalInformedSplit
 
 -- |Number of distribution steps
-distrSteps = 1 :: Int
+distrSteps = 4 :: Int
 
+-- |Distributivity configuration (force -- do distribution whenever it is
+-- possible, conservative -- only if there is a possibility to move ex.
+-- quantifier inside)
+distrConfig = DistrForce
 
 -- |Number of chunks for splitting in informed balancing
 balInforSplitChunks = 5 :: Int

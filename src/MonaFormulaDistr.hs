@@ -44,6 +44,23 @@ distributeFormula c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFor
 distributeFormula c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormula ("x":c) f)
 distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula ("x":c) f)
 
+
+distributeFormulaForce :: MonaFormula -> MonaFormula
+distributeFormulaForce (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
+distributeFormulaForce f@(MonaFormulaPredCall _ _) = f
+distributeFormulaForce (MonaFormulaVar var) = MonaFormulaVar var
+distributeFormulaForce (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormulaForce f)
+distributeFormulaForce (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormulaForce f1) (distributeFormulaForce f2)
+distributeFormulaForce (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
+  MonaFormulaDisj (distributeFormulaForce (MonaFormulaConj f1 f2)) (distributeFormulaForce (MonaFormulaConj f1 f3))
+distributeFormulaForce (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
+  MonaFormulaDisj (distributeFormulaForce (MonaFormulaConj f2 f1)) (distributeFormulaForce (MonaFormulaConj f3 f1))
+distributeFormulaForce (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormulaForce f1) (distributeFormulaForce f2)
+distributeFormulaForce (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormulaForce f)
+distributeFormulaForce (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormulaForce f)
+distributeFormulaForce (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormulaForce f)
+
+
 --
 -- applyConc1 :: (MonaFormula -> MonaFormula)
 --   -> (MonaFormula, MonaDeclaration)
@@ -131,7 +148,7 @@ replaceSharedFormula tm fm (MonaFormulaEx2 [(var, Nothing)] f) = MonaFormulaEx2 
 divideSharedFormula :: FVType -> Int -> MonaFormula -> (MonaFormula, [MonaDeclaration])
 divideSharedFormula tm i f = (replaceSharedFormula tm mp f, decls) where
   smp = createSubformulaMap tm f
-  fltSmp =  map (fst) $ take 50 $ sortOn (negate . formulaCountSubFle . fst . fst) $ filter (\x -> (snd x) >= 10) $ sortOn (negate . snd) $ Map.toList smp
+  fltSmp =  map (fst) $ take 60 $ sortOn (negate . formulaCountSubFle . fst . fst) $ filter (\x -> (snd x) >= 2) $ sortOn (negate . snd) $ Map.toList smp
   (mp, decls) = createPredicateMap fltSmp i
 
 
