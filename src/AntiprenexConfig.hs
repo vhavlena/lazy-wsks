@@ -27,12 +27,12 @@ renameBoundVars = True
 balanceFormulaConfig = BalInformedSplit
 
 -- |Number of distribution steps
-distrSteps = 4 :: Int
+distrSteps = 1 :: Int
 
 -- |Distributivity configuration (force -- do distribution whenever it is
 -- possible, conservative -- only if there is a possibility to move ex.
 -- quantifier inside)
-distrConfig = DistrForce
+distrConfig = DistrConservative
 
 -- |Number of chunks for splitting in informed balancing
 balInforSplitChunks = 5 :: Int

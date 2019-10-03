@@ -34,7 +34,7 @@ distributeFormula _ (MonaFormulaVar var) = MonaFormulaVar var
 distributeFormula _ (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormula [] f)
 distributeFormula c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormula c f1) (distributeFormula c f2)
 distributeFormula c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
-  if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f1 f2)) (distributeFormula c (MonaFormulaConj f1 f3))
+  if (length c) /= 0 && (length $ freeVarsFormula f1) <= 7 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f1 f2)) (distributeFormula c (MonaFormulaConj f1 f3))
   else (MonaFormulaConj (distributeFormula [] f1) (distributeFormula [] (MonaFormulaDisj f2 f3)))
 distributeFormula c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
   if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
@@ -105,8 +105,9 @@ baseCaseMap tm fl = Map.singleton (fl, freeVarsType tm fl) 1
 
 
 createSubformulaMap :: FVType -> MonaFormula -> Map.Map SubformulaType Int
-createSubformulaMap tm a@(MonaFormulaAtomic atom) = Map.empty -- baseCaseMap tm a
-createSubformulaMap tm a@(MonaFormulaVar var) = Map.empty -- baseCaseMap tm a
+createSubformulaMap tm (MonaFormulaAtomic atom) = Map.empty -- baseCaseMap tm a
+createSubformulaMap tm (MonaFormulaVar var) = Map.empty -- baseCaseMap tm a
+createSubformulaMap tm (MonaFormulaPredCall _ _) = Map.empty
 createSubformulaMap tm fl@(MonaFormulaNeg f) = Map.unionWith (+) (baseCaseMap tm fl) (createSubformulaMap tm f)
 createSubformulaMap tm fl@(MonaFormulaConj f1 f2) = Map.unionsWith (+) [(baseCaseMap tm fl), (createSubformulaMap tm f1), (createSubformulaMap tm f2)]
 createSubformulaMap tm fl@(MonaFormulaDisj f1 f2) = Map.unionsWith (+) [(baseCaseMap tm fl), (createSubformulaMap tm f1), (createSubformulaMap tm f2)]
@@ -137,6 +138,7 @@ lookupProceed tm mp fl = case (Map.lookup (fl, freeVarsType tm fl) mp) of
 replaceSharedFormula :: FVType -> Map.Map SubformulaType MonaFormula -> MonaFormula -> MonaFormula
 replaceSharedFormula _ _ a@(MonaFormulaAtomic atom) = a
 replaceSharedFormula _ _ a@(MonaFormulaVar var) = a
+replaceSharedFormula _ _ a@(MonaFormulaPredCall _ _) = a
 replaceSharedFormula tm fm (MonaFormulaNeg f) = MonaFormulaNeg $ lookupProceed tm fm f
 replaceSharedFormula tm fm (MonaFormulaConj f1 f2) = MonaFormulaConj (lookupProceed tm fm f1) (lookupProceed tm fm f2)
 replaceSharedFormula tm fm (MonaFormulaDisj f1 f2) = MonaFormulaDisj (lookupProceed tm fm f1) (lookupProceed tm fm f2)
@@ -148,7 +150,7 @@ replaceSharedFormula tm fm (MonaFormulaEx2 [(var, Nothing)] f) = MonaFormulaEx2 
 divideSharedFormula :: FVType -> Int -> MonaFormula -> (MonaFormula, [MonaDeclaration])
 divideSharedFormula tm i f = (replaceSharedFormula tm mp f, decls) where
   smp = createSubformulaMap tm f
-  fltSmp =  map (fst) $ take 60 $ sortOn (negate . formulaCountSubFle . fst . fst) $ filter (\x -> (snd x) >= 2) $ sortOn (negate . snd) $ Map.toList smp
+  fltSmp =  map (fst) $ take 60 $ sortOn (negate . formulaCountSubFle . fst . fst) $ filter (\x -> (snd x) >= 8) $ sortOn (negate . snd) $ Map.toList smp
   (mp, decls) = createPredicateMap fltSmp i
 
 
