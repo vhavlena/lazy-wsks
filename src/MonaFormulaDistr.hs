@@ -37,7 +37,7 @@ distributeFormula c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
   if (length c) /= 0 && isDistrSuit f1 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f1 f2)) (distributeFormula c (MonaFormulaConj f1 f3))
   else (MonaFormulaConj (distributeFormula [] f1) (distributeFormula [] (MonaFormulaDisj f2 f3)))
 distributeFormula c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
-  if (length c) /= 0 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
+  if (length c) /= 0 && isDistrSuit f1 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
   else MonaFormulaConj (distributeFormula c (MonaFormulaDisj f2 f3)) (distributeFormula c f1)
 distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula [] f1) (distributeFormula [] f2)
 distributeFormula c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormula ("x":c) f)
@@ -45,6 +45,7 @@ distributeFormula c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFor
 distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula ("x":c) f)
 
 
+-- |Compute number of conjunctions and disjunctions on the top of the formula.
 conjDisjTop :: MonaFormula -> Int
 conjDisjTop (MonaFormulaPredCall _ _) = 0
 conjDisjTop (MonaFormulaAtomic _) = 0
@@ -57,10 +58,12 @@ conjDisjTop (MonaFormulaEx1 _ f) = 0
 conjDisjTop (MonaFormulaEx2 _ f) = 0
 
 
+-- |Is it suitable to use distributivity?
 isDistrSuit :: MonaFormula -> Bool
-isDistrSuit f = ((conjDisjTop f) > 10 )|| ((conjDisjTop f) <= 10 && isDistrPredSuit f)
+isDistrSuit f = ((conjDisjTop f) > 10 ) || ((conjDisjTop f) <= 10 && isDistrPredSuit f)
 
 
+-- |Is it suitable to use distributivity (based on the predicate calls)
 isDistrPredSuit :: MonaFormula -> Bool
 isDistrPredSuit (MonaFormulaPredCall _ l) = (length l) <= 5
 isDistrPredSuit (MonaFormulaAtomic atom) = True

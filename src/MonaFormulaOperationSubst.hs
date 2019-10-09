@@ -200,7 +200,7 @@ getNewVarName :: [Lo.Var] -> Int -> Lo.Var
 getNewVarName lst i =
   if elem var lst then getNewVarName lst (i+1)
   else var where
-    var = "T" ++ (show i)
+    var = "__T__" ++ (show i)
 
 
 --------------------------------------------------------------------------------------------------------------
