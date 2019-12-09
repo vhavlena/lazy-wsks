@@ -25,6 +25,7 @@ import qualified MonaWrapper as MoWr
 import qualified MonaParser as MoPa
 import qualified BasicAutomata as BA
 import qualified MonaSocket as MS
+import qualified FormulaSizeEstimation as Est
 
 
 -- |Parameters of the decision procedure.
@@ -90,8 +91,14 @@ main = do
        case arg of
          Dbg -> putStrLn $ show $ removeRedundantPreds $ divideSharedFile $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
-         None -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
-         Pred -> putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona
+         None -> do
+           Est.writePredSizes Map.empty
+           putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+         Pred -> do
+           let prMona = replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+           dict <- Est.getPredSizes prMona
+           Est.writePredSizes dict
+           putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona
 
        --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime
