@@ -54,7 +54,7 @@ def main():
     files = files[:FORMULAS]
 
     print_config()
-    print("Formula: MONA, MONA+antiprenex")
+    print("formula;mona;mona+antiprenex")
     tex = "Timeout: {0}\n".format(TIMEOUT)
     tex += "\\begin{table}[h]\n\\begin{tabular}{llll}\n"
     tex += "\\textbf{Formula File} & \\textbf{Mona} & \\textbf{Mona+antiprenex} & \\textbf{Mona+antiprenex+pred} \\\\\n\\toprule \n"
@@ -181,7 +181,7 @@ def format_output_anti(parse, bold):
 
 
 def print_output(filename, lazy_parse, mona_parse, mona_parse_pred):
-    print("{0}: {1}\t {2}\t {3}".format(filename, format_output(lazy_parse, False), \
+    print("{0};{1};{2};{3}".format(filename, format_output(lazy_parse, False), \
         format_output_anti(mona_parse, False), format_output_anti(mona_parse_pred, False)))
 
 
