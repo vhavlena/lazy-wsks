@@ -93,7 +93,7 @@ main = do
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
          None -> do
            Est.writePredSizes Map.empty
-           putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
+           putStrLn $ show $ antiprenexFile $ antiprenexFile $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Pred -> do
            let prMona = replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
            dict <- Est.getPredSizes prMona

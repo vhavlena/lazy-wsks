@@ -70,7 +70,7 @@ antiprenexEmpty f = antiprenexFreeVar f []
 
 
 antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula = distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
+antiprenexFormula = simplifyNegFormula . moveNegToLeavesFormula . distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
   distrF = if distrConfig == DistrConservative then distributeFormula [] else distributeFormulaForce
   distr f = (iterate (antiprenexEmpty . distrF) f) !! distrSteps

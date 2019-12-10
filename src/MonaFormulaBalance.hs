@@ -13,6 +13,7 @@ module MonaFormulaBalance(
   , getChainVarName
   , balanceFormula
   , balanceFormulaInfSplit
+  , formulaCoutSubterms
 ) where
 
 
@@ -277,6 +278,18 @@ formulaCountSubFleStruct :: MonaFormula -> Int
 formulaCountSubFleStruct (MonaFormulaExGen _ f) = 4 + (formulaCountSubFleStruct f)
 formulaCountSubFleStruct (MonaFormulaConj f1 f2) = (formulaCountSubFleStruct f1) + (formulaCountSubFleStruct f2)
 formulaCountSubFleStruct f = subFormulas f
+
+
+formulaCoutSubterms :: MonaFormula -> Int
+formulaCoutSubterms (MonaFormulaPredCall _ _) = 1
+formulaCoutSubterms (MonaFormulaAtomic _) = 1
+formulaCoutSubterms (MonaFormulaVar _) = 1
+formulaCoutSubterms (MonaFormulaNeg f) = 1 + (formulaCoutSubterms f)
+formulaCoutSubterms (MonaFormulaConj f1 f2) = 1 + (formulaCoutSubterms f1) + (formulaCoutSubterms f2)
+formulaCoutSubterms (MonaFormulaDisj f1 f2) = 1 + (formulaCoutSubterms f1) + (formulaCoutSubterms f2)
+formulaCoutSubterms (MonaFormulaEx0 _ f) = 1 + (formulaCoutSubterms f)
+formulaCoutSubterms (MonaFormulaEx1 _ f) = 1 + (formulaCoutSubterms f)
+formulaCoutSubterms (MonaFormulaEx2 _ f) = 1 + (formulaCoutSubterms f)
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the debug functions
