@@ -27,7 +27,7 @@ renameBoundVars = True
 balanceFormulaConfig = BalInformedSplit
 
 -- |Number of distribution steps
-distrSteps = 1 :: Int
+distrSteps = 3 :: Int
 
 -- |Distributivity configuration (force -- do distribution whenever it is
 -- possible, conservative -- only if there is a possibility to move ex.

@@ -41,8 +41,7 @@ distributeFormula c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
 distributeFormula c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
   if (length c) /= 0 && isDistrSuit f1 then MonaFormulaDisj (distributeFormula c (MonaFormulaConj f2 f1)) (distributeFormula c (MonaFormulaConj f3 f1))
   else MonaFormulaConj (distributeFormula c (MonaFormulaDisj f2 f3)) (distributeFormula c f1)
-distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula c f1) (distributeFormula c f2) where
-  c' = if (length c) == 0 then c else tail c
+distributeFormula c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula c f1) (distributeFormula c f2)
 distributeFormula c (MonaFormulaEx0 vars f) = MonaFormulaEx0 vars (distributeFormula ("x":c) f)
 distributeFormula c (MonaFormulaEx1 decl f) = MonaFormulaEx1 decl (distributeFormula ("x":c) f)
 distributeFormula c (MonaFormulaEx2 decl f) = MonaFormulaEx2 decl (distributeFormula ("x":c) f)
@@ -64,19 +63,19 @@ conjDisjTop (MonaFormulaEx2 _ f) = 0
 -- |Is it suitable to use distributivity?
 isDistrSuit :: MonaFormula -> Bool
 --isDistrSuit f = ((conjDisjTop f) > 10 ) || ((conjDisjTop f) <= 10 && isDistrPredSuit f)
-isDistrSuit f = (formulaCoutSubterms f) <= 40
+isDistrSuit f = ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5)
 
 -- |Is it suitable to use distributivity (based on the predicate calls)
-isDistrPredSuit :: MonaFormula -> Bool
-isDistrPredSuit (MonaFormulaPredCall _ l) = (length l) <= 5
-isDistrPredSuit (MonaFormulaAtomic atom) = True
-isDistrPredSuit (MonaFormulaVar var) = True
-isDistrPredSuit fl@(MonaFormulaNeg f) = isDistrPredSuit f
-isDistrPredSuit fl@(MonaFormulaConj f1 f2) = (isDistrPredSuit f1) && (isDistrPredSuit f2)
-isDistrPredSuit fl@(MonaFormulaDisj f1 f2) = (isDistrPredSuit f1) && (isDistrPredSuit f2)
-isDistrPredSuit fl@(MonaFormulaEx0 [var] f) = isDistrPredSuit f
-isDistrPredSuit fl@(MonaFormulaEx1 [(var, Nothing)] f) = isDistrPredSuit f
-isDistrPredSuit fl@(MonaFormulaEx2 [(var, Nothing)] f) = isDistrPredSuit f
+maxPredCallSize :: MonaFormula -> Int
+maxPredCallSize (MonaFormulaPredCall _ l) = (length l)
+maxPredCallSize (MonaFormulaAtomic atom) = 0
+maxPredCallSize (MonaFormulaVar var) = 0
+maxPredCallSize (MonaFormulaNeg f) = maxPredCallSize f
+maxPredCallSize (MonaFormulaConj f1 f2) = max (maxPredCallSize f1) (maxPredCallSize f2)
+maxPredCallSize (MonaFormulaDisj f1 f2) = max (maxPredCallSize f1) (maxPredCallSize f2)
+maxPredCallSize (MonaFormulaEx0 _ f) = maxPredCallSize f
+maxPredCallSize (MonaFormulaEx1 _ f) = maxPredCallSize f
+maxPredCallSize (MonaFormulaEx2 _ f) = maxPredCallSize f
 
 
 

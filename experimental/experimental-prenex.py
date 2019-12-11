@@ -54,7 +54,7 @@ def main():
     files = files[:FORMULAS]
 
     print_config()
-    print("formula;mona;mona+antiprenex")
+    print("formula;mona;mona+antiprenex;antiprenex;mona+antiprenex+pred;antiprenex+pred")
     tex = "Timeout: {0}\n".format(TIMEOUT)
     tex += "\\begin{table}[h]\n\\begin{tabular}{llll}\n"
     tex += "\\textbf{Formula File} & \\textbf{Mona} & \\textbf{Mona+antiprenex} & \\textbf{Mona+antiprenex+pred} \\\\\n\\toprule \n"
@@ -154,7 +154,7 @@ def parse_mona_sat(line):
 
 
 def parse_mona_time(line):
-    match = re.search("Time: ([0-9][0-9]):([0-9][0-9]):([0-9][0-9].[0-9][0-9])", line)
+    match = re.search("Total time: ([0-9][0-9]):([0-9][0-9]):([0-9][0-9].[0-9][0-9])", line)
     if match is not None:
         time = 3600*float(match.group(1)) + 60*float(match.group(2)) + float(match.group(3))
         return time
@@ -177,7 +177,7 @@ def format_output_anti(parse, bold):
     if bold:
         return "\\textbf{{{0}}}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
     else:
-        return "{0}({1})".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
+        return "{0};{1}".format("TO" if parse[1] is None else parse[1], "TO" if parse[2] is None else parse[2])
 
 
 def print_output(filename, lazy_parse, mona_parse, mona_parse_pred):
