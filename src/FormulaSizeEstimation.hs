@@ -26,7 +26,8 @@ type DeclSize = Map.Map String Int
 
 tmpFileName = "_tmp_size.mona"
 tmpDeclsFileName = "_tmp_decls_.data"
-sizeEstScript = "./EstimationTest.py"
+sizeEstScript = "./../external/predict.py"
+predMonaPath = "../predict_mona/executables/bin/mona"
 
 -- |Get predicates sizes (assumes that predicates/macros contain no call to
 -- other macros/predicates --> the predicates are flat)
@@ -47,7 +48,7 @@ getPredSizes (MonaFile _ decls) = do
 callEstScript :: MonaFormula -> IO Int
 callEstScript f = do
   writeFile tmpFileName (show f)
-  out <- readProcess sizeEstScript [tmpFileName] []
+  out <- readProcess sizeEstScript [tmpFileName, predMonaPath] []
   return $ parseOutput out
 
 

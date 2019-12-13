@@ -18,7 +18,7 @@ import resource
 VALIDLINE = -2
 TIMELINE = -1
 TIMEOUT = 100 #in seconds
-FORMULAS = 20
+FORMULAS = 100
 
 PREPROFILE = "test-wgjcm3.mona"
 ANTIPREFILE = "test-wgjcm4.mona"
@@ -39,7 +39,7 @@ def main():
         sys.exit()
 
     texout = False
-    FORMULAS = 20
+    FORMULAS = 100
 
     for o, a in opts:
         if o in ("-t", "--tex"):
