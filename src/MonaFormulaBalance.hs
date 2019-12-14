@@ -24,6 +24,7 @@ import AntiprenexConfig
 import MonaParser
 import MonaFormulaOperation
 import MonaFormulaOperationSubst
+import MonaFormulaInfo
 
 import qualified Relation as Rel
 import qualified Logic as Lo
@@ -195,13 +196,13 @@ builFormulaList chain fs = bfc chain fs where
 
 
 
-optimalBalance :: [String] -> [MonaFormula] -> MonaFormula
-optimalBalance vars = fst . allComb vars where
+optimalBalance :: FVType -> [String] -> [MonaFormula] -> MonaFormula
+optimalBalance fv vars = fst . allComb vars where
   minF [(f,c)] = (f,c)
   minF ((f1, c1):xs) = if c1 <= c2 then (f1, c1) else (f2, c2) where
     (f2, c2) = minF xs
   allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
-  allComb [] fs = (f', formulaValue 0 f') where
+  allComb [] fs = (f', formulaValue fv 0 f') where
     f' = rebuildFormula (MonaFormulaConj) fs
   allComb vars fs = minF $ map (applyComb vars fs) lv  where
     comp = getComparableVars vars fs
@@ -219,17 +220,18 @@ optimalBalance vars = fst . allComb vars where
 
 
 balanceFormulaInf ::
-  (MonaFormula -> [QuantifVarChain] -> MonaFormula)
+  FVType
+  -> (MonaFormula -> [QuantifVarChain] -> MonaFormula)
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
-balanceFormulaInf rest (MonaFormulaConj f1 f2) [] = MonaFormulaConj (balanceFormulaInf rest f1 []) (balanceFormulaInf rest f2 [])
-balanceFormulaInf rest f [] = rebuildFormula (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
-balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
+balanceFormulaInf fv rest (MonaFormulaConj f1 f2) [] = MonaFormulaConj (balanceFormulaInf fv rest f1 []) (balanceFormulaInf fv rest f2 [])
+balanceFormulaInf fv rest f [] = rebuildFormula (MonaFormulaConj) $ map (\x -> rest x []) $ getConjList f
+balanceFormulaInf fv rest f chain = procAntiprenex varmap balfor [] where
   fs = getConjList f
   vars = map (getChainVarName) chain
   varmap = Map.fromList $ zip vars chain
-  balfor = optimalBalance (intersect (freeVarsFormula f) vars) fs
+  balfor = optimalBalance fv (intersect (freeVarsFormula f) vars) fs
 
   procAntiprenex mp f@(MonaFormulaConj f1 f2) ch = flushQuantifChain ch $ MonaFormulaConj (procAntiprenex mp f1 []) (procAntiprenex mp f2 [])
   procAntiprenex mp (MonaFormulaExGen var f) ch = (procAntiprenex mp f (chainmember:ch)) where
@@ -238,28 +240,29 @@ balanceFormulaInf rest f chain = procAntiprenex varmap balfor [] where
 
 
 balanceFormulaInfSplit ::
-  (MonaFormula -> [QuantifVarChain] -> MonaFormula)
+  FVType
+  -> (MonaFormula -> [QuantifVarChain] -> MonaFormula)
   -> MonaFormula
   -> [QuantifVarChain]
   -> MonaFormula
-balanceFormulaInfSplit rest f [] = balanceFormulaInf rest f []
-balanceFormulaInfSplit rest f chain =  balIter rest f divc where
+balanceFormulaInfSplit fv rest f [] = balanceFormulaInf fv rest f []
+balanceFormulaInfSplit fv rest f chain =  balIter rest f divc where
   divc = LstSpl.chunksOf balInforSplitChunks $ reverse chain
 
-  balIter rest fl [] = balanceFormulaInf rest fl []
-  balIter rest fl@(MonaFormulaConj _ _) [c] = balanceFormulaInf rest fl c
+  balIter rest fl [] = balanceFormulaInf fv rest fl []
+  balIter rest fl@(MonaFormulaConj _ _) [c] = balanceFormulaInf fv rest fl c
   balIter rest fl [c] = flushQuantifChain (reverse c) fl
-  balIter rest fl (c:xs) = balIter rest (balanceFormulaInf rest fl (reverse c)) xs
+  balIter rest fl (c:xs) = balIter rest (balanceFormulaInf fv rest fl (reverse c)) xs
 
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the cost functions
 --------------------------------------------------------------------------------------------------------------
 
-formulaValue :: Int -> MonaFormula -> Int
-formulaValue d (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue (d) f)
-formulaValue d (MonaFormulaConj f1 f2) = (formulaValue (d+1) f1) + (formulaValue (d+1) f2)
-formulaValue d _ = 0 --1000*d
+formulaValue :: FVType -> Int -> MonaFormula -> Int
+formulaValue fv d (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue fv (d) f)
+formulaValue fv d (MonaFormulaConj f1 f2) = (formulaValue fv (d+1) f1) + (formulaValue fv (d+1) f2)
+formulaValue _ d _ = 0 --1000*d
 
 
 formulaCountSubFle :: MonaFormula -> Int
@@ -306,4 +309,4 @@ optimalBalanceDBG = do
       f3 = [flContainsDBG ["X1", "X2"]]
       vars1 = ["X1", "X2", "X3", "X4"]
       vars2 = ["X1", "X2"]
-  putStrLn $ show $ optimalBalance vars1 f1
+  putStrLn $ show $ optimalBalance (Map.empty) vars1 f1

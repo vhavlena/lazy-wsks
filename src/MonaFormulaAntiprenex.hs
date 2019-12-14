@@ -17,6 +17,7 @@ import MonaFormulaOperation
 import MonaFormulaOperationSubst
 import MonaFormulaBalance
 import MonaFormulaDistr
+import MonaFormulaInfo
 
 import qualified Relation as Rel
 import qualified Logic as Lo
@@ -32,8 +33,14 @@ import qualified Debug.Trace as Dbg
 --------------------------------------------------------------------------------------------------------------
 
 -- |Propagate quantifiers to binary formula operator (conjunction, disjunction).
-propagateTo :: (MonaFormula -> MonaFormula -> MonaFormula) -> MonaFormula -> MonaFormula -> [QuantifVarChain] -> MonaFormula
-propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar f1 rem1) (antiprenexFreeVar f2 rem2)) where --TODO: ex1 x where ..., y where ..., --> does not consider free variables in where declaration
+propagateTo ::
+  FVType
+  -> (MonaFormula -> MonaFormula -> MonaFormula)
+  -> MonaFormula
+  -> MonaFormula
+  -> [QuantifVarChain]
+  -> MonaFormula
+propagateTo fv cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVar fv f1 rem1) (antiprenexFreeVar fv f2 rem2)) where --TODO: ex1 x where ..., y where ..., --> does not consider free variables in where declaration
   vars1 = freeVarsFormula f1
   vars2 = freeVarsFormula f2
   fv1 = filter (\a -> elem (getChainVarName a) vars1) chain
@@ -45,35 +52,35 @@ propagateTo cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeV
 
 -- |Antiprenexing  with quantifiers distribution and permutation. Given starting
 -- chain of quantifiers.
-antiprenexFreeVar :: MonaFormula -> [QuantifVarChain] -> MonaFormula
-antiprenexFreeVar (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar f [])
+antiprenexFreeVar :: FVType -> MonaFormula -> [QuantifVarChain] -> MonaFormula
+antiprenexFreeVar fv (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar fv f [])
 --antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
-antiprenexFreeVar f@(MonaFormulaConj f1 f2) chain = case balanceFormulaConfig of
-  BalInformed -> balanceFormulaInf (antiprenexFreeVar) f $ reverse chain
-  BalInformedSplit -> balanceFormulaInfSplit (antiprenexFreeVar) f $ reverse chain
-  BalFullTree -> propagateTo (MonaFormulaConj) f1 f2 chain
-antiprenexFreeVar (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar f1 chain) (antiprenexFreeVar f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
-antiprenexFreeVar (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
-antiprenexFreeVar (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar f ((Exists1Chain var):chain)
-antiprenexFreeVar (MonaFormulaEx2 [var] f) chain = antiprenexFreeVar f ((Exists2Chain var):chain)
-antiprenexFreeVar (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar f ((ForAll0Chain (var, Nothing)):chain)
-antiprenexFreeVar (MonaFormulaAll1 [var] f) chain = antiprenexFreeVar f ((ForAll1Chain var):chain)
-antiprenexFreeVar (MonaFormulaAll2 [var] f) chain = antiprenexFreeVar f ((ForAll2Chain var):chain)
-antiprenexFreeVar atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
-antiprenexFreeVar atom@(MonaFormulaPredCall _ _) chain = flushQuantifChain chain atom
-antiprenexFreeVar atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
-antiprenexFreeVar a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
+antiprenexFreeVar fv f@(MonaFormulaConj f1 f2) chain = case balanceFormulaConfig of
+  BalInformed -> balanceFormulaInf fv (antiprenexFreeVar fv) f $ reverse chain
+  BalInformedSplit -> balanceFormulaInfSplit fv (antiprenexFreeVar fv) f $ reverse chain
+  BalFullTree -> propagateTo fv (MonaFormulaConj) f1 f2 chain
+antiprenexFreeVar fv (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar fv f1 chain) (antiprenexFreeVar fv f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
+antiprenexFreeVar fv (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar (Map.insert var 0 fv) f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
+antiprenexFreeVar fv (MonaFormulaEx1 [var] f) chain = antiprenexFreeVar (Map.insert (fst var) 1 fv) f ((Exists1Chain var):chain)
+antiprenexFreeVar fv (MonaFormulaEx2 [var] f) chain = antiprenexFreeVar (Map.insert (fst var) 2 fv) f ((Exists2Chain var):chain)
+antiprenexFreeVar fv (MonaFormulaAll0 [var] f) chain = antiprenexFreeVar (Map.insert var 0 fv) f ((ForAll0Chain (var, Nothing)):chain)
+antiprenexFreeVar fv (MonaFormulaAll1 [var] f) chain = antiprenexFreeVar (Map.insert (fst var) 1 fv) f ((ForAll1Chain var):chain)
+antiprenexFreeVar fv (MonaFormulaAll2 [var] f) chain = antiprenexFreeVar (Map.insert (fst var) 2 fv) f ((ForAll2Chain var):chain)
+antiprenexFreeVar _ atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
+antiprenexFreeVar _ atom@(MonaFormulaPredCall _ _) chain = flushQuantifChain chain atom
+antiprenexFreeVar _ atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
+antiprenexFreeVar _ a _ = error $ "antiprenexFreeVar: not supported " ++ (show a)
 
 
-antiprenexEmpty :: MonaFormula -> MonaFormula
-antiprenexEmpty f = antiprenexFreeVar f []
+antiprenexEmpty :: FVType -> MonaFormula -> MonaFormula
+antiprenexEmpty fv f = antiprenexFreeVar fv f []
 
 
-antiprenexFormula :: MonaFormula -> MonaFormula
-antiprenexFormula =  distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
+antiprenexFormula :: FVType -> MonaFormula -> MonaFormula
+antiprenexFormula varDecl =  distr . simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty varDecl . bal  . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
-  distrF = if distrConfig == DistrConservative then distributeFormula [] else distributeFormulaForce
-  distr f = (iterate (simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty . distrF) f) !! distrSteps
+  distrF = if distrConfig == DistrConservative then distributeFormula varDecl [] else distributeFormulaForce
+  distr f = (iterate (simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmpty varDecl . distrF) f) !! distrSteps
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
@@ -90,7 +97,8 @@ convertDecl g (MonaDeclLastpos var) = MonaDeclLastpos var
 
 
 antiprenexFile :: MonaFile -> MonaFile
-antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula)) decls where
+antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula varDecl)) decls where
+  varDecl = getMonaVarDecls decls
 
 
 --------------------------------------------------------------------------------------------------------------
