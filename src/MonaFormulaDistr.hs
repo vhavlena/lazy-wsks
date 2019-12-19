@@ -14,6 +14,7 @@ import MonaFormulaOperationSubst
 import FormulaSizeEstimation
 import MonaFormulaBalance
 import MonaFormulaInfo
+import AntiprenexConfig
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -64,7 +65,10 @@ conjDisjTop (MonaFormulaEx2 _ f) = 0
 isDistrSuit :: FVType -> MonaFormula -> Bool
 --isDistrSuit f = ((conjDisjTop f) > 10 ) || ((conjDisjTop f) <= 10 && isDistrPredSuit f)
 --isDistrSuit f = ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5)
-isDistrSuit fv f = Dbg.trace (show $ callEstScriptPure fv f) $ callEstScriptPure fv f <= 10000
+--isDistrSuit fv f = Dbg.trace (show $ callEstScriptPure fv f) $ callEstScriptPure fv f <= distrThreshold
+isDistrSuit fv f = if sizeEst /= -1 then sizeEst <= distrThreshold else ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5) where
+  sizeEst = callEstScriptPure fv f
+
 
 -- |Is it suitable to use distributivity (based on the predicate calls)
 maxPredCallSize :: MonaFormula -> Int
