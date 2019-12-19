@@ -30,3 +30,11 @@ getMonaVarDecls = Map.fromList . concat . map (variableTypes) where
   variableTypes (MonaDeclVar1 ds) = map (\(x,y) -> (x, 1)) ds
   variableTypes (MonaDeclVar2 ds) = map (\(x,y) -> (x, 2)) ds
   variableTypes _ = []
+
+
+getMonaPredVars :: [MonaMacroParam] -> FVType
+getMonaPredVars = Map.fromList . concat . map (variableTypes) where
+  variableTypes (MonaMacroParamVar0 ds) = map (\x -> (x, 0)) ds
+  variableTypes (MonaMacroParamVar1 ds) = map (\(x,y) -> (x, 1)) ds
+  variableTypes (MonaMacroParamVar2 ds) = map (\(x,y) -> (x, 2)) ds
+  variableTypes _ = []

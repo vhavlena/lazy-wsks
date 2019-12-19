@@ -11,6 +11,7 @@ module FormulaSizeEstimation (
   , callEstScript
   , formatPredSizes
   , writePredSizes
+  , writePredicateTemplate
 ) where
 
 import System.IO
@@ -48,13 +49,30 @@ getPredSizes (MonaFile _ decls) = do
       fltPred _ = False
 
 
+writePredicateTemplate :: MonaFile -> IO ()
+writePredicateTemplate (MonaFile header decls) = do
+  writeFile tmpDeclsFileName (hstr ++ "\n" ++ fstr)
+    where
+      hstr = case header of Just x -> x ++ ";"
+                            Nothing -> ""
+      fstr = unlines $ map (\x -> (show x) ++ ";") $ predFormulas
+      predFormulas = filter (fltPred) decls
+      fltPred (MonaDeclMacro _ _ _) = True
+      fltPred (MonaDeclPred _ _ _) = True
+      fltPred _ = False
+
+
 -- |Call a script for formula size estimation
 callEstScript :: FVType -> MonaFormula -> IO Int
 callEstScript fv f = do
+  declContent <- readFile tmpDeclsFileName
   let freevars = Set.fromList $ freeVarsFormula f
   let fvint = Map.filterWithKey (\k _ -> Set.member k freevars) fv
   let varDecl = unlines $ varsToDecls fvint
-  let content = varDecl ++ (show f) ++ ";"
+  let lins = lines declContent
+  let header = lins !! 0
+  let decls = unlines $ tail lins
+  let content = header ++ "\n" ++ varDecl ++ decls ++ (show f) ++ ";"
   writeFile tmpFileName content
   out <- readProcess sizeEstScript [predMonaPath, tmpFileName] []
   return $ parseOutput out

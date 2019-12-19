@@ -92,12 +92,10 @@ main = do
          Dbg -> putStrLn $ show $ removeRedundantPreds $ divideSharedFile $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
          None -> do
-           Est.writePredSizes Map.empty
+           Est.writePredicateTemplate (MoPa.MonaFile (MoPa.mf_domain mona) [])
            putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Pred -> do
-           let prMona = replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
-           dict <- Est.getPredSizes prMona
-           Est.writePredSizes dict
+           Est.writePredicateTemplate mona
            putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ removeWhereFile $ unwindQuantifFile mona
 
        --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona

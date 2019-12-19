@@ -96,8 +96,21 @@ convertDecl g (MonaDeclLastpos var) = MonaDeclLastpos var
 --convertDecl _ a = a -- TODO: incomplete
 
 
+convertDeclFV :: FVType -> (FVType -> MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
+convertDeclFV fv g (MonaDeclFormula f) = MonaDeclFormula $ g fv f
+convertDeclFV _ _ (MonaDeclVar0 decl) = MonaDeclVar0 decl
+convertDeclFV fv g (MonaDeclVar1 [(var, decl)]) = MonaDeclVar1 [(var,decl >>= return . g fv)]
+convertDeclFV fv g (MonaDeclVar2 [(var, decl)]) = MonaDeclVar2 [(var,decl >>= return . g fv)]
+convertDeclFV fv g (MonaDeclPred name params f) = MonaDeclPred name params $ g (Map.union (getMonaPredVars params) fv) f -- TODO: params are not converted
+convertDeclFV fv g (MonaDeclMacro name params f) = MonaDeclMacro name params $ g (Map.union (getMonaPredVars params) fv) f
+convertDeclFV fv g (MonaDeclAssert f) = MonaDeclAssert $ g fv f
+convertDeclFV _ _ (MonaDeclConst atom) = MonaDeclConst atom -- TODO: antiprenexing is skipped
+convertDeclFV _ _ (MonaDeclLastpos var) = MonaDeclLastpos var
+--convertDecl _ a = a -- TODO: incomplete
+
+
 antiprenexFile :: MonaFile -> MonaFile
-antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormula varDecl)) decls where
+antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDeclFV varDecl (antiprenexFormula)) decls where
   varDecl = getMonaVarDecls decls
 
 
