@@ -310,7 +310,7 @@ instance Show MonaFormula where
   show (MonaFormulaImpl f1 f2) = "((" ++ (show f1) ++ ") => (" ++ (show f2) ++ "))"
   show (MonaFormulaEquiv f1 f2) = "((" ++ (show f1) ++ ") <=> (" ++ (show f2) ++ "))"
   show (MonaFormulaEx0 varList phi) = pars $
-    "ex0 " ++ (unwords varList) ++ ": " ++ (show phi)
+    "ex0 " ++ (commatize varList) ++ ": " ++ (show phi)
   show (MonaFormulaEx1 varWhereCl phi) = pars $
     "ex1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
   show (MonaFormulaEx2 varWhereCl phi) = pars $
@@ -318,7 +318,7 @@ instance Show MonaFormula where
   show (MonaFormulaExGen var phi) = pars $
     "allGen " ++ var ++ ": " ++ (show phi)
   show (MonaFormulaAll0 varList phi) = pars $
-    "all0 " ++ (unwords varList) ++ ": " ++ (show phi)
+    "all0 " ++ (commatize varList) ++ ": " ++ (show phi)
   show (MonaFormulaAll1 varWhereCl phi) = pars $
     "all1 " ++ (showVarWhereClause varWhereCl) ++ ": " ++ (show phi)
   show (MonaFormulaAll2 varWhereCl phi) = pars $
