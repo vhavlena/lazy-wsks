@@ -67,7 +67,7 @@ isDistrSuit :: FVType -> MonaFormula -> Bool
 --isDistrSuit f = ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5)
 --isDistrSuit fv f = Dbg.trace (show $ callEstScriptPure fv f) $ callEstScriptPure fv f <= distrThreshold
 isDistrSuit fv f = if sizeEst /= -1 then sizeEst <= distrThreshold else ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5) where
-  sizeEst = callEstScriptPure fv f
+  sizeEst = callEstScriptPure fv "_2" f
 
 
 -- |Is it suitable to use distributivity (based on the predicate calls)

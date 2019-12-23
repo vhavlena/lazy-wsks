@@ -12,11 +12,14 @@ module FormulaSizeEstimation (
   , formatPredSizes
   , writePredSizes
   , writePredicateTemplate
+  , transferPath
+  , stopServer
 ) where
 
 import System.IO
 import System.IO.Unsafe
 import System.Process
+import Network.Socket
 
 import MonaParser
 import AuxFunctions
@@ -41,8 +44,8 @@ getPredSizes (MonaFile _ decls) = do
   return $ Map.fromList lst
     where
       fv = getMonaVarDecls decls
-      estScriptWrap (MonaDeclMacro nm _ fl) = (callEstScript fv fl) >>= \y -> return (nm,y)
-      estScriptWrap (MonaDeclPred nm _ fl) = (callEstScript fv fl) >>= \y -> return (nm,y)
+      estScriptWrap (MonaDeclMacro nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
+      estScriptWrap (MonaDeclPred nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
       predFormulas = filter (fltPred) decls
       fltPred (MonaDeclMacro _ _ _) = True
       fltPred (MonaDeclPred _ _ _) = True
@@ -63,8 +66,8 @@ writePredicateTemplate (MonaFile header decls) = do
 
 
 -- |Call a script for formula size estimation
-callEstScript :: FVType -> MonaFormula -> IO Int
-callEstScript fv f = do
+callEstScript :: FVType -> String -> MonaFormula -> IO Int
+callEstScript fv suff f = do
   declContent <- readFile tmpDeclsFileName
   let freevars = Set.fromList $ freeVarsFormula f
   let fvint = Map.filterWithKey (\k _ -> Set.member k freevars) fv
@@ -73,8 +76,9 @@ callEstScript fv f = do
   let header = lins !! 0
   let decls = unlines $ tail lins
   let content = header ++ "\n" ++ varDecl ++ decls ++ (show f) ++ ";"
-  writeFile tmpFileName content
-  out <- readProcess sizeEstScript [predMonaPath, tmpFileName] []
+  writeFile (tmpFileName ++ suff) content
+  --out <- readProcess sizeEstScript [predMonaPath, tmpFileName] []
+  out <- transferPath (tmpFileName ++ suff)
   return $ parseOutput out
 
 
@@ -95,5 +99,31 @@ parseOutput str = read str :: Int
 
 
 -- |Call estimation script PURELY (assumes that the script behaves as a mapping)
-callEstScriptPure :: FVType -> MonaFormula -> Int
-callEstScriptPure fv = unsafePerformIO . callEstScript fv
+callEstScriptPure :: FVType -> String -> MonaFormula -> Int
+callEstScriptPure fv suff = unsafePerformIO . callEstScript fv suff
+
+
+transferPath path = do
+  h <- openConnection "127.0.0.1" "50889"
+  hPutStrLn h path
+  hFlush h
+  str <- hGetLine h
+  hClose h
+  return str
+
+
+stopServer = do
+  h <- openConnection "127.0.0.1" "50889"
+  hPutStrLn h "stop"
+  hClose h
+
+
+openConnection :: HostName -> String -> IO Handle
+openConnection hostname port = do
+  addrinfos <- getAddrInfo Nothing (Just hostname) (Just port)
+  let serverAddr = head addrinfos
+  sock <- socket (addrFamily serverAddr) Stream defaultProtocol
+  connect sock (addrAddress serverAddr)
+  h <- socketToHandle sock ReadWriteMode
+  hSetBuffering h (BlockBuffering Nothing)
+  return h
