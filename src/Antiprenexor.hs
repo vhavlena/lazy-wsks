@@ -101,6 +101,7 @@ main = do
        --putStrLn $ show $ antiprenexFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
+       Est.deleteTmpFiles
      Help -> showHelp
      Error -> do
        putStrLn $ "Bad input params"

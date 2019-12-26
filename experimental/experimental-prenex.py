@@ -162,8 +162,8 @@ def parse_mona_time(line):
 
 
 def print_config():
-    print("Timeout: {0}".format(TIMEOUT))
-    print("Number of formulas: {0}".format(FORMULAS))
+    print("#Timeout: {0}".format(TIMEOUT))
+    print("#Number of formulas: {0}".format(FORMULAS))
 
 
 def format_output(parse, bold):

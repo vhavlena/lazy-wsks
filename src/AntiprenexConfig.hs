@@ -30,7 +30,7 @@ balanceFormulaConfig = BalInformedSplit
 distrSteps = 3 :: Int
 
 -- |Threshold for total number of states for distributivity
-distrThreshold = 10000 :: Int
+distrThreshold = 10000 :: Integer
 
 -- |Distributivity configuration (force -- do distribution whenever it is
 -- possible, conservative -- only if there is a possibility to move ex.

@@ -197,12 +197,12 @@ builFormulaList chain fs = bfc chain fs where
 
 
 
-optimalBalance :: FVType -> [String] -> [MonaFormula] -> MonaFormula
+optimalBalance :: FormulaFV -> [String] -> [MonaFormula] -> MonaFormula
 optimalBalance fv vars flist = fst $ allComb vars flist where
   minF [(f,c)] = (f,c)
   minF ((f1, c1):xs) = if c1 <= c2 then (f1, c1) else (f2, c2) where
     (f2, c2) = minF xs
-  allComb :: [String] -> [MonaFormula] -> (MonaFormula, Int)
+  allComb :: [String] -> [MonaFormula] -> (MonaFormula, Integer)
   allComb [] fs = (f', formulaValueEstMap fsizes f') where
     f' = rebuildFormula (MonaFormulaConj) fs
   allComb vars fs = minF $ map (applyComb vars fs) lv  where
@@ -223,7 +223,7 @@ optimalBalance fv vars flist = fst $ allComb vars flist where
 
 
 balanceFormulaInf ::
-  FVType
+  FormulaFV
   -> (MonaFormula -> [QuantifVarChain] -> MonaFormula)
   -> MonaFormula
   -> [QuantifVarChain]
@@ -243,7 +243,7 @@ balanceFormulaInf fv rest f chain = procAntiprenex varmap balfor [] where
 
 
 balanceFormulaInfSplit ::
-  FVType
+  FormulaFV
   -> (MonaFormula -> [QuantifVarChain] -> MonaFormula)
   -> MonaFormula
   -> [QuantifVarChain]
@@ -262,55 +262,55 @@ balanceFormulaInfSplit fv rest f chain =  balIter rest f divc where
 -- Part with the cost functions
 --------------------------------------------------------------------------------------------------------------
 
-formulaValue :: FVType -> Int -> MonaFormula -> Int
+formulaValue :: FormulaFV -> Int -> MonaFormula -> Integer
 formulaValue fv d (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue fv (d) f)
 formulaValue fv d (MonaFormulaConj f1 f2) = (formulaValue fv (d+1) f1) + (formulaValue fv (d+1) f2)
 formulaValue _ d _ = 0 --1000*d
 
 
-formulaValueEst :: FVType -> MonaFormula -> Int
+formulaValueEst :: FormulaFV -> MonaFormula -> Integer
 formulaValueEst fv (MonaFormulaExGen _ f) = (formulaValueEst fv f) + (formulaValueEstAux fv f)
 formulaValueEst fv (MonaFormulaConj f1 f2) = (formulaValueEst fv f1) + (formulaValueEst fv f2)
 formulaValueEst fv f = 0
 
 
-formulaValueEstAux :: FVType -> MonaFormula -> Int
+formulaValueEstAux :: FormulaFV -> MonaFormula -> Integer
 formulaValueEstAux fv (MonaFormulaExGen _ f) =  formulaValueEstAux fv f
 formulaValueEstAux fv (MonaFormulaConj f1 f2) = (formulaValueEstAux fv f1) + (formulaValueEstAux fv f2)
 formulaValueEstAux fv f = callEstScriptPure fv "_1" f
 
 
-formulaValueEstMap :: Map.Map MonaFormula Int -> MonaFormula -> Int
+formulaValueEstMap :: Map.Map MonaFormula Integer -> MonaFormula -> Integer
 formulaValueEstMap mp (MonaFormulaExGen _ f) = (formulaValueEstMap mp f) + (formulaValueEstAuxMap mp f)
 formulaValueEstMap mp (MonaFormulaConj f1 f2) = (formulaValueEstMap mp f1) + (formulaValueEstMap mp f2)
 formulaValueEstMap mp f = 0
 
 
-formulaValueEstAuxMap :: Map.Map MonaFormula Int -> MonaFormula -> Int
+formulaValueEstAuxMap :: Map.Map MonaFormula Integer -> MonaFormula -> Integer
 formulaValueEstAuxMap mp (MonaFormulaExGen _ f) =  formulaValueEstAuxMap mp f
 formulaValueEstAuxMap mp (MonaFormulaConj f1 f2) = (formulaValueEstAuxMap mp f1) + (formulaValueEstAuxMap mp f2)
 formulaValueEstAuxMap mp f = mp Map.! f
 
 
-formulaCountSubFle :: MonaFormula -> Int
+formulaCountSubFle :: MonaFormula -> Integer
 formulaCountSubFle (MonaFormulaExGen _ f) = formulaCountSubFle f
 formulaCountSubFle (MonaFormulaConj f1 f2) = (formulaCountSubFle f1) + (formulaCountSubFle f2)
 formulaCountSubFle _ = 1
 
 
-formulaValueStruct :: MonaFormula -> Int
+formulaValueStruct :: MonaFormula -> Integer
 formulaValueStruct (MonaFormulaExGen _ f) = (formulaCountSubFleStruct f) + (formulaValueStruct f)
 formulaValueStruct (MonaFormulaConj f1 f2) = (formulaValueStruct f1) + (formulaValueStruct f2)
 formulaValueStruct _ = 0
 
 
-formulaCountSubFleStruct :: MonaFormula -> Int
+formulaCountSubFleStruct :: MonaFormula -> Integer
 formulaCountSubFleStruct (MonaFormulaExGen _ f) = 4 + (formulaCountSubFleStruct f)
 formulaCountSubFleStruct (MonaFormulaConj f1 f2) = (formulaCountSubFleStruct f1) + (formulaCountSubFleStruct f2)
-formulaCountSubFleStruct f = subFormulas f
+formulaCountSubFleStruct f = toInteger $ subFormulas f
 
 
-formulaCoutSubterms :: MonaFormula -> Int
+formulaCoutSubterms :: MonaFormula -> Integer
 formulaCoutSubterms (MonaFormulaPredCall _ _) = 1
 formulaCoutSubterms (MonaFormulaAtomic _) = 1
 formulaCoutSubterms (MonaFormulaVar _) = 1
@@ -336,4 +336,4 @@ optimalBalanceDBG = do
       f3 = [flContainsDBG ["X1", "X2"]]
       vars1 = ["X1", "X2", "X3", "X4"]
       vars2 = ["X1", "X2"]
-  putStrLn $ show $ optimalBalance (Map.empty) vars1 f1
+  putStrLn $ show $ optimalBalance formulaFVEmpty vars1 f1

@@ -6,20 +6,23 @@ License     : GPL-3
 -}
 
 module FormulaSizeEstimation (
-  getPredSizes
-  , callEstScriptPure
+  callEstScriptPure
   , callEstScript
   , formatPredSizes
   , writePredSizes
   , writePredicateTemplate
   , transferPath
   , stopServer
+  , deleteTmpFiles
 ) where
 
 import System.IO
 import System.IO.Unsafe
 import System.Process
 import Network.Socket
+import System.Directory
+import qualified System.IO.Strict as SIO
+import System.Random
 
 import MonaParser
 import AuxFunctions
@@ -29,27 +32,28 @@ import qualified Data.List as Lst
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-type DeclSize = Map.Map String Int
+type DeclSize = Map.Map String Integer
 
-tmpFileName = "_tmp_size.mona"
+tmpFolder = "tmpSizes/"
+tmpFileName = tmpFolder ++ "_tmp_size.mona"
 tmpDeclsFileName = "_tmp_decls_.data"
 sizeEstScript = "./../external/predict.py"
 predMonaPath = "../../predict_mona/executables/bin/mona"
 
 -- |Get predicates sizes (assumes that predicates/macros contain no call to
 -- other macros/predicates --> the predicates are flat)
-getPredSizes :: MonaFile -> IO DeclSize
-getPredSizes (MonaFile _ decls) = do
-  lst <- sequence $ map (estScriptWrap) predFormulas
-  return $ Map.fromList lst
-    where
-      fv = getMonaVarDecls decls
-      estScriptWrap (MonaDeclMacro nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
-      estScriptWrap (MonaDeclPred nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
-      predFormulas = filter (fltPred) decls
-      fltPred (MonaDeclMacro _ _ _) = True
-      fltPred (MonaDeclPred _ _ _) = True
-      fltPred _ = False
+-- getPredSizes :: MonaFile -> IO DeclSize
+-- getPredSizes (MonaFile _ decls) = do
+--   lst <- sequence $ map (estScriptWrap) predFormulas
+--   return $ Map.fromList lst
+--     where
+--       fv = getMonaVarDecls decls
+--       estScriptWrap (MonaDeclMacro nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
+--       estScriptWrap (MonaDeclPred nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
+--       predFormulas = filter (fltPred) decls
+--       fltPred (MonaDeclMacro _ _ _) = True
+--       fltPred (MonaDeclPred _ _ _) = True
+--       fltPred _ = False
 
 
 writePredicateTemplate :: MonaFile -> IO ()
@@ -66,20 +70,28 @@ writePredicateTemplate (MonaFile header decls) = do
 
 
 -- |Call a script for formula size estimation
-callEstScript :: FVType -> String -> MonaFormula -> IO Int
+callEstScript :: FormulaFV -> String -> MonaFormula -> IO Integer
 callEstScript fv suff f = do
-  declContent <- readFile tmpDeclsFileName
-  let freevars = Set.fromList $ freeVarsFormula f
-  let fvint = Map.filterWithKey (\k _ -> Set.member k freevars) fv
-  let varDecl = unlines $ varsToDecls fvint
-  let lins = lines declContent
-  let header = lins !! 0
-  let decls = unlines $ tail lins
-  let content = header ++ "\n" ++ varDecl ++ decls ++ (show f) ++ ";"
-  writeFile (tmpFileName ++ suff) content
-  --out <- readProcess sizeEstScript [predMonaPath, tmpFileName] []
-  out <- transferPath (tmpFileName ++ suff)
+  num <- randomIO :: IO Int
+  i <- SIO.run $ callEstScript' fv (suff++(show num)) f
+  out <- transferPath (tmpFileName ++ suff ++ (show num))
   return $ parseOutput out
+  where
+    callEstScript' :: FormulaFV -> String -> MonaFormula -> SIO.SIO Int
+    callEstScript' fv suff f = do
+    declContent <- SIO.readFile tmpDeclsFileName
+    let fvDecls = Set.fromList $ predsFV fv
+    let freevars = Set.fromList $ freeVarsFormula f
+    let fvintGlobal = Map.filterWithKey (\k _ -> Set.member k fvDecls) (global fv)
+    let fvintLocal = Map.filterWithKey (\k _ -> Set.member k freevars) (unionLocGlobFV fv)
+    let varDecl = unlines $ varsToDecls (Map.union fvintLocal fvintGlobal)
+    let lins = lines declContent
+    let header = lins !! 0
+    let decls = unlines $ tail lins
+    let content = header ++ "\n" ++ varDecl ++ decls ++ (show f) ++ ";"
+    SIO.writeFile (tmpFileName ++ suff) content
+    SIO.return' 5
+
 
 
 -- |Write sizes of predicates to the tmp file
@@ -94,12 +106,12 @@ formatPredSizes dict = Lst.intercalate "\n" $ map (formatPair) $ Map.toList dict
 
 
 -- |Parse estimation script output
-parseOutput :: String -> Int
-parseOutput str = read str :: Int
+parseOutput :: String -> Integer
+parseOutput str = read str :: Integer
 
 
 -- |Call estimation script PURELY (assumes that the script behaves as a mapping)
-callEstScriptPure :: FVType -> String -> MonaFormula -> Int
+callEstScriptPure :: FormulaFV -> String -> MonaFormula -> Integer
 callEstScriptPure fv suff = unsafePerformIO . callEstScript fv suff
 
 
@@ -127,3 +139,9 @@ openConnection hostname port = do
   h <- socketToHandle sock ReadWriteMode
   hSetBuffering h (BlockBuffering Nothing)
   return h
+
+
+deleteTmpFiles :: IO ()
+deleteTmpFiles = do
+  files <- listDirectory tmpFolder
+  sequence_ $ map (\x -> removeFile (tmpFolder ++ x)) files

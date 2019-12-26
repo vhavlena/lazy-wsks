@@ -30,7 +30,7 @@ type SubFVType = Set.Set (String, Int)
 type SubformulaType = (MonaFormula, SubFVType)
 
 
-distributeFormula :: FVType -> [String] -> MonaFormula -> MonaFormula
+distributeFormula :: FormulaFV -> [String] -> MonaFormula -> MonaFormula
 distributeFormula _ _ (MonaFormulaAtomic atom) = MonaFormulaAtomic atom
 distributeFormula _ _ f@(MonaFormulaPredCall _ _) = f
 distributeFormula _ _ (MonaFormulaVar var) = MonaFormulaVar var
@@ -38,14 +38,14 @@ distributeFormula fv _ (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormula fv
 distributeFormula fv c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormula fv c f1) (distributeFormula fv c f2)
 distributeFormula fv c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
   if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f1 f2)) (distributeFormula fv c (MonaFormulaConj f1 f3))
-  else (MonaFormulaConj (distributeFormula fv [] f1) (distributeFormula fv [] (MonaFormulaDisj f2 f3)))
+  else (MonaFormulaConj (distributeFormula fv c f1) (distributeFormula fv c (MonaFormulaDisj f2 f3))) where
 distributeFormula fv c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
   if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f2 f1)) (distributeFormula fv c (MonaFormulaConj f3 f1))
   else MonaFormulaConj (distributeFormula fv c (MonaFormulaDisj f2 f3)) (distributeFormula fv c f1)
 distributeFormula fv c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula fv c f1) (distributeFormula fv c f2)
-distributeFormula fv c (MonaFormulaEx0 [var] f) = MonaFormulaEx0 [var] (distributeFormula (Map.insert var 0 fv) ("x":c) f)
-distributeFormula fv c (MonaFormulaEx1 [(var,Nothing)] f) = MonaFormulaEx1 [(var,Nothing)] (distributeFormula (Map.insert var 1 fv) ("x":c) f)
-distributeFormula fv c (MonaFormulaEx2 [(var,Nothing)] f) = MonaFormulaEx2 [(var,Nothing)] (distributeFormula (Map.insert var 2 fv) ("x":c) f)
+distributeFormula fv c (MonaFormulaEx0 [var] f) = MonaFormulaEx0 [var] (distributeFormula (fvUpdateLocal fv var 0) ("x":c) f)
+distributeFormula fv c (MonaFormulaEx1 [(var,Nothing)] f) = MonaFormulaEx1 [(var,Nothing)] (distributeFormula (fvUpdateLocal fv var 1) ("x":c) f)
+distributeFormula fv c (MonaFormulaEx2 [(var,Nothing)] f) = MonaFormulaEx2 [(var,Nothing)] (distributeFormula (fvUpdateLocal fv var 2) ("x":c) f)
 
 
 -- |Compute number of conjunctions and disjunctions on the top of the formula.
@@ -62,7 +62,7 @@ conjDisjTop (MonaFormulaEx2 _ f) = 0
 
 
 -- |Is it suitable to use distributivity?
-isDistrSuit :: FVType -> MonaFormula -> Bool
+isDistrSuit :: FormulaFV -> MonaFormula -> Bool
 --isDistrSuit f = ((conjDisjTop f) > 10 ) || ((conjDisjTop f) <= 10 && isDistrPredSuit f)
 --isDistrSuit f = ((formulaCoutSubterms f) <= 40) && ((maxPredCallSize f) <= 5)
 --isDistrSuit fv f = Dbg.trace (show $ callEstScriptPure fv f) $ callEstScriptPure fv f <= distrThreshold
