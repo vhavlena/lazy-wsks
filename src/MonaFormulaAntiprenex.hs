@@ -56,8 +56,8 @@ antiprenexFreeVar :: FormulaFV -> MonaFormula -> [QuantifVarChain] -> MonaFormul
 antiprenexFreeVar fv (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVar fv f [])
 --antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar fv f@(MonaFormulaConj f1 f2) chain = case balanceFormulaConfig of
-  BalInformed -> balanceFormulaInf fv (antiprenexFreeVar fv) f $ reverse chain
-  BalInformedSplit -> balanceFormulaInfSplit fv (antiprenexFreeVar fv) f $ reverse chain
+  BalInformed -> balanceFormulaInf fv (antiprenexFreeVar fv) f $ chain
+  BalInformedSplit -> balanceFormulaInfSplit fv (antiprenexFreeVar fv) f $ chain
   BalFullTree -> propagateTo fv (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar fv (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar fv f1 chain) (antiprenexFreeVar fv f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
 antiprenexFreeVar fv (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar (fvUpdateLocal fv var 0) f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
@@ -77,10 +77,13 @@ antiprenexEmpty fv f = antiprenexFreeVar fv f []
 
 
 antiprenexFormula :: FormulaFV -> MonaFormula -> MonaFormula
-antiprenexFormula varDecl = antiprenexEmpty varDecl . bal . distr . simplifyNegFormula . moveNegToLeavesFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula where
+antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ fBase where
+  fBase = convertToBaseFormula f
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
   distrF = if distrConfig == DistrConservative then distributeFormula varDecl [] else distributeFormulaForce
-  distr f = (iterate (simplifyNegFormula . moveNegToLeavesFormula . distrF) f) !! distrSteps
+  distr f = (iterate (pref . simplifyNegFormula . moveNegToLeavesFormula . distrF) f) !! distrSteps
+  pref fl = if subFormulas fl <= 300 then antiprenexEmpty varDecl fl else id fl
+  distrLoop fl = if subFormulas fl <= 10000 then antiprenexEmpty varDecl $ bal $ distr fl else id fl
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration

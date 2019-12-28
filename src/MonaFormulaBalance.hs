@@ -250,13 +250,22 @@ balanceFormulaInfSplit ::
   -> MonaFormula
 balanceFormulaInfSplit fv rest f [] = balanceFormulaInf fv rest f []
 balanceFormulaInfSplit fv rest f chain =  balIter rest f divc where
-  divc = LstSpl.chunksOf balInforSplitChunks $ reverse chain
+  divc = LstSpl.chunksOf chunksNum $ reverse chain
+  chunksNum = chunksOptimize f
 
   balIter rest fl [] = balanceFormulaInf fv rest fl []
   balIter rest fl@(MonaFormulaConj _ _) [c] = balanceFormulaInf fv rest fl c
   balIter rest fl [c] = flushQuantifChain (reverse c) fl
   balIter rest fl (c:xs) = balIter rest (balanceFormulaInf fv rest fl (reverse c)) xs
 
+  chunksOptimize f = if (length fList) <= 3 && varsInter fvars then 10 else balInforSplitChunks where
+    fList = getConjList f
+    chains = length chain
+    fvars = map (Set.fromList . freeVarsFormula) fList
+    varsInter v
+      | length v == 3 = (compSets (fvars !! 0) (fvars !! 1)) || (compSets (fvars !! 0) (fvars !! 2)) || (compSets (fvars !! 1) (fvars !! 2))
+      | length v == 2 = (compSets (fvars !! 0) (fvars !! 1))
+    compSets x y = (Set.size $ Set.intersection x y) >= ((chains * 3) `div` 4)
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the cost functions
