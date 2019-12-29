@@ -76,14 +76,49 @@ antiprenexEmpty :: FormulaFV -> MonaFormula -> MonaFormula
 antiprenexEmpty fv f = antiprenexFreeVar fv f []
 
 
+propagateToSimple ::
+  (MonaFormula -> MonaFormula -> MonaFormula)
+  -> MonaFormula
+  -> MonaFormula
+  -> [QuantifVarChain]
+  -> MonaFormula
+propagateToSimple cons f1 f2 chain = flushQuantifChain remChain (cons (antiprenexFreeVarSimple f1 rem1) (antiprenexFreeVarSimple f2 rem2)) where --TODO: ex1 x where ..., y where ..., --> does not consider free variables in where declaration
+  vars1 = freeVarsFormula f1
+  vars2 = freeVarsFormula f2
+  fv1 = filter (\a -> elem (getChainVarName a) vars1) chain
+  fv2 = filter (\a -> elem (getChainVarName a) vars2) chain
+  remChain = reverse $ intersect fv1 fv2
+  rem1 = fv1 \\ remChain
+  rem2 = fv2 \\ remChain
+
+antiprenexFreeVarSimple :: MonaFormula -> [QuantifVarChain] -> MonaFormula
+antiprenexFreeVarSimple (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFormulaNeg $ antiprenexFreeVarSimple f [])
+antiprenexFreeVarSimple f@(MonaFormulaConj f1 f2) chain = propagateToSimple (MonaFormulaConj) f1 f2 chain
+antiprenexFreeVarSimple (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVarSimple f1 chain) (antiprenexFreeVarSimple f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
+antiprenexFreeVarSimple (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVarSimple  f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
+antiprenexFreeVarSimple (MonaFormulaEx1 [var] f) chain = antiprenexFreeVarSimple  f ((Exists1Chain var):chain)
+antiprenexFreeVarSimple (MonaFormulaEx2 [var] f) chain = antiprenexFreeVarSimple  f ((Exists2Chain var):chain)
+antiprenexFreeVarSimple (MonaFormulaAll0 [var] f) chain = antiprenexFreeVarSimple  f ((ForAll0Chain (var, Nothing)):chain)
+antiprenexFreeVarSimple (MonaFormulaAll1 [var] f) chain = antiprenexFreeVarSimple  f ((ForAll1Chain var):chain)
+antiprenexFreeVarSimple (MonaFormulaAll2 [var] f) chain = antiprenexFreeVarSimple  f ((ForAll2Chain var):chain)
+antiprenexFreeVarSimple atom@(MonaFormulaAtomic _) chain = flushQuantifChain chain atom
+antiprenexFreeVarSimple atom@(MonaFormulaPredCall _ _) chain = flushQuantifChain chain atom
+antiprenexFreeVarSimple atom@(MonaFormulaVar _) chain = flushQuantifChain chain atom
+antiprenexFreeVarSimple a _ = error $ "antiprenexFreeVarSimple: not supported " ++ (show a)
+
+antiprenexEmptySimple :: MonaFormula -> MonaFormula
+antiprenexEmptySimple f = antiprenexFreeVarSimple f []
+
+
+
 antiprenexFormula :: FormulaFV -> MonaFormula -> MonaFormula
 antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ fBase where
   fBase = convertToBaseFormula f
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
   distrF = if distrConfig == DistrConservative then distributeFormula varDecl [] else distributeFormulaForce
   distr f = (iterate (pref . simplifyNegFormula . moveNegToLeavesFormula . distrF) f) !! distrSteps
-  pref fl = if subFormulas fl <= 300 then antiprenexEmpty varDecl fl else id fl
-  distrLoop fl = if subFormulas fl <= 10000 then antiprenexEmpty varDecl $ bal $ distr fl else id fl
+  pref fl = if subFormulas fl <= prefSubformulaCount then antiprenexEmpty varDecl fl else id fl
+  distrLoop fl = if subFormulas fl <= antiprenexSubformulaCount then antiprenexEmpty varDecl $ bal $ distr fl else antiprenexEmptySimple fl
 
 
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
