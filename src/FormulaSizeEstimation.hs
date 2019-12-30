@@ -40,21 +40,6 @@ tmpDeclsFileName = "_tmp_decls_.data"
 sizeEstScript = "./../external/predict.py"
 predMonaPath = "../../predict_mona/executables/bin/mona"
 
--- |Get predicates sizes (assumes that predicates/macros contain no call to
--- other macros/predicates --> the predicates are flat)
--- getPredSizes :: MonaFile -> IO DeclSize
--- getPredSizes (MonaFile _ decls) = do
---   lst <- sequence $ map (estScriptWrap) predFormulas
---   return $ Map.fromList lst
---     where
---       fv = getMonaVarDecls decls
---       estScriptWrap (MonaDeclMacro nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
---       estScriptWrap (MonaDeclPred nm _ fl) = (callEstScript fv "_1" fl) >>= \y -> return (nm,y)
---       predFormulas = filter (fltPred) decls
---       fltPred (MonaDeclMacro _ _ _) = True
---       fltPred (MonaDeclPred _ _ _) = True
---       fltPred _ = False
-
 
 writePredicateTemplate :: MonaFile -> IO ()
 writePredicateTemplate (MonaFile header decls) = do

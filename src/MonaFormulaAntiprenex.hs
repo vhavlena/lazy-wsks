@@ -29,7 +29,7 @@ import qualified Debug.Trace as Dbg
 
 
 --------------------------------------------------------------------------------------------------------------
--- Part with antiprenexing
+-- Part with informed antiprenexing
 --------------------------------------------------------------------------------------------------------------
 
 -- |Propagate quantifiers to binary formula operator (conjunction, disjunction).
@@ -76,6 +76,10 @@ antiprenexEmpty :: FormulaFV -> MonaFormula -> MonaFormula
 antiprenexEmpty fv f = antiprenexFreeVar fv f []
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with pure antiprenexing
+--------------------------------------------------------------------------------------------------------------
+
 propagateToSimple ::
   (MonaFormula -> MonaFormula -> MonaFormula)
   -> MonaFormula
@@ -110,6 +114,9 @@ antiprenexEmptySimple :: MonaFormula -> MonaFormula
 antiprenexEmptySimple f = antiprenexFreeVarSimple f []
 
 
+--------------------------------------------------------------------------------------------------------------
+-- Part with the mona formula main antiprenexing
+--------------------------------------------------------------------------------------------------------------
 
 antiprenexFormula :: FormulaFV -> MonaFormula -> MonaFormula
 antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFormula $ simplifyNegFormula $ moveNegToLeavesFormula $ fBase where
