@@ -128,6 +128,10 @@ antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFo
   distrLoop fl = if subFormulas fl <= antiprenexSubformulaCount then antiprenexEmpty varDecl $ bal $ distr fl else antiprenexEmptySimple fl
 
 
+antiprenexFormulaLight :: MonaFormula -> MonaFormula
+antiprenexFormulaLight = antiprenexEmptySimple . simplifyNegFormula . moveNegToLeavesFormula . simplifyNegFormula . moveNegToLeavesFormula . convertToBaseFormula
+
+
 convertDecl :: (MonaFormula -> MonaFormula) -> MonaDeclaration -> MonaDeclaration
 convertDecl g (MonaDeclFormula f) = MonaDeclFormula $ g f
 convertDecl g (MonaDeclVar0 decl) = MonaDeclVar0 decl
@@ -157,6 +161,10 @@ convertDeclFV _ _ (MonaDeclLastpos var) = MonaDeclLastpos var
 antiprenexFile :: MonaFile -> MonaFile
 antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDeclFV varDecl (antiprenexFormula)) decls where
   varDecl = getMonaFormulaFV decls
+
+
+antiprenexFileLight :: MonaFile -> MonaFile
+antiprenexFileLight (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormulaLight)) decls where
 
 
 --------------------------------------------------------------------------------------------------------------

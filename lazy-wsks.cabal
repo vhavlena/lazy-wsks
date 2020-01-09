@@ -8,6 +8,15 @@ build-depends:
   temporary,
   process,
   bimap,
-  split
-hs-source-dirs: src
+  split,
+  strict,
+  network
+hs-source-dirs:
+  src,
+  src/automata,
+  src/aux,
+  src/decision-procedure,
+  src/formula-operation,
+  src/graph,
+  src/parser
 main-is:  LazyWSkS.hs

@@ -72,6 +72,10 @@ The tests can be run via ``` $ make test ``` .
 * parsec
 * temporary
 * process
+* bimap
+* split
+* strict
+* network
 
 You can install the packages via
 ```

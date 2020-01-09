@@ -116,12 +116,12 @@ main = do
    case (parseArgs args) of
      (Antiprenex file) -> do
        mona <- MoPa.parseFile file
-       putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+       putStrLn $ show $ antiprenexFileLight $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
        stop <- getCurrentTime
        putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      (Validity file par) -> do
        mona <- MoPa.parseFile file
-       let fnc = if par == Prenex then simplifyFile else antiprenexFile
+       let fnc = if par == Prenex then simplifyFile else antiprenexFileLight
            prenexFile = fnc $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
            (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
            do
