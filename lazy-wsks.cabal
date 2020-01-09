@@ -9,7 +9,7 @@ build-depends:
   process,
   bimap,
   split,
-  strict,
+  strict-io,
   network
 hs-source-dirs:
   src,

@@ -74,7 +74,7 @@ The tests can be run via ``` $ make test ``` .
 * process
 * bimap
 * split
-* strict
+* strict-io
 * network
 
 You can install the packages via
