@@ -125,7 +125,7 @@ antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFo
   distrF = if distrConfig == DistrConservative then distributeFormula varDecl [] else distributeFormulaForce
   distr f = (iterate (pref . simplifyNegFormula . moveNegToLeavesFormula . distrF) f) !! distrSteps
   pref fl = if subFormulas fl <= prefSubformulaCount then antiprenexEmpty varDecl fl else id fl
-  distrLoop fl = if subFormulas fl <= antiprenexSubformulaCount then antiprenexEmpty varDecl $ bal $ distr fl else antiprenexEmptySimple fl
+  distrLoop fl = if subFormulas fl <= antiprenexSubformulaCount then antiprenexEmpty varDecl $ bal $ distr fl else (iterate (simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmptySimple) fl) !! distrSteps
 
 
 antiprenexFormulaLight :: MonaFormula -> MonaFormula

@@ -214,7 +214,7 @@ optimalBalance fv vars flist = fst $ allComb vars flist where
     fs' = builFormulaList apvar fs
     vars' = vars Lst.\\ apvar
 
-  fsizes = Map.fromList [(f, callEstScriptPure fv "_1" f) | f <- flist]
+  fsizes = Map.fromList [(f, blockFormulaEst fv f) | f <- flist]
 
   level [] _ _ = []
   level vars@(x:xs) fs incomp = related:(level xs' fs incomp) where
@@ -270,6 +270,11 @@ balanceFormulaInfSplit fv rest f chain =  balIter rest f divc where
 --------------------------------------------------------------------------------------------------------------
 -- Part with the cost functions
 --------------------------------------------------------------------------------------------------------------
+
+blockFormulaEst :: FormulaFV -> MonaFormula -> Integer
+blockFormulaEst fv f = if est == -1 then 10 ^ 300 :: Integer else (if est == -2 then 1 else est) where
+  est = callEstScriptPure fv "_1" f
+
 
 formulaValue :: FormulaFV -> Int -> MonaFormula -> Integer
 formulaValue fv d (MonaFormulaExGen _ f) = (formulaCountSubFle f) + (formulaValue fv (d) f)
