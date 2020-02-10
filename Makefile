@@ -12,6 +12,9 @@ install:
 release:
 	cd src && make release
 
+antiprenex-release:
+	cd src && make antiprenex-release
+
 test:
 	cd src && make test
 

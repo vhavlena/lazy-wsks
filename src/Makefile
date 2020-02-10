@@ -18,10 +18,10 @@ release:
 	ghc $(RELEASE_FLAGS) $(DIR_FLAGS) --make LazyWSkS.hs
 
 antiprenex:
-	ghc $(DEBUG_FLAGS) $(DIR_FLAGS) --make Antiprenexor.hs
+	ghc $(DEBUG_FLAGS) $(DIR_FLAGS) --make AntiMona.hs
 
 antiprenex-release:
-	ghc $(RELEASE_FLAGS) $(DIR_FLAGS)--make Antiprenexor.hs
+	ghc $(RELEASE_FLAGS) $(DIR_FLAGS)--make AntiMona.hs
 
 test:
 	cd .. && python3 experimental/testcheck.py src/LazyWSkS examples/
