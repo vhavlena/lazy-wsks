@@ -2,6 +2,7 @@ src/obj/*
 src/Main
 src/Antiprenexor
 src/LazyWSkS
+src/AntiMona
 automata/*
 results/*
 .DS_Store

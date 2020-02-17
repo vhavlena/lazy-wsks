@@ -14,6 +14,7 @@ module MonaFormulaBalance(
   , balanceFormula
   , balanceFormulaInfSplit
   , formulaCoutSubterms
+  , getConjList
 ) where
 
 

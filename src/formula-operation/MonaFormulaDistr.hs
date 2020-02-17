@@ -37,21 +37,21 @@ distributeFormula _ _ (MonaFormulaVar var) = MonaFormulaVar var
 distributeFormula fv _ (MonaFormulaNeg f) = MonaFormulaNeg (distributeFormula fv [] f)
 distributeFormula fv c (MonaFormulaDisj f1 f2) = MonaFormulaDisj (distributeFormula fv c f1) (distributeFormula fv c f2)
 distributeFormula fv c (MonaFormulaConj f1 (MonaFormulaDisj f2 f3)) =
-  if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f1 f2)) (distributeFormula fv c (MonaFormulaConj f1 f3))
-  else (MonaFormulaConj (distributeFormula fv c f1) (distributeFormula fv c (MonaFormulaDisj f2 f3))) where
-  -- if (length c) /= 0 && isDistrSuit fv f1' then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f1' f2')) (distributeFormula fv c (MonaFormulaConj f1' f3'))
-  -- else (MonaFormulaConj (distributeFormula fv c f1') (distributeFormula fv c (MonaFormulaDisj f2' f3'))) where
-  --   f1' = distributeFormula fv c f1
-  --   f2' = distributeFormula fv c f2
-  --   f3' = distributeFormula fv c f3
+  --if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f1 f2)) (distributeFormula fv c (MonaFormulaConj f1 f3))
+  --else (MonaFormulaConj (distributeFormula fv c f1) (distributeFormula fv c (MonaFormulaDisj f2 f3))) where
+  if (length c) /= 0 && isDistrSuit fv f1' then MonaFormulaDisj (MonaFormulaConj f1' f2') (MonaFormulaConj f1' f3')
+  else (MonaFormulaConj f1' (MonaFormulaDisj f2' f3')) where
+    f1' = distributeFormula fv c f1
+    f2' = distributeFormula fv c f2
+    f3' = distributeFormula fv c f3
 distributeFormula fv c (MonaFormulaConj (MonaFormulaDisj f2 f3) f1) =
-  if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f2 f1)) (distributeFormula fv c (MonaFormulaConj f3 f1))
-  else MonaFormulaConj (distributeFormula fv c (MonaFormulaDisj f2 f3)) (distributeFormula fv c f1)
-  -- if (length c) /= 0 && isDistrSuit fv f1' then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f2' f1')) (distributeFormula fv c (MonaFormulaConj f3' f1'))
-  -- else MonaFormulaConj (distributeFormula fv c (MonaFormulaDisj f2' f3')) (distributeFormula fv c f1') where
-  --   f1' = distributeFormula fv c f1
-  --   f2' = distributeFormula fv c f2
-  --   f3' = distributeFormula fv c f3
+  -- if (length c) /= 0 && isDistrSuit fv f1 then MonaFormulaDisj (distributeFormula fv c (MonaFormulaConj f2 f1)) (distributeFormula fv c (MonaFormulaConj f3 f1))
+  -- else MonaFormulaConj (distributeFormula fv c (MonaFormulaDisj f2 f3)) (distributeFormula fv c f1)
+  if (length c) /= 0 && isDistrSuit fv f1' then MonaFormulaDisj (MonaFormulaConj f2' f1') (MonaFormulaConj f3' f1')
+  else MonaFormulaConj (MonaFormulaDisj f2' f3') f1' where
+    f1' = distributeFormula fv c f1
+    f2' = distributeFormula fv c f2
+    f3' = distributeFormula fv c f3
 distributeFormula fv c (MonaFormulaConj f1 f2) = MonaFormulaConj (distributeFormula fv c f1) (distributeFormula fv c f2)
 distributeFormula fv c (MonaFormulaEx0 [var] f) = MonaFormulaEx0 [var] (distributeFormula (fvUpdateLocal fv var 0) ("x":c) f)
 distributeFormula fv c (MonaFormulaEx1 [(var,Nothing)] f) = MonaFormulaEx1 [(var,Nothing)] (distributeFormula (fvUpdateLocal fv var 1) ("x":c) f)

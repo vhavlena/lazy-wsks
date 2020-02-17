@@ -92,7 +92,8 @@ main = do
          Dbg -> putStrLn $ show $ removeRedundantPreds $ divideSharedFile $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Where -> putStrLn $ show $ removeWhereFile $ unwindQuantifFile mona
          None -> do
-           Est.writePredicateTemplate (MoPa.MonaFile (MoPa.mf_domain mona) [])
+           let mona' = convertBaseFile mona
+           Est.writePredicateTemplate (MoPa.MonaFile (MoPa.mf_domain mona') [])
            putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeRedundantPreds $ replaceAllCallsFile $ renameBVFileWrap $ removeWhereFile $ unwindQuantifFile mona
          Pred -> do
            Est.writePredicateTemplate mona

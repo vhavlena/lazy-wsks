@@ -57,7 +57,7 @@ antiprenexFreeVar fv (MonaFormulaNeg f) chain = flushQuantifChain chain (MonaFor
 --antiprenexFreeVar (MonaFormulaConj f1 f2) chain = propagateTo (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar fv f@(MonaFormulaConj f1 f2) chain = case balanceFormulaConfig of
   BalInformed -> balanceFormulaInf fv (antiprenexFreeVar fv) f $ chain
-  BalInformedSplit -> balanceFormulaInfSplit fv (antiprenexFreeVar fv) f $ chain
+  BalInformedSplit -> if (length $ getConjList f) >= 5 then propagateTo fv (MonaFormulaConj) f1 f2 chain else balanceFormulaInfSplit fv (antiprenexFreeVar fv) f $ chain
   BalFullTree -> propagateTo fv (MonaFormulaConj) f1 f2 chain
 antiprenexFreeVar fv (MonaFormulaDisj f1 f2) chain = MonaFormulaDisj (antiprenexFreeVar fv f1 chain) (antiprenexFreeVar fv f2 chain) -- propagateTo (MonaFormulaDisj) f1 f2 chain
 antiprenexFreeVar fv (MonaFormulaEx0 [var] f) chain = MonaFormulaEx0 [var] (antiprenexFreeVar (fvUpdateLocal fv var 0) f chain) --antiprenexFreeVar f ((Exists0Chain (var, Nothing)):chain)
@@ -123,7 +123,8 @@ antiprenexFormula varDecl f = distrLoop $ simplifyNegFormula $ moveNegToLeavesFo
   fBase = convertToBaseFormula f
   bal = if balanceFormulaConfig == BalFullTree then balanceFormula else id -- balanceFormula
   distrF = if distrConfig == DistrConservative then distributeFormula varDecl [] else distributeFormulaForce
-  distr f = (iterate (pref . simplifyNegFormula . moveNegToLeavesFormula . distrF) f) !! distrSteps
+  distr f = (iterate (fnc) f) !! distrSteps
+  fnc f = if subFormulas f <= prefSubformulaCount then (distrF . antiprenexEmpty varDecl . simplifyNegFormula . moveNegToLeavesFormula) f else (antiprenexEmptySimple . simplifyNegFormula . moveNegToLeavesFormula) f
   pref fl = if subFormulas fl <= prefSubformulaCount then antiprenexEmpty varDecl fl else id fl
   distrLoop fl = if subFormulas fl <= antiprenexSubformulaCount then antiprenexEmpty varDecl $ bal $ distr fl else (iterate (simplifyNegFormula . moveNegToLeavesFormula . antiprenexEmptySimple) fl) !! distrSteps
 
@@ -166,6 +167,9 @@ antiprenexFile (MonaFile dom decls) = MonaFile dom $ map (convertDeclFV varDecl 
 antiprenexFileLight :: MonaFile -> MonaFile
 antiprenexFileLight (MonaFile dom decls) = MonaFile dom $ map (convertDecl (antiprenexFormulaLight)) decls where
 
+
+convertBaseFile :: MonaFile -> MonaFile
+convertBaseFile (MonaFile dom decls) = MonaFile dom $ map (convertDecl (convertToBaseFormula)) decls where
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with the shared subformula dividing
