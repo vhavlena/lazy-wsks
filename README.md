@@ -2,9 +2,9 @@
 
 [![Build Status](https://travis-ci.org/vhavlena/lazy-wsks.svg?branch=master)](https://travis-ci.org/vhavlena/lazy-wsks)
 
-This repository contains the AntiMona prototype tool for static formula
-transformations (antiprenexing) and the LazyWSkS prototype tool implementing
-lazy decision procedure for WS2S.
+This repository contains the AntiMona (Antiprenexing for Mona) prototype tool
+for static formula transformations (antiprenexing & stuff) and the LazyWSkS
+prototype tool implementing lazy decision procedure for WS2S.
 
 ### Install
 
@@ -13,8 +13,8 @@ version 8.4 or greater, and *cabal* of version 2.2 or greater is needed. To comp
 the tools carry out the following steps:
 
 1. Install required Haskell and Python packages (below)
-2. Run ``` $ make release ``` in the root folder (for LazyWSkS) or
-3. Run ``` $ make antiprenex-release ``` in the root folder (for AntiMona)
+2. Run ``` $ make release ``` in the root folder (for *LazyWSkS*) or
+3. Run ``` $ make antiprenex-release ``` in the root folder (for *AntiMona*)
 
 The tests for the LazyWSkS can be run via ``` $ make test ``` .
 
@@ -52,6 +52,15 @@ You can install the packages via
 $ pip install <package>
 ```
 
+#### AntiMona Specific Dependencies
+
+For a successful run of the tool, the extended version of Mona is necessary. The
+extension provides further statistics about input formulae. This extended
+version you can download and install from
+[https://github.com/Iorethan/predict_mona](https://github.com/Iorethan/predict_mona).
+
+---
+
 ## AntiMona
 
 The tool AntiMona is a prototype tool implementing static formula
@@ -59,6 +68,13 @@ transformations (antiprenexing). The tool reads a file in Mona format and
 applies transformations on it. The output is written in Mona format. The input
 format allows to specify WS1S and WS2S formulae (specifications involving WSRT
 are not supported).
+
+Before running of the tool you need to launch
+```
+$ ./predict.py <path to predict mona>
+```
+This script serves as a server and AntiMona communicates with it, so it must be
+running during the time of AntiMona preprocessing.
 
 To preprocess a Mona file run
 ```
@@ -69,6 +85,8 @@ transform a formula on a level of predicates run
 ```
 $ ./AntiMona <file> -p
 ```
+
+---
 
 ## Lazy Decision Procedure for WS2S
 
