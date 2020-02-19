@@ -69,7 +69,7 @@ applies transformations on it. The output is written in Mona format. The input
 format allows to specify WS1S and WS2S formulae (specifications involving WSRT
 are not supported).
 
-Before running of the tool you need to launch
+Before running of the tool you need to launch (from ``` external ``` directory)
 ```
 $ ./predict.py <path to predict mona>
 ```
