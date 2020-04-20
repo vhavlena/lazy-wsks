@@ -1,0 +1,827 @@
+# Input is module test
+
+m2l-str;
+
+# Type environment
+
+var2 G0;
+var2 S0,S1;
+
+# Type predicates
+
+macro NULL(var1 p) = false;
+
+macro TYPE_Bool(var1 p) = true;
+
+macro TYPE0_Bool = true;
+
+macro TYPE_Label(var1 p) = true;
+
+macro TYPE0_Label = true;
+
+macro TYPE_Elm(var1 p) = true;
+
+macro TYPE0_Elm = true;
+
+macro GROUP_Elm_Label(var1 p,var2 G0) =
+   (p notin G0);
+
+macro GROUP0_Elm_Label(var0 g0) =
+   ~g0;
+
+macro GROUP_Elm_empty(var1 p,var2 G0) =
+   (p in G0);
+
+macro GROUP0_Elm_empty(var0 g0) =
+   g0;
+
+macro GROUP_Elm(var1 p,var2 G0) =
+   GROUP_Elm_Label(p,G0) | GROUP_Elm_empty(p,G0);
+
+macro GROUP0_Elm(var0 g0) =
+   GROUP0_Elm_Label(g0) | GROUP0_Elm_empty(g0);
+
+macro SCALAR_Bool_false_true(var1 p, var2 S0) =
+   true;
+
+macro SCALAR0_Bool_false_true(var0 s0) =
+   true;
+
+macro SCALAR_Bool(var1 p, var2 S0) =
+   SCALAR_Bool_false_true(p,S0);
+
+macro SCALAR0_Bool(var0 s0) =
+   SCALAR0_Bool_false_true(s0);
+
+macro SCALAR_Label_Null_etc(var1 p, var2 S0,S1) =
+   (p notin S1) | (true);
+
+macro SCALAR0_Label_Null_etc(var0 s0,s1) =
+   ~s1 | (true);
+
+macro SCALAR_Label(var1 p, var2 S0,S1) =
+   SCALAR_Label_Null_etc(p,S0,S1);
+
+macro SCALAR0_Label(var0 s0,s1) =
+   SCALAR0_Label_Null_etc(s0,s1);
+
+macro SCALAR_Elm_Label(var1 p, var2 S0,S1) =
+   SCALAR_Label(p,S0,S1);
+
+macro SCALAR0_Elm_Label(var0 s0,s1) =
+   SCALAR0_Label(s0,s1);
+
+macro SCALAR_Elm(var1 p, var2 S0,S1) =
+   SCALAR_Elm_Label(p,S0,S1);
+
+macro SCALAR0_Elm(var0 s0,s1) =
+   SCALAR0_Elm_Label(s0,s1);
+
+macro SUCC_Bool_false_true(var1 p) =
+   (p=p+1);
+
+macro SUCC_Elm_Label(var1 p) =
+   (p<p+1) & TYPE_Elm(p+1);
+
+macro SUCC_Elm_empty(var1 p) =
+   (p=p+1);
+
+macro EQ0_Bool(var0 s0_l,s0_r) = (
+   (s0_l <=> s0_r)
+);
+
+macro WF_Bool(var1 p,var2 S0) = TYPE_Bool(p) & (
+   (SCALAR_Bool_false_true(p,S0) & SUCC_Bool_false_true(p))
+);
+
+macro WF0_Bool(var0 s0) =
+   TYPE0_Bool & (
+   (SCALAR0_Bool_false_true(s0))
+);
+
+macro EQ0_Elm(var0 g0_l,s0_l,s1_l,g0_r,s0_r,s1_r) = (
+   (g0_l <=> g0_r) & (s0_l <=> s0_r) & (s1_l <=> s1_r)
+);
+
+macro WF_Elm(var1 p,var2 G0,S0,S1) = TYPE_Elm(p) & (
+   (GROUP_Elm_Label(p,G0) & SCALAR_Elm_Label(p,S0,S1) & SUCC_Elm_Label(p))
+  |
+   (GROUP_Elm_empty(p,G0) & (p notin S0) & (p notin S1) & SUCC_Elm_empty(p))
+);
+
+macro WF0_Elm(var0 g0,s0,s1) =
+   TYPE0_Elm & (
+   (GROUP0_Elm_Label(g0) & SCALAR0_Elm_Label(s0,s1))
+  |
+   (GROUP0_Elm_empty(g0) & ~s0 & ~s1)
+);
+
+macro TREE_Bool(var1 p,var2 S0) =
+   TYPE_Bool(p) & (all1 q: (p<=q) => (NULL(q) | WF_Bool(q,S0)));
+
+macro SKEL_Bool(var1 p) =
+   all1 q: (p<=q) => (
+   (TYPE_Bool(q) => (
+      true
+   ))
+);
+
+macro TREE_Elm(var1 p,var2 G0,S0,S1) =
+   TYPE_Elm(p) & (all1 q: (p<=q) => (NULL(q) | WF_Elm(q,G0,S0,S1)));
+
+macro SKEL_Elm(var1 p,var2 G0_f) =
+   all1 q: (p<=q) => (
+   (TYPE_Elm(q) => (
+      (GROUP_Elm_Label(q,G0) <=> GROUP_Elm_Label(q,G0_f)) &
+      (GROUP_Elm_empty(q,G0) <=> GROUP_Elm_empty(q,G0_f))
+   ))
+);
+
+macro DOT_next(var1 p,var1 q) =
+   (TYPE_Elm(p) & GROUP_Elm_Label(p,G0) & (q=p+1))
+ | (TYPE_Elm(p) & GROUP_Elm_empty(p,G0) & (q=p));
+
+macro DOT(var1 p,var1 q) =
+   DOT_next(p,q);
+
+macro UP(var1 p,var1 q) =
+   (p=0 & p=q) | DOT(q,p);
+
+# Free variables
+
+assert TREE_Elm(0,G0,S0,S1);
+
+# Functions
+
+pred FUNC_Type_Item(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex0 g0_1,s0_1,s1_1: ex0 g0_4,s0_4,s1_4: (ex1 POS3: (POS3=POS_mu_a) 
+& (g0_1<=>(POS3 in G0)) & (s1_1<=>(POS3 in S1)) & (s0_1<=>(POS3 in S0))) & (((TYPE0_Elm 
+& ~g0_4) & ~s0_4 & s1_4)) & EQ0_Elm(g0_1,s0_1,s1_1,g0_4,s0_4,s1_4)) | (ex0 g0_5,s0_5,s1_5: 
+ex0 g0_8,s0_8,s1_8: (ex1 POS7: (POS7=POS_mu_a) & (g0_5<=>(POS7 in 
+G0)) & (s1_5<=>(POS7 in S1)) & (s0_5<=>(POS7 in S0))) & (((TYPE0_Elm & ~g0_8) & s0_8 
+& s1_8)) & EQ0_Elm(g0_5,s0_5,s1_5,g0_8,s0_8,s1_8)));
+
+pred FUNC_VariantGroup_Item_red_blue(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex0 g0_9,s0_9,s1_9: ex0 g0_12,s0_12,s1_12: (ex1 POS11: (POS11=POS_mu_a) 
+& (g0_9<=>(POS11 in G0)) & (s1_9<=>(POS11 in S1)) & (s0_9<=>(POS11 in S0))) & (((TYPE0_Elm 
+& ~g0_12) & ~s0_12 & s1_12)) & EQ0_Elm(g0_9,s0_9,s1_9,g0_12,s0_12,s1_12)) | (ex0 
+g0_13,s0_13,s1_13: ex0 g0_16,s0_16,s1_16: (ex1 POS15: (POS15=POS_mu_a) 
+& (g0_13<=>(POS15 in G0)) & (s1_13<=>(POS15 in S1)) & (s0_13<=>(POS15 in S0))) & 
+(((TYPE0_Elm & ~g0_16) & s0_16 & s1_16)) & EQ0_Elm(g0_13,s0_13,s1_13,g0_16,s0_16,s1_16)));
+
+pred FUNC_WfPascal(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex1 POS18: ex2 G0_19,S0_19,S1_19: (((G0_19=G0_s_0) & (S0_19=S0_s_0) 
+& (S1_19=S1_s_0))) & (POS18=POS_mu_a) & FUNC_VariantGroup_Item_red_blue(G0_19,S0_19,S1_19,POS18)) 
+=> ((ex1 POS23: ex2 G0_24,S0_24,S1_24: (((G0_24=G0_s_0) & (S0_24=S0_s_0) 
+& (S1_24=S1_s_0))) & (ex1 POS22: (POS22=POS_mu_a) & DOT_next(POS22,POS23)) 
+& FUNC_Type_Item(G0_24,S0_24,S1_24,POS23)) | (ex0 g0_26,s0_26,s1_26: ex0 
+g0_30,s0_30,s1_30: (ex1 POS29: (ex1 POS28: (POS28=POS_mu_a) 
+& DOT_next(POS28,POS29)) & (g0_26<=>(POS29 in G0)) & (s1_26<=>(POS29 in S1)) & (s0_26<=>(POS29 
+in S0))) & (((TYPE0_Elm & ~g0_30) & s0_30 & ~s1_30)) & EQ0_Elm(g0_26,s0_26,s1_26,g0_30,s0_30,s1_30))));
+
+pred FUNC_Lim_x(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex0 g0_31,s0_31,s1_31: ex0 g0_34,s0_34,s1_34: (ex1 POS33: (POS33=POS_mu_a) 
+& (g0_31<=>(POS33 in G0)) & (s1_31<=>(POS33 in S1)) & (s0_31<=>(POS33 in S0))) & 
+(((TYPE0_Elm & ~g0_34) & s0_34 & ~s1_34)) & EQ0_Elm(g0_31,s0_31,s1_31,g0_34,s0_34,s1_34)) 
+& (all1 POS_mu_b: (TYPE_Elm(POS_mu_b)) => ((ex1 POS36: ex1 
+POS38: (POS36=POS_mu_b) & (POS38=POS_mu_a) & (POS36 < POS38)) => ~(ex0 g0_39,s0_39,s1_39: 
+ex0 g0_42,s0_42,s1_42: (ex1 POS41: (POS41=POS_mu_b) & (g0_39<=>(POS41 in 
+G0)) & (s1_39<=>(POS41 in S1)) & (s0_39<=>(POS41 in S0))) & (((TYPE0_Elm & ~g0_42) 
+& s0_42 & ~s1_42)) & EQ0_Elm(g0_39,s0_39,s1_39,g0_42,s0_42,s1_42)))));
+
+pred FUNC_Lim_y(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex0 g0_43,s0_43,s1_43: ex0 g0_46,s0_46,s1_46: (ex1 POS45: (POS45=POS_mu_a) 
+& (g0_43<=>(POS45 in G0)) & (s1_43<=>(POS45 in S1)) & (s0_43<=>(POS45 in S0))) & 
+(((TYPE0_Elm & ~g0_46) & s0_46 & ~s1_46)) & EQ0_Elm(g0_43,s0_43,s1_43,g0_46,s0_46,s1_46)) 
+& (ex1 POS_mu_c: (TYPE_Elm(POS_mu_c)) & (((ex1 POS48: ex2 G0_49,S0_49,S1_49: 
+(((G0_49=G0_s_0) & (S0_49=S0_s_0) & (S1_49=S1_s_0))) & (POS48=POS_mu_c) & FUNC_Lim_x(G0_49,S0_49,S1_49,POS48)) 
+& ~(ex1 POS52: ex1 POS54: (POS52=POS_mu_a) & (POS54=POS_mu_c) 
+& (POS52=POS54))) & (all1 POS_mu_b: (TYPE_Elm(POS_mu_b)) => (((ex1 
+POS56: ex1 POS58: (POS56=POS_mu_b) & (POS58=POS_mu_a) & (POS56 < 
+POS58)) & (ex1 POS60: ex1 POS62: (POS60=POS_mu_c) & (POS62=POS_mu_b) 
+& (POS60 < POS62))) => ~(ex0 g0_63,s0_63,s1_63: ex0 g0_66,s0_66,s1_66: (ex1 
+POS65: (POS65=POS_mu_b) & (g0_63<=>(POS65 in G0)) & (s1_63<=>(POS65 in S1)) & (s0_63<=>(POS65 
+in S0))) & (((TYPE0_Elm & ~g0_66) & s0_66 & ~s1_66)) & EQ0_Elm(g0_63,s0_63,s1_63,g0_66,s0_66,s1_66)))))));
+
+pred FUNC_Root_x_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+(((ex0 g0_67,s0_67,s1_67: ex0 g0_71,s0_71,s1_71: (ex1 POS70: (ex1 
+POS69: POS69=0 & DOT_next(POS69,POS70)) & (g0_67<=>(POS70 in G0)) & (s1_67<=>(POS70 
+in S1)) & (s0_67<=>(POS70 in S0))) & (((TYPE0_Elm & ~g0_71) & s0_71 & ~s1_71)) & 
+EQ0_Elm(g0_67,s0_67,s1_67,g0_71,s0_71,s1_71)) & (ex1 POS73: ex1 
+POS75: (POS73=POS_mu_a) & POS75=0 & (POS73=POS75))) | (~(ex0 g0_67,s0_67,s1_67: 
+ex0 g0_71,s0_71,s1_71: (ex1 POS70: (ex1 POS69: POS69=0 
+& DOT_next(POS69,POS70)) & (g0_67<=>(POS70 in G0)) & (s1_67<=>(POS70 in S1)) & (s0_67<=>(POS70 
+in S0))) & (((TYPE0_Elm & ~g0_71) & s0_71 & ~s1_71)) & EQ0_Elm(g0_67,s0_67,s1_67,g0_71,s0_71,s1_71)) 
+& ((ex1 POS77: ex1 POS80: (POS77=POS_mu_a) & (ex1 
+POS79: POS79=0 & DOT_next(POS79,POS80)) & (POS77=POS80)) & (ex1 
+POS82: ex2 G0_83,S0_83,S1_83: (((G0_83=G0_s_0) & (S0_83=S0_s_0) & (S1_83=S1_s_0))) 
+& (POS82=POS_mu_a) & FUNC_Type_Item(G0_83,S0_83,S1_83,POS82)))));
+
+pred FUNC_Root_y_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+(ex1 POS_mu_b: (TYPE_Elm(POS_mu_b)) & ((ex1 POS87: ex2 G0_88,S0_88,S1_88: 
+(((G0_88=G0_s_0) & (S0_88=S0_s_0) & (S1_88=S1_s_0))) & (POS87=POS_mu_b) & FUNC_Lim_x(G0_88,S0_88,S1_88,POS87)) 
+& (((ex0 g0_90,s0_90,s1_90: ex0 g0_94,s0_94,s1_94: (ex1 POS93: (ex1 
+POS92: (POS92=POS_mu_b) & DOT_next(POS92,POS93)) & (g0_90<=>(POS93 in G0)) & (s1_90<=>(POS93 
+in S1)) & (s0_90<=>(POS93 in S0))) & (((TYPE0_Elm & ~g0_94) & s0_94 & ~s1_94)) & 
+EQ0_Elm(g0_90,s0_90,s1_90,g0_94,s0_94,s1_94)) & (ex1 POS96: ex1 
+POS98: (POS96=POS_mu_a) & POS98=0 & (POS96=POS98))) | (~(ex0 g0_90,s0_90,s1_90: 
+ex0 g0_94,s0_94,s1_94: (ex1 POS93: (ex1 POS92: (POS92=POS_mu_b) 
+& DOT_next(POS92,POS93)) & (g0_90<=>(POS93 in G0)) & (s1_90<=>(POS93 in S1)) & (s0_90<=>(POS93 
+in S0))) & (((TYPE0_Elm & ~g0_94) & s0_94 & ~s1_94)) & EQ0_Elm(g0_90,s0_90,s1_90,g0_94,s0_94,s1_94)) 
+& ((ex1 POS100: ex1 POS103: (POS100=POS_mu_a) & (ex1 
+POS102: (POS102=POS_mu_b) & DOT_next(POS102,POS103)) & (POS100=POS103)) & (ex1 
+POS105: ex2 G0_106,S0_106,S1_106: (((G0_106=G0_s_0) & (S0_106=S0_s_0) & (S1_106=S1_s_0))) 
+& (POS105=POS_mu_a) & FUNC_Type_Item(G0_106,S0_106,S1_106,POS105)))))));
+
+pred FUNC_Pos_p_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_p) =
+(((ex1 POS110: ex2 G0_111,S0_111,S1_111: (((G0_111=G0_s_0) & (S0_111=S0_s_0) 
+& (S1_111=S1_s_0))) & (POS110=POS_mu_a) & FUNC_Type_Item(G0_111,S0_111,S1_111,POS110)) 
+| (ex0 g0_113,s0_113,s1_113: ex0 g0_116,s0_116,s1_116: (ex1 POS115: 
+(POS115=POS_mu_a) & (g0_113<=>(POS115 in G0)) & (s1_113<=>(POS115 in S1)) & (s0_113<=>(POS115 
+in S0))) & (((TYPE0_Elm & ~g0_116) & ~s0_116 & ~s1_116)) & EQ0_Elm(g0_113,s0_113,s1_113,g0_116,s0_116,s1_116))) 
+& (ex1 POS118: ex1 POS120: (POS118=POS_mu_a) & (POS120=POS_p) 
+& (POS118=POS120)));
+
+pred FUNC_WfStore(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex0 g0_121,s0_121,s1_121: ex0 g0_124,s0_124,s1_124: (ex1 POS123: POS123=0
+& (g0_121<=>(POS123 in G0)) & (s1_121<=>(POS123 in S1)) & (s0_121<=>(POS123 in S0))) 
+& (((TYPE0_Elm & ~g0_124) & ~s0_124 & ~s1_124)) & EQ0_Elm(g0_121,s0_121,s1_121,g0_124,s0_124,s1_124)) 
+& (ex1 POS_mu_b: (TYPE_Elm(POS_mu_b)) & ((ex1 POS126: ex2 G0_127,S0_127,S1_127: 
+(((G0_127=G0_s_0) & (S0_127=S0_s_0) & (S1_127=S1_s_0))) & (POS126=POS_mu_b) & FUNC_Lim_y(G0_127,S0_127,S1_127,POS126)) 
+& (all1 POS_mu_a: (TYPE_Elm(POS_mu_a)) => ((((ex0 g0_129,s0_129,s1_129: 
+ex0 g0_132,s0_132,s1_132: (ex1 POS131: (POS131=POS_mu_a) & (g0_129<=>(POS131 
+in G0)) & (s1_129<=>(POS131 in S1)) & (s0_129<=>(POS131 in S0))) & (((TYPE0_Elm & 
+~g0_132) & ~s0_132 & ~s1_132)) & EQ0_Elm(g0_129,s0_129,s1_129,g0_132,s0_132,s1_132)) 
+=> (ex1 POS134: ex1 POS136: (POS134=POS_mu_a) & POS136=0
+& (POS134=POS136))) & ((ex1 POS138: ex1 POS140: (POS138=POS_mu_b) 
+& (POS140=POS_mu_a) & (POS138 < POS140)) => ~(ex0 g0_141,s0_141,s1_141: ex0 g0_144,s0_144,s1_144: 
+(ex1 POS143: (POS143=POS_mu_a) & (g0_141<=>(POS143 in G0)) & (s1_141<=>(POS143 
+in S1)) & (s0_141<=>(POS143 in S0))) & (((TYPE0_Elm & ~g0_144) & s0_144 & ~s1_144)) 
+& EQ0_Elm(g0_141,s0_141,s1_141,g0_144,s0_144,s1_144)))) & ((ex1 POS146: 
+ex1 POS148: (POS146=POS_mu_a) & (POS148=POS_mu_b) & (POS146 < POS148)) 
+=> (ex1 POS150: ex2 G0_151,S0_151,S1_151: (((G0_151=G0_s_0) & (S0_151=S0_s_0) 
+& (S1_151=S1_s_0))) & (POS150=POS_mu_a) & FUNC_WfPascal(G0_151,S0_151,S1_151,POS150))))))));
+
+pred FUNC_TypeTest_Item(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS154: ex1 POS156: (POS154=POS_mu_a) & (POS156=POS_mu_b) 
+& (POS154=POS156)) & (ex1 POS158: ex2 G0_159,S0_159,S1_159: (((G0_159=G0_s_0) 
+& (S0_159=S0_s_0) & (S1_159=S1_s_0))) & (POS158=POS_mu_a) & FUNC_Type_Item(G0_159,S0_159,S1_159,POS158)));
+
+pred FUNC_VariantTest_Item_red(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS162: ex1 POS164: (POS162=POS_mu_a) & (POS164=POS_mu_b) 
+& (POS162=POS164)) & (ex0 g0_165,s0_165,s1_165: ex0 g0_168,s0_168,s1_168: (ex1 
+POS167: (POS167=POS_mu_b) & (g0_165<=>(POS167 in G0)) & (s1_165<=>(POS167 in S1)) 
+& (s0_165<=>(POS167 in S0))) & (((TYPE0_Elm & ~g0_168) & ~s0_168 & s1_168)) & EQ0_Elm(g0_165,s0_165,s1_165,g0_168,s0_168,s1_168)));
+
+pred FUNC_VariantTest_Item_blue(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS170: ex1 POS172: (POS170=POS_mu_a) & (POS172=POS_mu_b) 
+& (POS170=POS172)) & (ex0 g0_173,s0_173,s1_173: ex0 g0_176,s0_176,s1_176: (ex1 
+POS175: (POS175=POS_mu_b) & (g0_173<=>(POS175 in G0)) & (s1_173<=>(POS175 in S1)) 
+& (s0_173<=>(POS175 in S0))) & (((TYPE0_Elm & ~g0_176) & s0_176 & s1_176)) & EQ0_Elm(g0_173,s0_173,s1_173,g0_176,s0_176,s1_176)));
+
+pred FUNC_nilTest(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS178: ex1 POS180: (POS178=POS_mu_a) & (POS180=POS_mu_b) 
+& (POS178=POS180)) & (ex1 POS182: ex1 POS184: (POS182=POS_mu_a) 
+& POS184=0 & (POS182=POS184)));
+
+pred FUNC_LineTest_0(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_185: ((TYPE0_Bool & s0_185)) & s0_185);
+
+pred FUNC_empty(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(ex2 SET187: ex2 SET188: (SET187=SET_P_0) & empty(SET188) & (SET187=SET188));
+
+pred FUNC_nil(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS190: ex1 POS192: (POS190=POS_mu_0) & POS192=0 
+& (POS190=POS192));
+
+pred FUNC_true(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_193: ((TYPE0_Bool & s0_193)) & s0_193);
+
+pred FUNC_Cell_pos(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(~(ex0 g0_194,s0_194,s1_194: ex0 g0_197,s0_197,s1_197: (ex1 POS196: 
+(POS196=POS_mu_0) & (g0_194<=>(POS196 in G0)) & (s1_194<=>(POS196 in S1)) & (s0_194<=>(POS196 
+in S0))) & (((TYPE0_Elm & ~g0_197) & s0_197 & ~s1_197)) & EQ0_Elm(g0_194,s0_194,s1_194,g0_197,s0_197,s1_197)) 
+& ~(ex0 g0_198,s0_198,s1_198: ex0 g0_201,s0_201,s1_201: (ex1 POS200: 
+(POS200=POS_mu_0) & (g0_198<=>(POS200 in G0)) & (s1_198<=>(POS200 in S1)) & (s0_198<=>(POS200 
+in S0))) & ((TYPE0_Elm & g0_201)) & EQ0_Elm(g0_198,s0_198,s1_198,g0_201,s0_201,s1_201)));
+
+pred FUNC_Cell_set(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(all1 POS_mu_0: (TYPE_Elm(POS_mu_0)) => ((ex1 POS203: ex2 
+SET205: (POS203=POS_mu_0) & (SET205=SET_P_0) & (POS203 in SET205)) => (~(ex0 g0_206,s0_206,s1_206: 
+ex0 g0_209,s0_209,s1_209: (ex1 POS208: (POS208=POS_mu_0) & (g0_206<=>(POS208 
+in G0)) & (s1_206<=>(POS208 in S1)) & (s0_206<=>(POS208 in S0))) & (((TYPE0_Elm & 
+~g0_209) & s0_209 & ~s1_209)) & EQ0_Elm(g0_206,s0_206,s1_206,g0_209,s0_209,s1_209)) 
+& ~(ex0 g0_210,s0_210,s1_210: ex0 g0_213,s0_213,s1_213: (ex1 POS212: (POS212=POS_mu_0) 
+& (g0_210<=>(POS212 in G0)) & (s1_210<=>(POS212 in S1)) & (s0_210<=>(POS212 in S0))) 
+& ((TYPE0_Elm & g0_213)) & EQ0_Elm(g0_210,s0_210,s1_210,g0_213,s0_213,s1_213)))));
+
+pred FUNC_Succ_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((((ex2 G0_214,S0_214,S1_214: (((G0_214=G0_s_0) & (S0_214=S0_s_0) & (S1_214=S1_s_0))) 
+& FUNC_WfStore(G0_214,S0_214,S1_214)) & (~(ex0 g0_216,s0_216,s1_216: ex0 
+g0_219,s0_219,s1_219: (ex1 POS218: (POS218=POS_mu_a) & (g0_216<=>(POS218 
+in G0)) & (s1_216<=>(POS218 in S1)) & (s0_216<=>(POS218 in S0))) & (((TYPE0_Elm & 
+~g0_219) & ~s0_219 & ~s1_219)) & EQ0_Elm(g0_216,s0_216,s1_216,g0_219,s0_219,s1_219)) 
+& ~(ex0 g0_220,s0_220,s1_220: ex0 g0_223,s0_223,s1_223: (ex1 POS222: 
+(POS222=POS_mu_a) & (g0_220<=>(POS222 in G0)) & (s1_220<=>(POS222 in S1)) & (s0_220<=>(POS222 
+in S0))) & (((TYPE0_Elm & ~g0_223) & s0_223 & ~s1_223)) & EQ0_Elm(g0_220,s0_220,s1_220,g0_223,s0_223,s1_223)))) 
+& (ex1 POS_mu_c: (TYPE_Elm(POS_mu_c)) & ((ex1 POS225: ex1 
+POS227: (POS225=POS_mu_a) & (POS227=POS_mu_c) & (POS225 < POS227)) & (ex0 
+g0_228,s0_228,s1_228: ex0 g0_231,s0_231,s1_231: (ex1 POS230: (POS230=POS_mu_c) 
+& (g0_228<=>(POS230 in G0)) & (s1_228<=>(POS230 in S1)) & (s0_228<=>(POS230 in S0))) 
+& (((TYPE0_Elm & ~g0_231) & s0_231 & ~s1_231)) & EQ0_Elm(g0_228,s0_228,s1_228,g0_231,s0_231,s1_231))))) 
+& (((ex0 g0_232,s0_232,s1_232: ex0 g0_236,s0_236,s1_236: (ex1 POS235: 
+(ex1 POS234: (POS234=POS_mu_a) & DOT_next(POS234,POS235)) & (g0_232<=>(POS235 
+in G0)) & (s1_232<=>(POS235 in S1)) & (s0_232<=>(POS235 in S0))) & (((TYPE0_Elm & 
+~g0_236) & s0_236 & ~s1_236)) & EQ0_Elm(g0_232,s0_232,s1_232,g0_236,s0_236,s1_236)) 
+& (ex1 POS238: ex1 POS240: (POS238=POS_mu_b) & POS240=0
+& (POS238=POS240))) | (~(ex0 g0_232,s0_232,s1_232: ex0 g0_236,s0_236,s1_236: (ex1 
+POS235: (ex1 POS234: (POS234=POS_mu_a) & DOT_next(POS234,POS235)) 
+& (g0_232<=>(POS235 in G0)) & (s1_232<=>(POS235 in S1)) & (s0_232<=>(POS235 in S0))) 
+& (((TYPE0_Elm & ~g0_236) & s0_236 & ~s1_236)) & EQ0_Elm(g0_232,s0_232,s1_232,g0_236,s0_236,s1_236)) 
+& (ex1 POS242: ex1 POS245: (POS242=POS_mu_b) & (ex1 
+POS244: (POS244=POS_mu_a) & DOT_next(POS244,POS245)) & (POS242=POS245)))));
+
+pred FUNC_Succ_next_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS248: ex1 POS250: ex2 G0_251,S0_251,S1_251: 
+(((G0_251=G0_s_0) & (S0_251=S0_s_0) & (S1_251=S1_s_0))) & (POS250=POS_mu_a) & (POS248=POS_mu_b) 
+& FUNC_Succ_0(G0_251,S0_251,S1_251,POS250,POS248)) & (ex1 
+POS254: ex2 G0_255,S0_255,S1_255: (((G0_255=G0_s_0) & (S0_255=S0_s_0) & (S1_255=S1_s_0))) 
+& (POS254=POS_mu_a) & FUNC_VariantGroup_Item_red_blue(G0_255,S0_255,S1_255,POS254)));
+
+pred FUNC_Alloc_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS258: ex2 G0_259,S0_259,S1_259: (((G0_259=G0_s_0) & (S0_259=S0_s_0) 
+& (S1_259=S1_s_0))) & (POS258=POS_mu_0) & FUNC_Lim_y(G0_259,S0_259,S1_259,POS258));
+
+pred FUNC_DeAlloc_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex0 s0_261: ((TYPE0_Bool & ~s0_261)) & s0_261);
+
+pred FUNC_New_0(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex0 s0_262: ((TYPE0_Bool & ~s0_262)) & s0_262);
+
+pred FUNC_VrtGroupCheck_0(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_263: ((TYPE0_Bool & s0_263)) & s0_263);
+
+pred FUNC_DeAllocCheck_0(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_264: ((TYPE0_Bool & s0_264)) & s0_264);
+
+pred FUNC_AssignCheck_0(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_265: ((TYPE0_Bool & s0_265)) & s0_265);
+
+pred FUNC_TypeVariantCheck_0(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex0 s0_266: ((TYPE0_Bool & s0_266)) & s0_266);
+
+pred FUNC_Equal_pos_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 POS268: ex2 G0_269,S0_269,S1_269: 
+(((G0_269=G0_s_0) & (S0_269=S0_s_0) & (S1_269=S1_s_0))) & (POS268=POS_mu_0) & FUNC_Root_y_0(G0_269,S0_269,S1_269,POS268)) 
+& (ex1 POS272: ex2 G0_273,S0_273,S1_273: (((G0_273=G0_s_0) & (S0_273=S0_s_0) 
+& (S1_273=S1_s_0))) & (POS272=POS_mu_0) & FUNC_nil(G0_273,S0_273,S1_273,POS272))));
+
+pred FUNC_Assume(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 G0_275,S0_275,S1_275: (((G0_275=G0_s_0) & (S0_275=S0_s_0) & (S1_275=S1_s_0))) 
+& FUNC_Equal_pos_1(G0_275,S0_275,S1_275));
+
+pred FUNC_DeAllocTest_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS278: ex1 POS280: (POS278=POS_mu_a) & (POS280=POS_mu_b) 
+& (POS278=POS280)) & (ex1 POS282: ex2 G0_283,S0_283,S1_283: (((G0_283=G0_s_0) 
+& (S0_283=S0_s_0) & (S1_283=S1_s_0))) & (POS282=POS_mu_a) & FUNC_DeAlloc_0(G0_283,S0_283,S1_283,POS282)));
+
+pred FUNC_AllocTest_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS286: ex1 POS288: (POS286=POS_mu_a) & (POS288=POS_mu_b) 
+& (POS286=POS288)) & (ex1 POS290: ex2 G0_291,S0_291,S1_291: (((G0_291=G0_s_0) 
+& (S0_291=S0_s_0) & (S1_291=S1_s_0))) & (POS290=POS_mu_a) & FUNC_New_0(G0_291,S0_291,S1_291,POS290)));
+
+pred FUNC_FreeTest_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS294: ex1 POS296: (POS294=POS_mu_a) & (POS296=POS_mu_b) 
+& (POS294=POS296)) & (ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 
+POS298: ex2 G0_299,S0_299,S1_299: (((G0_299=G0_s_0) & (S0_299=S0_s_0) & (S1_299=S1_s_0))) 
+& (POS298=POS_mu_0) & FUNC_Alloc_0(G0_299,S0_299,S1_299,POS298)) & (ex1 
+POS302: ex1 POS304: (POS302=POS_mu_a) & (POS304=POS_mu_0) & (POS304 < POS302)))));
+
+pred FUNC_GarbageTest_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS306: ex1 POS308: ex2 G0_309,S0_309,S1_309: 
+(((G0_309=G0_s_0) & (S0_309=S0_s_0) & (S1_309=S1_s_0))) & (POS308=POS_mu_a) & (POS306=POS_mu_b) 
+& FUNC_DeAllocTest_1(G0_309,S0_309,S1_309,POS308,POS306)) | (ex1 
+POS312: ex1 POS314: ex2 G0_315,S0_315,S1_315: (((G0_315=G0_s_0) & 
+(S0_315=S0_s_0) & (S1_315=S1_s_0))) & (POS314=POS_mu_a) & (POS312=POS_mu_b) & FUNC_FreeTest_1(G0_315,S0_315,S1_315,POS314,POS312)));
+
+pred FUNC_IsRoot_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex1 POS318: ex2 G0_319,S0_319,S1_319: (((G0_319=G0_s_0) & (S0_319=S0_s_0) 
+& (S1_319=S1_s_0))) & (POS318=POS_mu_a) & FUNC_Root_x_0(G0_319,S0_319,S1_319,POS318)) 
+| (ex1 POS322: ex2 G0_323,S0_323,S1_323: (((G0_323=G0_s_0) & (S0_323=S0_s_0) 
+& (S1_323=S1_s_0))) & (POS322=POS_mu_a) & FUNC_Root_y_0(G0_323,S0_323,S1_323,POS322)));
+
+pred FUNC_RootTest_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS326: ex1 POS328: (POS326=POS_mu_a) & (POS328=POS_mu_b) 
+& (POS326=POS328)) & (ex1 POS330: ex2 G0_331,S0_331,S1_331: (((G0_331=G0_s_0) 
+& (S0_331=S0_s_0) & (S1_331=S1_s_0))) & (POS330=POS_mu_a) & FUNC_IsRoot_1(G0_331,S0_331,S1_331,POS330)));
+
+pred FUNC_Precond(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 G0_333,S0_333,S1_333: (((G0_333=G0_s_0) & (S0_333=S0_s_0) & (S1_333=S1_s_0))) 
+& FUNC_true(G0_333,S0_333,S1_333));
+
+pred FUNC_Succ_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS336: ex1 POS338: ex2 G0_339,S0_339,S1_339: 
+(((G0_339=G0_s_0) & (S0_339=S0_s_0) & (S1_339=S1_s_0))) & (POS338=POS_mu_a) & (POS336=POS_mu_b) 
+& FUNC_Succ_0(G0_339,S0_339,S1_339,POS338,POS336)) & (ex2 G0_341,S0_341,S1_341: 
+(((G0_341=G0_s_0) & (S0_341=S0_s_0) & (S1_341=S1_s_0))) & FUNC_Precond(G0_341,S0_341,S1_341)));
+
+pred FUNC_Succ_next_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS344: ex1 POS346: ex2 G0_347,S0_347,S1_347: 
+(((G0_347=G0_s_0) & (S0_347=S0_s_0) & (S1_347=S1_s_0))) & (POS346=POS_mu_a) & (POS344=POS_mu_b) 
+& FUNC_Succ_next_0(G0_347,S0_347,S1_347,POS346,POS344)) & (ex1 
+POS350: ex1 POS352: ex2 G0_353,S0_353,S1_353: (((G0_353=G0_s_0) & 
+(S0_353=S0_s_0) & (S1_353=S1_s_0))) & (POS352=POS_mu_a) & (POS350=POS_mu_b) & FUNC_Succ_1(G0_353,S0_353,S1_353,POS352,POS350)));
+
+pred FUNC_DeAllocCheck_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_355,S0_355,S1_355: (((G0_355=G0_s_0) & (S0_355=S0_s_0) & (S1_355=S1_s_0))) 
+& FUNC_DeAllocCheck_0(G0_355,S0_355,S1_355)) & (ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) 
+& ((ex1 POS358: ex2 G0_359,S0_359,S1_359: (((G0_359=G0_s_0) & (S0_359=S0_s_0) 
+& (S1_359=S1_s_0))) & (POS358=POS_mu_0) & FUNC_Root_x_0(G0_359,S0_359,S1_359,POS358)) 
+& (~(ex1 POS362: ex2 G0_363,S0_363,S1_363: (((G0_363=G0_s_0) & (S0_363=S0_s_0) 
+& (S1_363=S1_s_0))) & (POS362=POS_mu_0) & FUNC_DeAlloc_0(G0_363,S0_363,S1_363,POS362))))));
+
+pred FUNC_Equal_pos_2(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 POS366: ex2 G0_367,S0_367,S1_367: 
+(((G0_367=G0_s_0) & (S0_367=S0_s_0) & (S1_367=S1_s_0))) & (POS366=POS_mu_0) & FUNC_Root_x_0(G0_367,S0_367,S1_367,POS366)) 
+& (ex1 POS370: ex2 G0_371,S0_371,S1_371: (((G0_371=G0_s_0) & (S0_371=S0_s_0) 
+& (S1_371=S1_s_0))) & (POS370=POS_mu_0) & FUNC_nil(G0_371,S0_371,S1_371,POS370))));
+
+pred FUNC_Not_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(~(ex2 G0_373,S0_373,S1_373: (((G0_373=G0_s_0) & (S0_373=S0_s_0) & (S1_373=S1_s_0))) 
+& FUNC_Equal_pos_2(G0_373,S0_373,S1_373)));
+
+pred FUNC_Test_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 G0_375,S0_375,S1_375: (((G0_375=G0_s_0) & (S0_375=S0_s_0) & (S1_375=S1_s_0))) 
+& FUNC_Not_1(G0_375,S0_375,S1_375));
+
+pred FUNC_DeAllocCheck_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_377,S0_377,S1_377: (((G0_377=G0_s_0) & (S0_377=S0_s_0) & (S1_377=S1_s_0))) 
+& FUNC_DeAllocCheck_1(G0_377,S0_377,S1_377)) & (ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) 
+& ((ex1 POS380: ex2 G0_381,S0_381,S1_381: (((G0_381=G0_s_0) & (S0_381=S0_s_0) 
+& (S1_381=S1_s_0))) & (POS380=POS_mu_0) & FUNC_Root_x_0(G0_381,S0_381,S1_381,POS380)) 
+& (~(ex1 POS384: ex2 G0_385,S0_385,S1_385: (((G0_385=G0_s_0) & (S0_385=S0_s_0) 
+& (S1_385=S1_s_0))) & (POS384=POS_mu_0) & FUNC_DeAlloc_0(G0_385,S0_385,S1_385,POS384))))));
+
+pred FUNC_Deref_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS_mu_1: (TYPE_Elm(POS_mu_1)) & ((ex1 POS388: ex2 G0_389,S0_389,S1_389: 
+(((G0_389=G0_s_0) & (S0_389=S0_s_0) & (S1_389=S1_s_0))) & (POS388=POS_mu_1) & FUNC_Root_x_0(G0_389,S0_389,S1_389,POS388)) 
+& (ex1 POS392: ex1 POS394: ex2 G0_395,S0_395,S1_395: (((G0_395=G0_s_0) 
+& (S0_395=S0_s_0) & (S1_395=S1_s_0))) & (POS394=POS_mu_1) & (POS392=POS_mu_0) & FUNC_Succ_next_1(G0_395,S0_395,S1_395,POS394,POS392))));
+
+pred FUNC_DeAllocCheck_IF1_L_2(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_397,S0_397,S1_397: (((G0_397=G0_s_0) & (S0_397=S0_s_0) & (S1_397=S1_s_0))) 
+& FUNC_DeAllocCheck_IF1_L_1(G0_397,S0_397,S1_397)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS400: ex2 G0_401,S0_401,S1_401: (((G0_401=G0_s_0) 
+& (S0_401=S0_s_0) & (S1_401=S1_s_0))) & (POS400=POS_mu_0) & FUNC_Deref_IF1_L_1(G0_401,S0_401,S1_401,POS400)) 
+& (~(ex1 POS404: ex2 G0_405,S0_405,S1_405: (((G0_405=G0_s_0) & (S0_405=S0_s_0) 
+& (S1_405=S1_s_0))) & (POS404=POS_mu_0) & FUNC_DeAlloc_0(G0_405,S0_405,S1_405,POS404))))));
+
+pred FUNC_Pos_p_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS408: ex2 G0_409,S0_409,S1_409: (((G0_409=G0_s_0) & (S0_409=S0_s_0) 
+& (S1_409=S1_s_0))) & (POS408=POS_mu_0) & FUNC_Deref_IF1_L_1(G0_409,S0_409,S1_409,POS408));
+
+pred FUNC_DeAllocCheck_IF1_L_3(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_411,S0_411,S1_411: (((G0_411=G0_s_0) & (S0_411=S0_s_0) & (S1_411=S1_s_0))) 
+& FUNC_DeAllocCheck_IF1_L_2(G0_411,S0_411,S1_411)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS414: ex2 G0_415,S0_415,S1_415: (((G0_415=G0_s_0) 
+& (S0_415=S0_s_0) & (S1_415=S1_s_0))) & (POS414=POS_mu_0) & FUNC_Root_x_0(G0_415,S0_415,S1_415,POS414)) 
+& (~(ex1 POS418: ex2 G0_419,S0_419,S1_419: (((G0_419=G0_s_0) & (S0_419=S0_s_0) 
+& (S1_419=S1_s_0))) & (POS418=POS_mu_0) & FUNC_DeAlloc_0(G0_419,S0_419,S1_419,POS418))))));
+
+pred FUNC_AssignCheck_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_421,S0_421,S1_421: (((G0_421=G0_s_0) & (S0_421=S0_s_0) & (S1_421=S1_s_0))) 
+& FUNC_AssignCheck_0(G0_421,S0_421,S1_421)) & (ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) 
+& ((ex1 POS424: ex2 G0_425,S0_425,S1_425: (((G0_425=G0_s_0) & (S0_425=S0_s_0) 
+& (S1_425=S1_s_0))) & (POS424=POS_mu_0) & FUNC_Root_x_0(G0_425,S0_425,S1_425,POS424)) 
+& ~(ex0 g0_427,s0_427,s1_427: ex0 g0_430,s0_430,s1_430: (ex1 POS429: (POS429=POS_mu_0) 
+& (g0_427<=>(POS429 in G0)) & (s1_427<=>(POS429 in S1)) & (s0_427<=>(POS429 in S0))) 
+& (((TYPE0_Elm & ~g0_430) & ~s0_430 & ~s1_430)) & EQ0_Elm(g0_427,s0_427,s1_427,g0_430,s0_430,s1_430)))));
+
+pred FUNC_DeAllocCheck_IF1_L_4(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_431,S0_431,S1_431: (((G0_431=G0_s_0) & (S0_431=S0_s_0) & (S1_431=S1_s_0))) 
+& FUNC_DeAllocCheck_IF1_L_3(G0_431,S0_431,S1_431)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS434: ex2 G0_435,S0_435,S1_435: (((G0_435=G0_s_0) 
+& (S0_435=S0_s_0) & (S1_435=S1_s_0))) & (POS434=POS_mu_0) & FUNC_Root_y_0(G0_435,S0_435,S1_435,POS434)) 
+& (~(ex1 POS438: ex2 G0_439,S0_439,S1_439: (((G0_439=G0_s_0) & (S0_439=S0_s_0) 
+& (S1_439=S1_s_0))) & (POS438=POS_mu_0) & FUNC_DeAlloc_0(G0_439,S0_439,S1_439,POS438))))));
+
+pred FUNC_Succ_next_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+(((ex1 POS442: ex2 G0_443,S0_443,S1_443: (((G0_443=G0_s_0) & (S0_443=S0_s_0) 
+& (S1_443=S1_s_0))) & (POS442=POS_mu_a) & FUNC_Root_x_0(G0_443,S0_443,S1_443,POS442)) 
+& (ex1 POS446: ex2 G0_447,S0_447,S1_447: (((G0_447=G0_s_0) & (S0_447=S0_s_0) 
+& (S1_447=S1_s_0))) & (POS446=POS_mu_b) & FUNC_Root_y_0(G0_447,S0_447,S1_447,POS446))) 
+| (~(ex1 POS442: ex2 G0_443,S0_443,S1_443: (((G0_443=G0_s_0) & (S0_443=S0_s_0) 
+& (S1_443=S1_s_0))) & (POS442=POS_mu_a) & FUNC_Root_x_0(G0_443,S0_443,S1_443,POS442)) 
+& (ex1 POS450: ex1 POS452: ex2 G0_453,S0_453,S1_453: 
+(((G0_453=G0_s_0) & (S0_453=S0_s_0) & (S1_453=S1_s_0))) & (POS452=POS_mu_a) & (POS450=POS_mu_b) 
+& FUNC_Succ_next_1(G0_453,S0_453,S1_453,POS452,POS450))));
+
+pred FUNC_VrtGroupCheck_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_456,S0_456,S1_456: (((G0_456=G0_s_0) & (S0_456=S0_s_0) & (S1_456=S1_s_0))) 
+& FUNC_VrtGroupCheck_0(G0_456,S0_456,S1_456)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS459: ex2 G0_460,S0_460,S1_460: (((G0_460=G0_s_0) 
+& (S0_460=S0_s_0) & (S1_460=S1_s_0))) & (POS459=POS_mu_0) & FUNC_Root_x_0(G0_460,S0_460,S1_460,POS459)) 
+& (ex1 POS463: ex2 G0_464,S0_464,S1_464: (((G0_464=G0_s_0) & (S0_464=S0_s_0) 
+& (S1_464=S1_s_0))) & (POS463=POS_mu_0) & FUNC_VariantGroup_Item_red_blue(G0_464,S0_464,S1_464,POS463)))));
+
+pred FUNC_DeAllocCheck_IF1_L_5(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_466,S0_466,S1_466: (((G0_466=G0_s_0) & (S0_466=S0_s_0) & (S1_466=S1_s_0))) 
+& FUNC_DeAllocCheck_IF1_L_4(G0_466,S0_466,S1_466)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS469: ex2 G0_470,S0_470,S1_470: (((G0_470=G0_s_0) 
+& (S0_470=S0_s_0) & (S1_470=S1_s_0))) & (POS469=POS_mu_0) & FUNC_Root_x_0(G0_470,S0_470,S1_470,POS469)) 
+& (~(ex1 POS473: ex2 G0_474,S0_474,S1_474: (((G0_474=G0_s_0) & (S0_474=S0_s_0) 
+& (S1_474=S1_s_0))) & (POS473=POS_mu_0) & FUNC_DeAlloc_0(G0_474,S0_474,S1_474,POS473))))));
+
+pred FUNC_Root_y_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS477: ex2 G0_478,S0_478,S1_478: (((G0_478=G0_s_0) & (S0_478=S0_s_0) 
+& (S1_478=S1_s_0))) & (POS477=POS_mu_0) & FUNC_Root_x_0(G0_478,S0_478,S1_478,POS477));
+
+pred FUNC_DeAllocCheck_IF1_L_6(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((ex2 G0_480,S0_480,S1_480: (((G0_480=G0_s_0) & (S0_480=S0_s_0) & (S1_480=S1_s_0))) 
+& FUNC_DeAllocCheck_IF1_L_5(G0_480,S0_480,S1_480)) & (ex1 POS_mu_0: 
+(TYPE_Elm(POS_mu_0)) & ((ex1 POS483: ex2 G0_484,S0_484,S1_484: (((G0_484=G0_s_0) 
+& (S0_484=S0_s_0) & (S1_484=S1_s_0))) & (POS483=POS_mu_0) & FUNC_Pos_p_IF1_L_1(G0_484,S0_484,S1_484,POS483)) 
+& (~(ex1 POS487: ex2 G0_488,S0_488,S1_488: (((G0_488=G0_s_0) & (S0_488=S0_s_0) 
+& (S1_488=S1_s_0))) & (POS487=POS_mu_0) & FUNC_DeAlloc_0(G0_488,S0_488,S1_488,POS487))))));
+
+pred FUNC_Root_x_IF1_L_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(ex1 POS491: ex2 G0_492,S0_492,S1_492: (((G0_492=G0_s_0) & (S0_492=S0_s_0) 
+& (S1_492=S1_s_0))) & (POS491=POS_mu_0) & FUNC_Pos_p_IF1_L_1(G0_492,S0_492,S1_492,POS491));
+
+pred FUNC_Root_x_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(((ex2 G0_494,S0_494,S1_494: (((G0_494=G0_s_0) & (S0_494=S0_s_0) & (S1_494=S1_s_0))) 
+& FUNC_Test_1(G0_494,S0_494,S1_494)) & (ex1 POS497: ex2 G0_498,S0_498,S1_498: 
+(((G0_498=G0_s_0) & (S0_498=S0_s_0) & (S1_498=S1_s_0))) & (POS497=POS_mu_0) & FUNC_Root_x_IF1_L_1(G0_498,S0_498,S1_498,POS497))) 
+| (~(ex2 G0_494,S0_494,S1_494: (((G0_494=G0_s_0) & (S0_494=S0_s_0) & (S1_494=S1_s_0))) 
+& FUNC_Test_1(G0_494,S0_494,S1_494)) & (ex1 POS501: ex2 G0_502,S0_502,S1_502: 
+(((G0_502=G0_s_0) & (S0_502=S0_s_0) & (S1_502=S1_s_0))) & (POS501=POS_mu_0) & FUNC_Root_x_0(G0_502,S0_502,S1_502,POS501))));
+
+pred FUNC_Root_y_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0) =
+(((ex2 G0_505,S0_505,S1_505: (((G0_505=G0_s_0) & (S0_505=S0_s_0) & (S1_505=S1_s_0))) 
+& FUNC_Test_1(G0_505,S0_505,S1_505)) & (ex1 POS508: ex2 G0_509,S0_509,S1_509: 
+(((G0_509=G0_s_0) & (S0_509=S0_s_0) & (S1_509=S1_s_0))) & (POS508=POS_mu_0) & FUNC_Root_y_IF1_L_1(G0_509,S0_509,S1_509,POS508))) 
+| (~(ex2 G0_505,S0_505,S1_505: (((G0_505=G0_s_0) & (S0_505=S0_s_0) & (S1_505=S1_s_0))) 
+& FUNC_Test_1(G0_505,S0_505,S1_505)) & (ex1 POS512: ex2 G0_513,S0_513,S1_513: 
+(((G0_513=G0_s_0) & (S0_513=S0_s_0) & (S1_513=S1_s_0))) & (POS512=POS_mu_0) & FUNC_Root_y_0(G0_513,S0_513,S1_513,POS512))));
+
+pred FUNC_Pos_p_1(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_0,var1 POS_p) =
+(((ex2 G0_516,S0_516,S1_516: (((G0_516=G0_s_0) & (S0_516=S0_s_0) & (S1_516=S1_s_0))) 
+& FUNC_Test_1(G0_516,S0_516,S1_516)) & (ex1 POS519: ex2 G0_520,S0_520,S1_520: 
+(((G0_520=G0_s_0) & (S0_520=S0_s_0) & (S1_520=S1_s_0))) & (POS519=POS_mu_0) & FUNC_Pos_p_IF1_L_1(G0_520,S0_520,S1_520,POS519))) 
+| (~(ex2 G0_516,S0_516,S1_516: (((G0_516=G0_s_0) & (S0_516=S0_s_0) & (S1_516=S1_s_0))) 
+& FUNC_Test_1(G0_516,S0_516,S1_516)) & (ex1 POS523: ex1 
+POS525: ex2 G0_526,S0_526,S1_526: (((G0_526=G0_s_0) & (S0_526=S0_s_0) & (S1_526=S1_s_0))) 
+& (POS525=POS_mu_0) & (POS523=POS_p) & FUNC_Pos_p_0(G0_526,S0_526,S1_526,POS525,POS523))));
+
+pred FUNC_Succ_next_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+(((ex2 G0_529,S0_529,S1_529: (((G0_529=G0_s_0) & (S0_529=S0_s_0) & (S1_529=S1_s_0))) 
+& FUNC_Test_1(G0_529,S0_529,S1_529)) & (ex1 POS532: ex1 
+POS534: ex2 G0_535,S0_535,S1_535: (((G0_535=G0_s_0) & (S0_535=S0_s_0) & (S1_535=S1_s_0))) 
+& (POS534=POS_mu_a) & (POS532=POS_mu_b) & FUNC_Succ_next_IF1_L_1(G0_535,S0_535,S1_535,POS534,POS532))) 
+| (~(ex2 G0_529,S0_529,S1_529: (((G0_529=G0_s_0) & (S0_529=S0_s_0) & (S1_529=S1_s_0))) 
+& FUNC_Test_1(G0_529,S0_529,S1_529)) & (ex1 POS538: ex1 
+POS540: ex2 G0_541,S0_541,S1_541: (((G0_541=G0_s_0) & (S0_541=S0_s_0) & (S1_541=S1_s_0))) 
+& (POS540=POS_mu_a) & (POS538=POS_mu_b) & FUNC_Succ_next_1(G0_541,S0_541,S1_541,POS540,POS538))));
+
+pred FUNC_DeAllocCheck_2(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_544,S0_544,S1_544: (((G0_544=G0_s_0) & (S0_544=S0_s_0) & (S1_544=S1_s_0))) 
+& FUNC_Test_1(G0_544,S0_544,S1_544)) & (ex2 G0_546,S0_546,S1_546: (((G0_546=G0_s_0) 
+& (S0_546=S0_s_0) & (S1_546=S1_s_0))) & FUNC_DeAllocCheck_IF1_L_6(G0_546,S0_546,S1_546))) 
+| (~(ex2 G0_544,S0_544,S1_544: (((G0_544=G0_s_0) & (S0_544=S0_s_0) & (S1_544=S1_s_0))) 
+& FUNC_Test_1(G0_544,S0_544,S1_544)) & (ex2 G0_548,S0_548,S1_548: (((G0_548=G0_s_0) 
+& (S0_548=S0_s_0) & (S1_548=S1_s_0))) & FUNC_DeAllocCheck_1(G0_548,S0_548,S1_548))));
+
+pred FUNC_AssignCheck_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_551,S0_551,S1_551: (((G0_551=G0_s_0) & (S0_551=S0_s_0) & (S1_551=S1_s_0))) 
+& FUNC_Test_1(G0_551,S0_551,S1_551)) & (ex2 G0_553,S0_553,S1_553: (((G0_553=G0_s_0) 
+& (S0_553=S0_s_0) & (S1_553=S1_s_0))) & FUNC_AssignCheck_IF1_L_1(G0_553,S0_553,S1_553))) 
+| (~(ex2 G0_551,S0_551,S1_551: (((G0_551=G0_s_0) & (S0_551=S0_s_0) & (S1_551=S1_s_0))) 
+& FUNC_Test_1(G0_551,S0_551,S1_551)) & (ex2 G0_555,S0_555,S1_555: (((G0_555=G0_s_0) 
+& (S0_555=S0_s_0) & (S1_555=S1_s_0))) & FUNC_AssignCheck_0(G0_555,S0_555,S1_555))));
+
+pred FUNC_VrtGroupCheck_1(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_558,S0_558,S1_558: (((G0_558=G0_s_0) & (S0_558=S0_s_0) & (S1_558=S1_s_0))) 
+& FUNC_Test_1(G0_558,S0_558,S1_558)) & (ex2 G0_560,S0_560,S1_560: (((G0_560=G0_s_0) 
+& (S0_560=S0_s_0) & (S1_560=S1_s_0))) & FUNC_VrtGroupCheck_IF1_L_1(G0_560,S0_560,S1_560))) 
+| (~(ex2 G0_558,S0_558,S1_558: (((G0_558=G0_s_0) & (S0_558=S0_s_0) & (S1_558=S1_s_0))) 
+& FUNC_Test_1(G0_558,S0_558,S1_558)) & (ex2 G0_562,S0_562,S1_562: (((G0_562=G0_s_0) 
+& (S0_562=S0_s_0) & (S1_562=S1_s_0))) & FUNC_VrtGroupCheck_0(G0_562,S0_562,S1_562))));
+
+pred FUNC_DeAllocTest_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS566: ex1 POS568: (POS566=POS_mu_a) & (POS568=POS_mu_b) 
+& (POS566=POS568)) & (ex1 POS570: ex2 G0_571,S0_571,S1_571: (((G0_571=G0_s_0) 
+& (S0_571=S0_s_0) & (S1_571=S1_s_0))) & (POS570=POS_mu_a) & FUNC_DeAlloc_0(G0_571,S0_571,S1_571,POS570)));
+
+pred FUNC_AllocTest_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS574: ex1 POS576: (POS574=POS_mu_a) & (POS576=POS_mu_b) 
+& (POS574=POS576)) & (ex1 POS578: ex2 G0_579,S0_579,S1_579: (((G0_579=G0_s_0) 
+& (S0_579=S0_s_0) & (S1_579=S1_s_0))) & (POS578=POS_mu_a) & FUNC_New_0(G0_579,S0_579,S1_579,POS578)));
+
+pred FUNC_FreeTest_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS582: ex1 POS584: (POS582=POS_mu_a) & (POS584=POS_mu_b) 
+& (POS582=POS584)) & (ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 
+POS586: ex2 G0_587,S0_587,S1_587: (((G0_587=G0_s_0) & (S0_587=S0_s_0) & (S1_587=S1_s_0))) 
+& (POS586=POS_mu_0) & FUNC_Alloc_0(G0_587,S0_587,S1_587,POS586)) & (ex1 
+POS590: ex1 POS592: (POS590=POS_mu_a) & (POS592=POS_mu_0) & (POS592 < POS590)))));
+
+pred FUNC_GarbageTest_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS594: ex1 POS596: ex2 G0_597,S0_597,S1_597: 
+(((G0_597=G0_s_0) & (S0_597=S0_s_0) & (S1_597=S1_s_0))) & (POS596=POS_mu_a) & (POS594=POS_mu_b) 
+& FUNC_DeAllocTest_2(G0_597,S0_597,S1_597,POS596,POS594)) | (ex1 
+POS600: ex1 POS602: ex2 G0_603,S0_603,S1_603: (((G0_603=G0_s_0) & 
+(S0_603=S0_s_0) & (S1_603=S1_s_0))) & (POS602=POS_mu_a) & (POS600=POS_mu_b) & FUNC_FreeTest_2(G0_603,S0_603,S1_603,POS602,POS600)));
+
+pred FUNC_IsRoot_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a) =
+((ex1 POS606: ex2 G0_607,S0_607,S1_607: (((G0_607=G0_s_0) & (S0_607=S0_s_0) 
+& (S1_607=S1_s_0))) & (POS606=POS_mu_a) & FUNC_Root_x_1(G0_607,S0_607,S1_607,POS606)) 
+| (ex1 POS610: ex2 G0_611,S0_611,S1_611: (((G0_611=G0_s_0) & (S0_611=S0_s_0) 
+& (S1_611=S1_s_0))) & (POS610=POS_mu_a) & FUNC_Root_y_1(G0_611,S0_611,S1_611,POS610)));
+
+pred FUNC_RootTest_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+((ex1 POS614: ex1 POS616: (POS614=POS_mu_a) & (POS616=POS_mu_b) 
+& (POS614=POS616)) & (ex1 POS618: ex2 G0_619,S0_619,S1_619: (((G0_619=G0_s_0) 
+& (S0_619=S0_s_0) & (S1_619=S1_s_0))) & (POS618=POS_mu_a) & FUNC_IsRoot_2(G0_619,S0_619,S1_619,POS618)));
+
+pred FUNC_Postcond(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 G0_621,S0_621,S1_621: (((G0_621=G0_s_0) & (S0_621=S0_s_0) & (S1_621=S1_s_0))) 
+& FUNC_true(G0_621,S0_621,S1_621));
+
+pred FUNC_Equal_pos_3(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 POS624: ex2 G0_625,S0_625,S1_625: 
+(((G0_625=G0_s_0) & (S0_625=S0_s_0) & (S1_625=S1_s_0))) & (POS624=POS_mu_0) & FUNC_Root_x_1(G0_625,S0_625,S1_625,POS624)) 
+& (ex1 POS628: ex2 G0_629,S0_629,S1_629: (((G0_629=G0_s_0) & (S0_629=S0_s_0) 
+& (S1_629=S1_s_0))) & (POS628=POS_mu_0) & FUNC_nil(G0_629,S0_629,S1_629,POS628))));
+
+pred FUNC_Demand(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 G0_631,S0_631,S1_631: (((G0_631=G0_s_0) & (S0_631=S0_s_0) & (S1_631=S1_s_0))) 
+& FUNC_Equal_pos_3(G0_631,S0_631,S1_631));
+
+pred FUNC_Succ_2(var2 G0_s_0,var2 S0_s_0,S1_s_0,var1 POS_mu_a,var1 POS_mu_b) =
+(ex1 POS634: ex1 POS636: ex2 G0_637,S0_637,S1_637: 
+(((G0_637=G0_s_0) & (S0_637=S0_s_0) & (S1_637=S1_s_0))) & (POS636=POS_mu_a) & (POS634=POS_mu_b) 
+& FUNC_Succ_next_2(G0_637,S0_637,S1_637,POS636,POS634));
+
+pred FUNC_Has_Root_x_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 POS640: ex2 G0_641,S0_641,S1_641: 
+(((G0_641=G0_s_0) & (S0_641=S0_s_0) & (S1_641=S1_s_0))) & (POS640=POS_mu_0) & FUNC_Root_x_1(G0_641,S0_641,S1_641,POS640)) 
+& (ex1 POS644: ex2 SET646: (POS644=POS_mu_0) & (SET646=SET_P_0) 
+& (POS644 in SET646))));
+
+pred FUNC_Has_Root_y_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & ((ex1 POS648: ex2 G0_649,S0_649,S1_649: 
+(((G0_649=G0_s_0) & (S0_649=S0_s_0) & (S1_649=S1_s_0))) & (POS648=POS_mu_0) & FUNC_Root_y_1(G0_649,S0_649,S1_649,POS648)) 
+& (ex1 POS652: ex2 SET654: (POS652=POS_mu_0) & (SET654=SET_P_0) 
+& (POS652 in SET654))));
+
+pred FUNC_Enough_Cells(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex1 POS_mu_0: (TYPE_Elm(POS_mu_0)) & (ex1 POS656: ex2 G0_657,S0_657,S1_657: 
+(((G0_657=G0_s_0) & (S0_657=S0_s_0) & (S1_657=S1_s_0))) & (POS656=POS_mu_0) & FUNC_Alloc_0(G0_657,S0_657,S1_657,POS656)));
+
+pred FUNC_Restricted_Store(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_659,S0_659,S1_659: (((G0_659=G0_s_0) & (S0_659=S0_s_0) & (S1_659=S1_s_0))) 
+& FUNC_WfStore(G0_659,S0_659,S1_659)) & (ex2 G0_661,S0_661,S1_661: (((G0_661=G0_s_0) 
+& (S0_661=S0_s_0) & (S1_661=S1_s_0))) & FUNC_Enough_Cells(G0_661,S0_661,S1_661))) 
+& (ex2 G0_663,S0_663,S1_663: (((G0_663=G0_s_0) & (S0_663=S0_s_0) & (S1_663=S1_s_0))) 
+& FUNC_Precond(G0_663,S0_663,S1_663)));
+
+pred FUNC_ForwardClosure(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(all1 POS_mu_a: (TYPE_Elm(POS_mu_a)) => ((ex1 POS666: ex2 
+SET668: (POS666=POS_mu_a) & (SET668=SET_P_0) & (POS666 in SET668)) => (all1 
+POS_mu_b: (TYPE_Elm(POS_mu_b)) => ((ex1 POS670: ex1 POS672: ex2 
+G0_673,S0_673,S1_673: (((G0_673=G0_s_0) & (S0_673=S0_s_0) & (S1_673=S1_s_0))) & (POS672=POS_mu_a) 
+& (POS670=POS_mu_b) & FUNC_Succ_2(G0_673,S0_673,S1_673,POS672,POS670)) => 
+(ex1 POS676: ex2 SET678: (POS676=POS_mu_b) & (SET678=SET_P_0) 
+& (POS676 in SET678))))));
+
+pred FUNC_UsedCells_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(all1 POS_mu_a: (TYPE_Elm(POS_mu_a)) => (ex1 POS_mu_b: (TYPE_Elm(POS_mu_b)) 
+& ((ex1 POS680: ex2 G0_681,S0_681,S1_681: (((G0_681=G0_s_0) & (S0_681=S0_s_0) 
+& (S1_681=S1_s_0))) & (POS680=POS_mu_b) & FUNC_Alloc_0(G0_681,S0_681,S1_681,POS680)) 
+& (((((ex1 POS684: ex1 POS686: (POS684=POS_mu_a) & (POS686=POS_mu_b) 
+& (POS684 < POS686)) | (ex1 POS688: ex1 POS690: (POS688=POS_mu_a) 
+& (POS690=POS_mu_b) & (POS688=POS690))) & ~(ex0 g0_691,s0_691,s1_691: ex0 g0_694,s0_694,s1_694: 
+(ex1 POS693: (POS693=POS_mu_a) & (g0_691<=>(POS693 in G0)) & (s1_691<=>(POS693 
+in S1)) & (s0_691<=>(POS693 in S0))) & (((TYPE0_Elm & ~g0_694) & s0_694 & ~s1_694)) 
+& EQ0_Elm(g0_691,s0_691,s1_691,g0_694,s0_694,s1_694))) & (ex1 POS696: ex2 
+SET698: (POS696=POS_mu_a) & (SET698=SET_P_0) & (POS696 in SET698))) 
+| (~(((ex1 POS684: ex1 POS686: (POS684=POS_mu_a) & (POS686=POS_mu_b) 
+& (POS684 < POS686)) | (ex1 POS688: ex1 POS690: (POS688=POS_mu_a) 
+& (POS690=POS_mu_b) & (POS688=POS690))) & ~(ex0 g0_691,s0_691,s1_691: ex0 g0_694,s0_694,s1_694: 
+(ex1 POS693: (POS693=POS_mu_a) & (g0_691<=>(POS693 in G0)) & (s1_691<=>(POS693 
+in S1)) & (s0_691<=>(POS693 in S0))) & (((TYPE0_Elm & ~g0_694) & s0_694 & ~s1_694)) 
+& EQ0_Elm(g0_691,s0_691,s1_691,g0_694,s0_694,s1_694))) & (~(ex1 POS700: 
+ex2 SET702: (POS700=POS_mu_a) & (SET702=SET_P_0) & (POS700 in SET702))))))));
+
+pred FUNC_GarbageCells_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(all1 POS_mu_a: (TYPE_Elm(POS_mu_a)) => (((ex1 POS705: ex2 G0_706,S0_706,S1_706: 
+(((G0_706=G0_s_0) & (S0_706=S0_s_0) & (S1_706=S1_s_0))) & (POS705=POS_mu_a) & FUNC_DeAlloc_0(G0_706,S0_706,S1_706,POS705)) 
+& (ex1 POS709: ex2 SET711: (POS709=POS_mu_a) & (SET711=SET_P_0) 
+& (POS709 in SET711))) | (~(ex1 POS705: ex2 G0_706,S0_706,S1_706: (((G0_706=G0_s_0) 
+& (S0_706=S0_s_0) & (S1_706=S1_s_0))) & (POS705=POS_mu_a) & FUNC_DeAlloc_0(G0_706,S0_706,S1_706,POS705)) 
+& (~(ex1 POS713: ex2 SET715: (POS713=POS_mu_a) & (SET715=SET_P_0) 
+& (POS713 in SET715))))));
+
+pred FUNC_RecordCells_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(ex2 SET_UCells: (all1 p: p in SET_UCells => (TYPE_Elm(p))) & 
+((ex2 SET718: ex2 G0_719,S0_719,S1_719: (((G0_719=G0_s_0) & (S0_719=S0_s_0) 
+& (S1_719=S1_s_0))) & (SET718=SET_UCells) & FUNC_UsedCells_After(G0_719,S0_719,S1_719,SET718)) 
+& (ex2 SET_GCells: (all1 p: p in SET_GCells => (TYPE_Elm(p))) 
+& ((ex2 SET722: ex2 G0_723,S0_723,S1_723: (((G0_723=G0_s_0) & (S0_723=S0_s_0) 
+& (S1_723=S1_s_0))) & (SET722=SET_GCells) & FUNC_GarbageCells_After(G0_723,S0_723,S1_723,SET722)) 
+& (ex2 SET726: ex2 SET732: (SET726=SET_P_0) & (ex2 
+SET728: ex2 SET731: (SET728=SET_UCells) & (ex2 SET730: (SET730=SET_GCells) 
+& (SET731 = $\SET730)) & (SET732=SET728 inter SET731)) & (SET726=SET732))))));
+
+pred FUNC_NullSet(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(all1 POS_mu_0: (TYPE_Elm(POS_mu_0)) => (((ex1 POS734: ex1 
+POS736: (POS734=POS_mu_0) & POS736=0 & (POS734=POS736)) & (ex1 
+POS738: ex2 SET740: (POS738=POS_mu_0) & (SET740=SET_P_0) & (POS738 
+in SET740))) | (~(ex1 POS734: ex1 POS736: (POS734=POS_mu_0) & 
+POS736=0 & (POS734=POS736)) & (~(ex1 POS742: ex2 
+SET744: (POS742=POS_mu_0) & (SET744=SET_P_0) & (POS742 in SET744))))));
+
+pred FUNC_List_x_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(((ex2 SET747: ex2 G0_748,S0_748,S1_748: (((G0_748=G0_s_0) & (S0_748=S0_s_0) 
+& (S1_748=S1_s_0))) & (SET747=SET_P_0) & FUNC_Has_Root_x_After(G0_748,S0_748,S1_748,SET747)) 
+& (ex2 SET751: ex2 G0_752,S0_752,S1_752: (((G0_752=G0_s_0) & (S0_752=S0_s_0) 
+& (S1_752=S1_s_0))) & (SET751=SET_P_0) & FUNC_ForwardClosure(G0_752,S0_752,S1_752,SET751))) 
+& (all1 POS_mu_b: (TYPE_Elm(POS_mu_b)) => (((ex1 POS755: ex2 
+SET757: (POS755=POS_mu_b) & (SET757=SET_P_0) & (POS755 in SET757)) 
+& (~(ex1 POS759: ex2 G0_760,S0_760,S1_760: (((G0_760=G0_s_0) & (S0_760=S0_s_0) 
+& (S1_760=S1_s_0))) & (POS759=POS_mu_b) & FUNC_Root_x_1(G0_760,S0_760,S1_760,POS759)))) 
+=> (ex1 POS_mu_a: (TYPE_Elm(POS_mu_a)) & ((ex1 POS763: ex2 
+SET765: (POS763=POS_mu_a) & (SET765=SET_P_0) & (POS763 in SET765)) & (ex1 
+POS767: ex1 POS769: ex2 G0_770,S0_770,S1_770: (((G0_770=G0_s_0) & (S0_770=S0_s_0) 
+& (S1_770=S1_s_0))) & (POS769=POS_mu_a) & (POS767=POS_mu_b) & FUNC_Succ_2(G0_770,S0_770,S1_770,POS769,POS767)))))));
+
+pred FUNC_List_y_After(var2 G0_s_0,var2 S0_s_0,S1_s_0,var2 SET_P_0) =
+(((ex2 SET773: ex2 G0_774,S0_774,S1_774: (((G0_774=G0_s_0) & (S0_774=S0_s_0) 
+& (S1_774=S1_s_0))) & (SET773=SET_P_0) & FUNC_Has_Root_y_After(G0_774,S0_774,S1_774,SET773)) 
+& (ex2 SET777: ex2 G0_778,S0_778,S1_778: (((G0_778=G0_s_0) & (S0_778=S0_s_0) 
+& (S1_778=S1_s_0))) & (SET777=SET_P_0) & FUNC_ForwardClosure(G0_778,S0_778,S1_778,SET777))) 
+& (all1 POS_mu_b: (TYPE_Elm(POS_mu_b)) => (((ex1 POS781: ex2 
+SET783: (POS781=POS_mu_b) & (SET783=SET_P_0) & (POS781 in SET783)) 
+& (~(ex1 POS785: ex2 G0_786,S0_786,S1_786: (((G0_786=G0_s_0) & (S0_786=S0_s_0) 
+& (S1_786=S1_s_0))) & (POS785=POS_mu_b) & FUNC_Root_y_1(G0_786,S0_786,S1_786,POS785)))) 
+=> (ex1 POS_mu_a: (TYPE_Elm(POS_mu_a)) & ((ex1 POS789: ex2 
+SET791: (POS789=POS_mu_a) & (SET791=SET_P_0) & (POS789 in SET791)) & (ex1 
+POS793: ex1 POS795: ex2 G0_796,S0_796,S1_796: (((G0_796=G0_s_0) & (S0_796=S0_s_0) 
+& (S1_796=S1_s_0))) & (POS795=POS_mu_a) & (POS793=POS_mu_b) & FUNC_Succ_2(G0_796,S0_796,S1_796,POS795,POS793)))))));
+
+pred FUNC_OK(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((((ex2 G0_798,S0_798,S1_798: (((G0_798=G0_s_0) & (S0_798=S0_s_0) & (S1_798=S1_s_0))) 
+& FUNC_DeAllocCheck_2(G0_798,S0_798,S1_798)) & (ex2 G0_800,S0_800,S1_800: 
+(((G0_800=G0_s_0) & (S0_800=S0_s_0) & (S1_800=S1_s_0))) & FUNC_AssignCheck_1(G0_800,S0_800,S1_800))) 
+& (ex2 G0_802,S0_802,S1_802: (((G0_802=G0_s_0) & (S0_802=S0_s_0) & (S1_802=S1_s_0))) 
+& FUNC_VrtGroupCheck_1(G0_802,S0_802,S1_802))) & (ex2 G0_804,S0_804,S1_804: 
+(((G0_804=G0_s_0) & (S0_804=S0_s_0) & (S1_804=S1_s_0))) & FUNC_TypeVariantCheck_0(G0_804,S0_804,S1_804)));
+
+pred FUNC_WfStore'(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(ex2 SET_x_Cells: (all1 p: p in SET_x_Cells => (TYPE_Elm(p))) 
+& ((ex2 SET807: ex2 G0_808,S0_808,S1_808: (((G0_808=G0_s_0) & (S0_808=S0_s_0) 
+& (S1_808=S1_s_0))) & (SET807=SET_x_Cells) & FUNC_List_x_After(G0_808,S0_808,S1_808,SET807)) 
+& (ex2 SET_y_Cells: (all1 p: p in SET_y_Cells => (TYPE_Elm(p))) 
+& (((ex2 SET811: ex2 G0_812,S0_812,S1_812: (((G0_812=G0_s_0) & (S0_812=S0_s_0) 
+& (S1_812=S1_s_0))) & (SET811=SET_y_Cells) & FUNC_List_y_After(G0_812,S0_812,S1_812,SET811)) 
+& (ex2 SET818: ex2 G0_819,S0_819,S1_819: (((G0_819=G0_s_0) & (S0_819=S0_s_0) 
+& (S1_819=S1_s_0))) & (ex2 SET815: ex2 SET817: (SET815=SET_x_Cells) 
+& (SET817=SET_y_Cells) & (SET818=SET815 union SET817)) & FUNC_RecordCells_After(G0_819,S0_819,S1_819,SET818))) 
+& (ex2 SET825: ex2 G0_826,S0_826,S1_826: (((G0_826=G0_s_0) & (S0_826=S0_s_0) 
+& (S1_826=S1_s_0))) & (ex2 SET822: ex2 SET824: (SET822=SET_x_Cells) 
+& (SET824=SET_y_Cells) & (SET825=SET822 inter SET824)) & FUNC_NullSet(G0_826,S0_826,S1_826,SET825))))));
+
+pred FUNC_Check_Validity(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_828,S0_828,S1_828: (((G0_828=G0_s_0) & (S0_828=S0_s_0) & (S1_828=S1_s_0))) 
+& FUNC_Restricted_Store(G0_828,S0_828,S1_828)) & (ex2 G0_830,S0_830,S1_830: 
+(((G0_830=G0_s_0) & (S0_830=S0_s_0) & (S1_830=S1_s_0))) & FUNC_Test_1(G0_830,S0_830,S1_830))) 
+=> (((ex2 G0_832,S0_832,S1_832: (((G0_832=G0_s_0) & (S0_832=S0_s_0) & (S1_832=S1_s_0))) 
+& FUNC_WfStore'(G0_832,S0_832,S1_832)) & (ex2 G0_834,S0_834,S1_834: (((G0_834=G0_s_0) 
+& (S0_834=S0_s_0) & (S1_834=S1_s_0))) & FUNC_Postcond(G0_834,S0_834,S1_834))) 
+& (ex2 G0_836,S0_836,S1_836: (((G0_836=G0_s_0) & (S0_836=S0_s_0) & (S1_836=S1_s_0))) 
+& FUNC_OK(G0_836,S0_836,S1_836))));
+
+pred FUNC_Check_PreImplication(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+((((ex2 G0_838,S0_838,S1_838: (((G0_838=G0_s_0) & (S0_838=S0_s_0) & (S1_838=S1_s_0))) 
+& FUNC_WfStore(G0_838,S0_838,S1_838)) & (ex2 G0_840,S0_840,S1_840: (((G0_840=G0_s_0) 
+& (S0_840=S0_s_0) & (S1_840=S1_s_0))) & FUNC_Enough_Cells(G0_840,S0_840,S1_840))) 
+& (ex2 G0_842,S0_842,S1_842: (((G0_842=G0_s_0) & (S0_842=S0_s_0) & (S1_842=S1_s_0))) 
+& FUNC_Assume(G0_842,S0_842,S1_842))) => (ex2 G0_844,S0_844,S1_844: (((G0_844=G0_s_0) 
+& (S0_844=S0_s_0) & (S1_844=S1_s_0))) & FUNC_Restricted_Store(G0_844,S0_844,S1_844)));
+
+pred FUNC_Check_PostImplication(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_846,S0_846,S1_846: (((G0_846=G0_s_0) & (S0_846=S0_s_0) & (S1_846=S1_s_0))) 
+& FUNC_Restricted_Store(G0_846,S0_846,S1_846)) & (~(ex2 G0_848,S0_848,S1_848: 
+(((G0_848=G0_s_0) & (S0_848=S0_s_0) & (S1_848=S1_s_0))) & FUNC_Test_1(G0_848,S0_848,S1_848)))) 
+=> (ex2 G0_850,S0_850,S1_850: (((G0_850=G0_s_0) & (S0_850=S0_s_0) & (S1_850=S1_s_0))) 
+& FUNC_Demand(G0_850,S0_850,S1_850)));
+
+pred FUNC_Check_Partial_Validity(var2 G0_s_0,var2 S0_s_0,S1_s_0) =
+(((ex2 G0_852,S0_852,S1_852: (((G0_852=G0_s_0) & (S0_852=S0_s_0) & (S1_852=S1_s_0))) 
+& FUNC_Check_PreImplication(G0_852,S0_852,S1_852)) & (ex2 G0_854,S0_854,S1_854: 
+(((G0_854=G0_s_0) & (S0_854=S0_s_0) & (S1_854=S1_s_0))) & FUNC_Check_Validity(G0_854,S0_854,S1_854))) 
+& (ex2 G0_856,S0_856,S1_856: (((G0_856=G0_s_0) & (S0_856=S0_s_0) & (S1_856=S1_s_0))) 
+& FUNC_Check_PostImplication(G0_856,S0_856,S1_856)));
+
+# Main formula
+
+(ex2 G0_858,S0_858,S1_858: (((G0_858=G0) & (S0_858=S0) & (S1_858=S1))) & FUNC_Check_Partial_Validity(G0_858,S0_858,S1_858));
