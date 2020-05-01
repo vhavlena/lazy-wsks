@@ -1,0 +1,5 @@
+# Validity: unsatisfiable
+
+ws2s;
+
+all0 x: ex0 y: x & y;

@@ -30,7 +30,7 @@ import qualified MonaSocket as MS
 -- to tree automata.
 useMona = False
 -- |Rename bound vars.
-renameBoundVars = False
+renameBoundVars = True
 
 -- |Parameters of the decision procedure.
 data ProcedureArgs =

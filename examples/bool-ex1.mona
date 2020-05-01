@@ -1,0 +1,7 @@
+# Validity: valid
+
+ws2s;
+
+pred test(var0 x) = x & true;
+
+ex0 x: test(x) | false;

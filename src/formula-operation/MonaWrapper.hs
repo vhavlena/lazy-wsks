@@ -43,6 +43,8 @@ convertAtom (MonaAtomSing (MonaTermVar v)) = Lo.Sing v
 convertAtom (MonaAtomEps (MonaTermVar v)) = Lo.Eps v
 convertAtom MonaAtomTrue = Lo.AtTrue
 convertAtom MonaAtomFalse = Lo.AtFalse
+convertAtom (MonaAtomTerm (MonaTermBool MonaAtomTrue)) = Lo.AtTrue -- obtained by ex0 substitutions
+convertAtom (MonaAtomTerm (MonaTermBool MonaAtomFalse)) = Lo.AtFalse -- obtained by ex0 substitutions
 convertAtom atom = Lo.MonaAt atom (freeVarsAtom atom)
 --convertAtom a = error $ "convertAtom: Unsupported behaviour: " ++ (show a)
 
@@ -53,6 +55,7 @@ convertBaseMonaToFormula (MonaFormulaAtomic atom) = Lo.FormulaAtomic $ convertAt
 convertBaseMonaToFormula (MonaFormulaDisj f1 f2) = Lo.Disj (convertBaseMonaToFormula f1) (convertBaseMonaToFormula f2)
 convertBaseMonaToFormula (MonaFormulaConj f1 f2) = Lo.Conj (convertBaseMonaToFormula f1) (convertBaseMonaToFormula f2)
 convertBaseMonaToFormula (MonaFormulaNeg f) = Lo.Neg $ convertBaseMonaToFormula f
+convertBaseMonaToFormula (MonaFormulaEx0 [p] f) = Lo.Disj (convertBaseMonaToFormula $ substituteVars [(MonaMacroParamVar0 [p], MonaTermBool MonaAtomTrue)] f) (convertBaseMonaToFormula $ substituteVars [(MonaMacroParamVar0 [p], MonaTermBool MonaAtomFalse)] f)
 convertBaseMonaToFormula (MonaFormulaEx1 [p] f) = Lo.Exists var $ Lo.Conj (convertBaseMonaToFormula f) (Lo.FormulaAtomic $ Lo.Sing var) where
   var = fst p
 convertBaseMonaToFormula (MonaFormulaEx2 [p] f) = Lo.Exists (fst p) (convertBaseMonaToFormula f)
