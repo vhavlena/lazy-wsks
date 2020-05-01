@@ -9,7 +9,7 @@ module MonaFormulaInfo where
 
 import Data.List
 import Data.Maybe
-import MonaParser
+import MonaFormula
 import MonaFormulaOperationSubst
 
 import qualified Data.Map as Map

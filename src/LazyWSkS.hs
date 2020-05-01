@@ -21,6 +21,7 @@ import qualified FormulaOperation as FO
 import qualified MonaFormulaOperationSubst as FOS
 import qualified Examples as Ex
 import qualified MonaWrapper as MoWr
+import qualified MonaFormula as MoFo
 import qualified MonaParser as MoPa
 import qualified BasicAutomata as BA
 import qualified MonaSocket as MS
@@ -95,7 +96,7 @@ formulaOperationsDebug f = do
 
 
 -- |Wrap for renaming bound variables in Mona file.
-renameBVFileWrap :: MoPa.MonaFile -> MoPa.MonaFile
+renameBVFileWrap :: MoFo.MonaFile -> MoFo.MonaFile
 renameBVFileWrap = if renameBoundVars then FOS.renameBVFile else id
 
 

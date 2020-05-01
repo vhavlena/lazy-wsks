@@ -16,7 +16,7 @@ import System.Process
 import Data.List
 
 import MonaFormulaOperation
-import MonaParser
+import MonaFormula
 import MonaFormulaOperationSubst
 import qualified MonaAutomataParser as MAP
 import MonaAutomataWrapper

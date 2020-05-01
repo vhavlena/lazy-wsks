@@ -18,7 +18,7 @@ import Data.List
 import Data.Maybe
 import Debug.Trace
 
-import MonaParser
+import MonaFormula
 import MonaFormulaOperationSubst
 
 import qualified Logic as Lo

@@ -24,7 +24,7 @@ import System.Directory
 import qualified System.IO.Strict as SIO
 import System.Random
 
-import MonaParser
+import MonaFormula
 import AuxFunctions
 import MonaFormulaInfo
 import MonaFormulaOperationSubst

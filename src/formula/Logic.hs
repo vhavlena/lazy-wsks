@@ -7,7 +7,7 @@ License     : GPL-3
 
 module Logic where
 
-import MonaParser
+import MonaFormula
 import Data.List
 import Data.Monoid
 import Control.Monad.Writer

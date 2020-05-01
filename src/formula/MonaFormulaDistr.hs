@@ -9,7 +9,7 @@ module MonaFormulaDistr where
 
 import Data.List
 import Data.Maybe
-import MonaParser
+import MonaFormula
 import MonaFormulaOperationSubst
 import FormulaSizeEstimation
 import MonaFormulaBalance

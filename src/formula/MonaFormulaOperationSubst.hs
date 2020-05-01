@@ -17,7 +17,7 @@ import Text.Parsec.Token
 import Data.List
 import Data.Maybe
 
-import MonaParser
+import MonaFormula
 
 import qualified AuxFunctions as Aux
 import qualified Logic as Lo

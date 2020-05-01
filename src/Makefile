@@ -6,7 +6,7 @@
 RELEASE_FLAGS=-O2 -odir obj -hidir obj
 TEST_FLAGS=-odir obj -hidir obj
 DEBUG_FLAGS=-odir obj -hidir obj -prof -fprof-auto -rtsopts
-DIR_FLAGS=-iautomata:aux:decision-procedure:formula-operation:graph:parser
+DIR_FLAGS=-iautomata:aux:decision-procedure:formula:graph:parser
 
 all:
 	ghc $(TEST_FLAGS) $(DIR_FLAGS) --make LazyWSkS.hs

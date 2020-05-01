@@ -12,6 +12,7 @@ module MonaWrapper (
 import Data.List
 import Data.Maybe
 
+import MonaFormula
 import MonaParser
 import MonaFormulaOperation
 import MonaFormulaOperationSubst

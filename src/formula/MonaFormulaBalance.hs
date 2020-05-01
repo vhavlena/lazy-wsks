@@ -22,7 +22,7 @@ import Data.List
 import Data.Maybe
 
 import AntiprenexConfig
-import MonaParser
+import MonaFormula
 import MonaFormulaOperation
 import MonaFormulaOperationSubst
 import MonaFormulaInfo
