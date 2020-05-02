@@ -8,6 +8,7 @@ License     : GPL-3
 import System.Environment
 import Control.Monad.Writer
 import Data.Time
+import System.IO
 
 import MonaFormulaOperation
 import MonaFormulaAntiprenex
@@ -76,6 +77,20 @@ showValidMonaLazy aut f = do
    putStrLn $ formatAnswerStat $ LDP.isValid (Map.fromList aut) f
 
 
+solveLazyShow :: MoFo.MonaFile -> ProcedureArgs -> IO ()
+solveLazyShow mona par =
+  let fnc = if par == Prenex then simplifyFile else antiprenexFileLight
+      prenexFile = fnc $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+      (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
+      do
+        auts <- MS.getMonaAutomata monareq
+        showValidMonaLazy auts hf
+
+
+antiprenexShow :: MoFo.MonaFile -> IO ()
+antiprenexShow mona = putStrLn $ show $ antiprenexFileLight $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
+
+
 formatAnswerStat :: Either BP.FormulaStat String -> String
 formatAnswerStat (Left (BP.FormulaStat val states)) = (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
 formatAnswerStat (Right y) = "Error: " ++ show y
@@ -116,20 +131,21 @@ main = do
    start <- getCurrentTime
    case (parseArgs args) of
      (Antiprenex file) -> do
-       mona <- MoPa.parseFile file
-       putStrLn $ show $ antiprenexFileLight $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
-       stop <- getCurrentTime
-       putStrLn $ "Time: " ++ show (diffUTCTime stop start)
+       parse <- MoPa.parseFile file
+       case parse of
+         Left err -> hPutStrLn stderr $ "Syntax error: " ++ show err
+         Right mona -> do
+           antiprenexShow mona
+           stop <- getCurrentTime
+           putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      (Validity file par) -> do
-       mona <- MoPa.parseFile file
-       let fnc = if par == Prenex then simplifyFile else antiprenexFileLight
-           prenexFile = fnc $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
-           (hf, monareq) = runWriter $ Lo.convertMonaSub useMona $ Lo.simplifyTrueFalse $ MoWr.getBaseFormula prenexFile in
-           do
-             auts <- MS.getMonaAutomata monareq
-             showValidMonaLazy auts hf
-             stop <- getCurrentTime
-             putStrLn $ "Time: " ++ show (diffUTCTime stop start)
+       parse <- MoPa.parseFile file
+       case parse of
+         Left err -> hPutStrLn stderr $ "Syntax error: " ++ show err
+         Right mona -> do
+           solveLazyShow mona par
+           stop <- getCurrentTime
+           putStrLn $ "Time: " ++ show (diffUTCTime stop start)
      Help -> showHelp
      Error -> do
        putStrLn $ "Bad input params"

@@ -22,16 +22,17 @@ import Text.Parsec.String
 import Text.Parsec.Token
 
 
-parseFile :: FilePath -> IO MonaFile
+parseFile :: FilePath -> IO (Either ParseError MonaFile)
 parseFile filename = do
   str <- readFile filename
   return $ parseString str
 
 
-parseString :: String -> MonaFile
-parseString str = case (parse monaFileParser "MONA parser" str) of
-  Left err   -> error $ show err
-  Right res  -> res
+parseString :: String -> Either ParseError MonaFile
+parseString str = parse monaFileParser "" str
+  -- case (parse monaFileParser "MONA parser" str) of
+  -- Left err   -> error $ "hello: " ++ (show err)
+  -- Right res  -> res
 -- parseString = error "Unimplemented"
 
 

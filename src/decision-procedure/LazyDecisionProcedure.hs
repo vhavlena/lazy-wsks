@@ -241,7 +241,7 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 -- |Decide whether given ground formula is valid (lazy approach).
 isValid :: MonaAutDict -> Lo.Formula -> Either FormulaStat String
---isValid autdict f | Dbg.trace ("isValid: " ++ show (formula2Terms autdict f)) False = undefined
+--isValid autdict f | Dbg.trace ("isValid: " ++ show f) False = undefined
 isValid autdict f
    | Lo.freeVars f == [] = Left $ botInLazy (formula2Terms autdict f)
    | otherwise = Right $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)

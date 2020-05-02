@@ -208,7 +208,7 @@ simplifyTrueFalse (ForAll var f) = simplifyTrueFalseRule $ ForAll var (simplifyT
 
 -- retrieves free variables of a formula
 freeVars :: Formula -> [Var]
-freeVars (FormulaAtomic phi) = freeVarsAtom phi
+freeVars (FormulaAtomic phi) = nub $ freeVarsAtom phi
 freeVars (Disj f1 f2)   = nub $ (freeVars f1) ++ (freeVars f2)
 freeVars (Conj f1 f2)   = freeVars (Disj f1 f2)
 freeVars (Neg f)        = freeVars f

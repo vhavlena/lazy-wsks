@@ -56,7 +56,9 @@ convertBaseMonaToFormula (MonaFormulaAtomic atom) = Lo.FormulaAtomic $ convertAt
 convertBaseMonaToFormula (MonaFormulaDisj f1 f2) = Lo.Disj (convertBaseMonaToFormula f1) (convertBaseMonaToFormula f2)
 convertBaseMonaToFormula (MonaFormulaConj f1 f2) = Lo.Conj (convertBaseMonaToFormula f1) (convertBaseMonaToFormula f2)
 convertBaseMonaToFormula (MonaFormulaNeg f) = Lo.Neg $ convertBaseMonaToFormula f
-convertBaseMonaToFormula (MonaFormulaEx0 [p] f) = Lo.Disj (convertBaseMonaToFormula $ substituteVars [(MonaMacroParamVar0 [p], MonaTermBool MonaAtomTrue)] f) (convertBaseMonaToFormula $ substituteVars [(MonaMacroParamVar0 [p], MonaTermBool MonaAtomFalse)] f)
+convertBaseMonaToFormula (MonaFormulaEx0 [p] f) = Lo.Disj ptrue pfalse where
+  ptrue = convertBaseMonaToFormula $ substituteBoolVar p (MonaTermBool MonaAtomTrue) f
+  pfalse = convertBaseMonaToFormula $ substituteBoolVar p (MonaTermBool MonaAtomFalse) f
 convertBaseMonaToFormula (MonaFormulaEx1 [p] f) = Lo.Exists var $ Lo.Conj (convertBaseMonaToFormula f) (Lo.FormulaAtomic $ Lo.Sing var) where
   var = fst p
 convertBaseMonaToFormula (MonaFormulaEx2 [p] f) = Lo.Exists (fst p) (convertBaseMonaToFormula f)
@@ -73,6 +75,9 @@ getBaseFormula (MonaFile dom decls) = convertBaseMonaToFormula fle where
 
 -- |Only for debugging purposes.
 flatTest file = do
-  mona <- parseFile file
-  putStrLn $ show mona
-  putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona
+  parse <- parseFile file
+  case parse of
+    Left err -> error $ show err
+    Right mona -> do
+      putStrLn $ show mona
+      putStrLn $ show $ antiprenexFile $ removeForAllFile $ removeWhereFile $ unwindQuantifFile $ replaceCallsFile mona

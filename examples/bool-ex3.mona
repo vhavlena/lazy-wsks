@@ -1,0 +1,5 @@
+# Validity: unsatisfiable
+
+ws2s;
+
+all0 y: ex2 Y: ex2 X: X sub Y & y;

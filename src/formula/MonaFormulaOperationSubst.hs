@@ -129,6 +129,15 @@ applyVarDecl :: (MonaFormula -> MonaFormula) -> [(String, Maybe MonaFormula)] ->
 applyVarDecl f = map (\(a,b) -> (a,b >>= \a -> return $ f a))
 
 
+-- |Substitute bool vars by the corresponding values
+substituteBoolVars :: [(String, MonaTerm)] -> MonaFormula -> MonaFormula
+substituteBoolVars repl = substituteVars $ map (\(x,y) -> (MonaMacroParamVar0 [x], y)) repl
+
+
+-- |Substitute single bool var by the corresponding value
+substituteBoolVar :: String -> MonaTerm -> MonaFormula -> MonaFormula
+substituteBoolVar var value = substituteBoolVars [(var, value)]
+
 
 --------------------------------------------------------------------------------------------------------------
 -- Part with renaming bound variables.
