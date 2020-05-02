@@ -91,15 +91,15 @@ antiprenexShow :: MoFo.MonaFile -> IO ()
 antiprenexShow mona = putStrLn $ show $ antiprenexFileLight $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
 
 
-formatAnswerStat :: Either BP.FormulaStat String -> String
-formatAnswerStat (Left (BP.FormulaStat val states)) = (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
-formatAnswerStat (Right y) = "Error: " ++ show y
+formatAnswerStat :: Either String BP.FormulaStat -> String
+formatAnswerStat (Right (BP.FormulaStat val states)) = (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
+formatAnswerStat (Left y) = "Error: " ++ y
 
 
 -- |Format validity answer
-formatAnswer :: Either Bool String -> String
-formatAnswer (Left x) = formatAnswerStat (Left $ BP.FormulaStat x (-1))
-formatAnswer (Right y) = "Error: " ++ show y
+formatAnswer :: Either String Bool -> String
+formatAnswer (Right x) = formatAnswerStat (Right $ BP.FormulaStat x (-1))
+formatAnswer (Left y) = "Error: " ++ show y
 
 
 -- |Show formula and its simplicication for debug purposes.

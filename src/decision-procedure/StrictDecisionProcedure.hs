@@ -89,7 +89,7 @@ formula2Terms f = joinSetTerm $ formula2TermsVars Map.empty f []
 
 
 -- |Decide whether given ground formula is valid (strict approach).
-isValid :: Lo.Formula -> Either Bool String
+isValid :: Lo.Formula -> Either String Bool
 isValid f
-   | Lo.freeVars f == [] = Left $ botIn $ unwindFixpoints $ formula2Terms $ Lo.removeForAll f
-   | otherwise = Right "isValid: Only ground formula is allowed"
+   | Lo.freeVars f == [] = Right $ botIn $ unwindFixpoints $ formula2Terms $ Lo.removeForAll f
+   | otherwise = Left "isValid: Only ground formula is allowed"

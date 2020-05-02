@@ -10,7 +10,7 @@ module LazyDecisionProcedure (
    , formula2Terms
 ) where
 
-
+import Data.Either
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -19,6 +19,7 @@ import qualified AuxFunctions as Aux
 import qualified Logic as Lo
 import qualified Alphabet as Alp
 import qualified StrictDecisionProcedure as SDP
+import qualified ProcedureCheck as Check
 
 import BaseDecisionProcedure
 import BaseProcedureSymbolic
@@ -240,8 +241,11 @@ formula2Terms autdict f =  formula2TermsVarsLazy autdict f []
 
 
 -- |Decide whether given ground formula is valid (lazy approach).
-isValid :: MonaAutDict -> Lo.Formula -> Either FormulaStat String
+isValid :: MonaAutDict -> Lo.Formula -> Either String FormulaStat
 --isValid autdict f | Dbg.trace ("isValid: " ++ show f) False = undefined
 isValid autdict f
-   | Lo.freeVars f == [] = Left $ botInLazy (formula2Terms autdict f)
-   | otherwise = Right $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)
+   | isLeft supp = Left $ "Unsupported atom: " ++ (fromLeft "" supp)
+   | Lo.freeVars f /= [] = Left $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)
+   | otherwise = Right $ botInLazy (formula2Terms autdict f)
+   where
+     supp = Check.isFormulaSup autdict f
