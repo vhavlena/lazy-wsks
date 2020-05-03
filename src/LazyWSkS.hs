@@ -60,9 +60,12 @@ parseArgs args
 
 -- |Show formula and its validity (strict approach)
 showValid :: Lo.Formula -> IO ()
-showValid f = do
-   putStrLn $ show f
-   putStrLn $ formatAnswer $ SDP.isValid f
+showValid f = do --putStrLn $ show f
+   case ans of
+     Right msg -> putStrLn msg
+     Left msg -> hPutStrLn stderr msg
+   where
+     ans = formatAnswer $ SDP.isValid f
 
 
 -- |Show formula and its validity (lazy approach)
@@ -72,11 +75,15 @@ showValidLazy f = showValidMonaLazy [] f
 
 -- |Show formula and its validity using MONA
 showValidMonaLazy :: [(String, BA.WS2STreeAut)] -> Lo.Formula -> IO ()
-showValidMonaLazy aut f = do
-   putStrLn $ show f
-   putStrLn $ formatAnswerStat $ LDP.isValid (Map.fromList aut) f
+showValidMonaLazy aut f = do --putStrLn $ show f
+   case ans of
+     Right msg -> putStrLn msg
+     Left msg -> hPutStrLn stderr msg
+   where
+     ans = formatAnswerStat $ LDP.isValid (Map.fromList aut) f
 
 
+-- |Solve validity of a formula using lazy approach
 solveLazyShow :: MoFo.MonaFile -> ProcedureArgs -> IO ()
 solveLazyShow mona par =
   let fnc = if par == Prenex then simplifyFile else antiprenexFileLight
@@ -87,26 +94,28 @@ solveLazyShow mona par =
         showValidMonaLazy auts hf
 
 
+-- |Perform light antiprenexing
 antiprenexShow :: MoFo.MonaFile -> IO ()
 antiprenexShow mona = putStrLn $ show $ antiprenexFileLight $ removeForAllFile $ removeWhereFile $ replaceCallsFile $ renameBVFileWrap $ unwindQuantifFile mona
 
 
-formatAnswerStat :: Either String BP.FormulaStat -> String
-formatAnswerStat (Right (BP.FormulaStat val states)) = (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
-formatAnswerStat (Left y) = "Error: " ++ y
+-- |Format validity answer with additional statistics
+formatAnswerStat :: Either String BP.FormulaStat -> Either String String
+formatAnswerStat (Right (BP.FormulaStat val states)) = Right $ (if val then "valid" else "unsatisfiable") ++ "\nStates: " ++ (show states)
+formatAnswerStat (Left y) = Left $ "Error: " ++ y
 
 
 -- |Format validity answer
-formatAnswer :: Either String Bool -> String
+formatAnswer :: Either String Bool -> Either String String
 formatAnswer (Right x) = formatAnswerStat (Right $ BP.FormulaStat x (-1))
-formatAnswer (Left y) = "Error: " ++ show y
+formatAnswer (Left y) = Left $ "Error: " ++ show y
 
 
 -- |Show formula and its simplicication for debug purposes.
 formulaOperationsDebug :: Lo.Formula -> IO ()
 formulaOperationsDebug f = do
   let sf = FO.simplifyFormula f in do
-    putStrLn $ show $ FO.antiprenex sf
+    --putStrLn $ show $ FO.antiprenex sf
     putStrLn $ show $ FO.antiprenex $ FO.balanceFormula sf
 
 

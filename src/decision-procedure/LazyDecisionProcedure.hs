@@ -245,7 +245,7 @@ isValid :: MonaAutDict -> Lo.Formula -> Either String FormulaStat
 --isValid autdict f | Dbg.trace ("isValid: " ++ show f) False = undefined
 isValid autdict f
    | isLeft supp = Left $ "Unsupported atom: " ++ (fromLeft "" supp)
-   | Lo.freeVars f /= [] = Left $ "isValidLazy: Only ground formula is allowed" ++ show (Lo.freeVars f)
+   | Lo.freeVars f /= [] = Left $ "Only closed formula is allowed " ++ show (Lo.freeVars f)
    | otherwise = Right $ botInLazy (formula2Terms autdict f)
    where
      supp = Check.isFormulaSup autdict f
