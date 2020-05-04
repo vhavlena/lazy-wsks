@@ -1,0 +1,4710 @@
+# Source: type D = enumeration of a, b, c
+ 
+# encoding D: [var0 X0, var0 X1], a = 00, b = 01, c = 10, 
+ 
+macro IS_a(var0 X0, var0 X1) = 
+~X0 & ~X1; 
+ 
+macro IS_b(var0 X0, var0 X1) = 
+~X0 & X1; 
+ 
+macro IS_c(var0 X0, var0 X1) = 
+X0 & ~X1; 
+ 
+macro IS_D(var0 X0, var0 X1) = 
+IS_a(X0, X1) &
+IS_b(X0, X1) &
+IS_c(X0, X1); 
+
+# Source: type MultiD = enumeration of
+#      D_empty, D_a, D_b, D_c, D_ab, D_ac, D_bc, D_abc
+ 
+# encoding MultiD: [var0 X0, var0 X1, var0 X2], D_empty = 000, D_a = 001, D_b = 010, D_c = 011, D_ab = 100, D_ac = 101, D_bc = 110, D_abc = 111, 
+ 
+macro IS_D_empty(var0 X0, var0 X1, var0 X2) = 
+~X0 & ~X1 & ~X2; 
+ 
+macro IS_D_a(var0 X0, var0 X1, var0 X2) = 
+~X0 & ~X1 & X2; 
+ 
+macro IS_D_b(var0 X0, var0 X1, var0 X2) = 
+~X0 & X1 & ~X2; 
+ 
+macro IS_D_c(var0 X0, var0 X1, var0 X2) = 
+~X0 & X1 & X2; 
+ 
+macro IS_D_ab(var0 X0, var0 X1, var0 X2) = 
+X0 & ~X1 & ~X2; 
+ 
+macro IS_D_ac(var0 X0, var0 X1, var0 X2) = 
+X0 & ~X1 & X2; 
+ 
+macro IS_D_bc(var0 X0, var0 X1, var0 X2) = 
+X0 & X1 & ~X2; 
+ 
+macro IS_D_abc(var0 X0, var0 X1, var0 X2) = 
+X0 & X1 & X2; 
+ 
+macro IS_MultiD(var0 X0, var0 X1, var0 X2) = 
+IS_D_empty(X0, X1, X2) &
+IS_D_a(X0, X1, X2) &
+IS_D_b(X0, X1, X2) &
+IS_D_c(X0, X1, X2) &
+IS_D_ab(X0, X1, X2) &
+IS_D_ac(X0, X1, X2) &
+IS_D_bc(X0, X1, X2) &
+IS_D_abc(X0, X1, X2); 
+
+# Source: type MultiA = enumeration of A_pres, A_empty
+ 
+# encoding MultiA: [var0 X0], A_pres = 0, A_empty = 1, 
+ 
+macro IS_A_pres(var0 X0) = 
+~X0; 
+ 
+macro IS_A_empty(var0 X0) = 
+X0; 
+ 
+macro IS_MultiA(var0 X0) = 
+IS_A_pres(X0) &
+IS_A_empty(X0); 
+
+# IOA Source Automaton name: SlidingWindow
+
+# signature
+
+# input send(d: D)
+# internal sendpktSR(p: D), prepareNewSeg(d: D), 
+#	prepareRetranSeg(d: D), rcvpktRS(i: Int), 
+#	rcvpktSR(i: Int), sendpktRS(i: Int), 
+#	dropSR(i: Int), dropRS(i: Int)
+# output deliver(d: D)
+
+# Source line: states
+# SendBuf: Seq[D] := {}
+# encoding: [S0 has the valid indices and S1 and S2 denote the elts of the Seq]
+# hSendBuf: Int := 1
+# encoding: [S3 = hSendBuf]
+# W: Int := choose n where n > 0
+# encoding: [S4 = W]
+# readyToSend: Bool := false
+# encoding: [S5 = readyToSend]
+# seqNum: Int := 0
+# encoding: [S6 = seqNum]
+# segment: D
+# encoding: [Encode as above with variables S7 and S8 ]
+# RetranBuf: Seq[D] := {}
+# encoding: [S9 has the valid indices and S10 and S11 denote the elts of the Seq]
+# hRetranBuf: Int := 1
+# encoding: [S12 = hRetranBuf]
+# RcvBuf: Seq[D] := {}
+# encoding: [S13 has the valid indices and S14 and S15 denote the elts of the Seq]
+# hRcvBuf: Int := 1
+# encoding: [S16 = hRcvBuf]
+# sendAck: Bool := false
+# encoding: [S17 = sendAck]
+# transitSR: Map[Int, MultiD] := empty
+# encoding: [S18 has the valid indices and S19 and S20 and S21 denote the elts of the Map]
+# transitRS: Map[Int, MultiA] := empty
+# encoding: [S22 has the valid indices and S23 denote the elts of the Map]
+
+# State variables as global Variables 
+var2 S0, S0'; var2 S1, S1'; var2 S2, S2'; 
+var1 S3, S3';
+var1 S4, S4';
+var0 S5, S5';
+var1 S6, S6';
+var0 S7, S7'; var0 S8, S8'; 
+var2 S9, S9'; var2 S10, S10'; var2 S11, S11'; 
+var1 S12, S12';
+var2 S13, S13'; var2 S14, S14'; var2 S15, S15'; 
+var1 S16, S16';
+var0 S17, S17';
+var2 S18, S18'; var2 S19, S19'; var2 S20, S20'; var2 S21, S21'; 
+var2 S22, S22'; var2 S23, S23'; 
+
+
+# Define initial state 
+pred initialize_state =
+ex2 X0: ex2 X1: ex2 X2: S0' =  X0 & S1' =  X1 & S2' =  X2 & 
+( X0 = {0} & X1 = {} & X2 = {}) &
+(S3' = 1) &
+ex1 X0: S4' =  X0 & 
+ex1 P0: X0 = P0 &
+ex0 X2: (X2 <=> true) & ex1 X3: (X3 = P0) & 
+(X2 <=> (X3 > 0)) &
+(S5' <=> false) &
+(S6' = 0) &
+ex2 X0: ex2 X1: ex2 X2: S9' =  X0 & S10' =  X1 & S11' =  X2 & 
+( X0 = {0} & X1 = {} & X2 = {}) &
+(S12' = 1) &
+ex2 X0: ex2 X1: ex2 X2: S13' =  X0 & S14' =  X1 & S15' =  X2 & 
+( X0 = {0} & X1 = {} & X2 = {}) &
+(S16' = 1) &
+(S17' <=> false) &
+ex2 X0: ex2 X1: ex2 X2: ex2 X3: S18' =  X0 & S19' =  X1 & S20' =  X2 & S21' =  X3 & 
+( X0 = {} & X1 = {} & X2 = {} & X3 = {}) &
+ex2 X0: ex2 X1: S22' =  X0 & S23' =  X1 & 
+( X0 = {} & X1 = {});
+
+# transitions
+
+# IOA source:
+# input send([d])
+# eff SendBuf := SendBuf |- d
+
+pred send(var0 P1, var0 P2) =
+(ex2 T0: ex2 T1: ex2 T2: 
+
+## IOA souce: SendBuf := SendBuf |- d ##
+
+( ex2 X0: ex2 X1: ex2 X2: T0 = X0 & T1 = X1 & T2 = X2 & 
+ex2 X3: ex2 X4: ex2 X5: (X3 = S0 & X4 = S1 & X5 = S2) & 
+ex0 X6: ex0 X7: ((X6 <=> P1) & (X7 <=> P2)) & 
+( X0 = X3 union {(max X3) + 1}) &
+(X6 => (X1 = X4 union {(max X3) + 1})) &
+(~X6 => (X1 = X4)) &
+(X7 => (X2 = X5 union {(max X3) + 1})) &
+(~X7 => (X2 = X5)) ) &
+S0' = T0 & S1' = T1 & S2' = T2) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6;
+
+# IOA source:
+# internal prepareNewSeg([d])
+# pre readyToSend = false
+#   /\ hSendBuf <= len(SendBuf)
+#   /\ d = SendBuf[hSendBuf]
+#   /\ len(RetranBuf) < W
+# eff RetranBuf := RetranBuf |- d
+#     seqNum := hSendBuf
+#     hSendBuf := hSendBuf + 1
+#     readyToSend := true
+#     segment := d
+
+pred prepareNewSeg(var0 P3, var0 P4) =
+
+## IOA source: pre readyToSend = false
+#   /\ hSendBuf <= len(SendBuf)
+#   /\ d = SendBuf[hSendBuf]
+#   /\ len(RetranBuf) < W
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex0 X4: ((X4 <=> S5)) & 
+(X3 <=> (X4 <=> false))) & 
+ex0 X4: (ex1 X5: (X5 = S3) & 
+ex1 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S0 & X8 = S1 & X9 = S2) & 
+X6 = max X7) & 
+(X4 <=> (X5 <= X6))) & 
+(X2 <=> (X3 & X4))) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> P3) & (X5 <=> P4)) & 
+ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: (X8 = S0 & X9 = S1 & X10 = S2) & 
+ex1 X11: (X11 = S3) & 
+( (X11 in X8 & X11 ~= 0) =>
+((X6 <=> (X11 in X9)) &
+(X7 <=> (X11 in X10))))) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9 & X5 = S10 & X6 = S11) & 
+X3 = max X4) & 
+ex1 X4: (X4 = S4) & 
+(X2 <=> (X3 < X4))) & 
+(X0 <=> (X1 & X2))) =>
+((ex0 T5: 
+ex1 T4: 
+ex0 T6: ex0 T7: 
+ex2 T0: ex2 T1: ex2 T2: 
+ex1 T3: 
+
+## IOA souce: RetranBuf := RetranBuf |- d ##
+
+( ex2 X0: ex2 X1: ex2 X2: T0 = X0 & T1 = X1 & T2 = X2 & 
+ex2 X3: ex2 X4: ex2 X5: (X3 = S9 & X4 = S10 & X5 = S11) & 
+ex0 X6: ex0 X7: ((X6 <=> P3) & (X7 <=> P4)) & 
+( X0 = X3 union {(max X3) + 1}) &
+(X6 => (X1 = X4 union {(max X3) + 1})) &
+(~X6 => (X1 = X4)) &
+(X7 => (X2 = X5 union {(max X3) + 1})) &
+(~X7 => (X2 = X5)) )
+&
+
+## IOA souce: seqNum := hSendBuf ##
+
+( ex1 X0: T3 = X0 & 
+X0 = S3 )
+&
+
+## IOA souce: hSendBuf := hSendBuf + 1 ##
+
+( ex1 X0: T4 = X0 & 
+ex1 X1: (X1 = S3) & 
+X0 = X1 + 1 )
+&
+
+## IOA souce: readyToSend := true
+
+(T5 <=> true)
+&
+
+## IOA souce: segment := d ##
+
+( ex0 X0: ex0 X1: (T6 <=> X0) & (T7 <=> X1) & 
+(X0 <=> P3) & (X1 <=> P4) ) &
+(S5' <=> T5) &
+S3' = T4 &
+(S7' <=> T6) & (S8' <=> T7) &
+S9' = T0 & S10' = T1 & S11' = T2 &
+S6' = T3) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex0 X4: ((X4 <=> S5)) & 
+(X3 <=> (X4 <=> false))) & 
+ex0 X4: (ex1 X5: (X5 = S3) & 
+ex1 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S0 & X8 = S1 & X9 = S2) & 
+X6 = max X7) & 
+(X4 <=> (X5 <= X6))) & 
+(X2 <=> (X3 & X4))) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> P3) & (X5 <=> P4)) & 
+ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: (X8 = S0 & X9 = S1 & X10 = S2) & 
+ex1 X11: (X11 = S3) & 
+( (X11 in X8 & X11 ~= 0) =>
+((X6 <=> (X11 in X9)) &
+(X7 <=> (X11 in X10))))) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9 & X5 = S10 & X6 = S11) & 
+X3 = max X4) & 
+ex1 X4: (X4 = S4) & 
+(X2 <=> (X3 < X4))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal sendpktSR([d])
+# pre readyToSend = true /\ d = segment
+# eff readyToSend := false
+#     if d = a then
+#    if
+#       ~defined(transitSR, seqNum)
+#         \/ transitSR[seqNum] = D_empty
+#         \/ transitSR[seqNum] = D_a then
+#       transitSR := update(transitSR, seqNum, D_a)
+#     elseif transitSR[seqNum] = D_b then
+#        transitSR := update(transitSR, seqNum, D_ab)
+#     elseif transitSR[seqNum] = D_c then
+#        transitSR := update(transitSR, seqNum, D_ac)
+#     elseif transitSR[seqNum] = D_bc then
+#        transitSR := update(transitSR, seqNum, D_abc)
+#     fi
+#  elseif d = b then
+#     if
+#        ~defined(transitSR, seqNum)
+#          \/ transitSR[seqNum] = D_empty
+#          \/ transitSR[seqNum] = D_b then
+#        transitSR := update(transitSR, seqNum, D_b)
+#      elseif transitSR[seqNum] = D_a then
+#         transitSR := update(transitSR, seqNum, D_ab)
+#      elseif transitSR[seqNum] = D_c then
+#         transitSR := update(transitSR, seqNum, D_bc)
+#      elseif transitSR[seqNum] = D_ac then
+#         transitSR := update(transitSR, seqNum, D_abc)
+#      fi
+#  elseif d = c then
+#     if
+#        ~defined(transitSR, seqNum)
+#          \/ transitSR[seqNum] = D_empty
+#          \/ transitSR[seqNum] = D_c then
+#        transitSR := update(transitSR, seqNum, D_c)
+#      elseif transitSR[seqNum] = D_a then
+#         transitSR := update(transitSR, seqNum, D_ac)
+#      elseif transitSR[seqNum] = D_b then
+#         transitSR := update(transitSR, seqNum, D_bc)
+#      elseif transitSR[seqNum] = D_ab then
+#         transitSR := update(transitSR, seqNum, D_abc)
+#      fi
+#  fi
+
+pred sendpktSR(var0 P8, var0 P9) =
+
+## IOA source: pre readyToSend = true /\ d = segment
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: ((X2 <=> S5)) & 
+(X1 <=> (X2 <=> true))) & 
+ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> P8) & (X4 <=> P9)) & 
+ex0 X5: ex0 X6: ((X5 <=> S7) & (X6 <=> S8)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex2 T45: ex2 T46: ex2 T47: ex2 T48: 
+ex0 T0: 
+ex2 T29: ex2 T30: ex2 T31: ex2 T32: 
+ex2 T13: ex2 T14: ex2 T15: ex2 T16: 
+
+## IOA souce: readyToSend := false
+
+(T0 <=> false)
+&
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+ex2 T9: ex2 T10: ex2 T11: ex2 T12: 
+ex2 T5: ex2 T6: ex2 T7: ex2 T8: 
+ex2 T1: ex2 T2: ex2 T3: ex2 T4: 
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_a) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T1 = X0 & T2 = X1 & T3 = X2 & T4 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> false) & (X10 <=> false) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+( T1 = S18 & T2 = S19 & T3 = S20 & T4 = S21 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_ab) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T5 = X0 & T6 = X1 & T7 = X2 & T8 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> false) & (X11 <=> false)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T5 = T1 & T6 = T2 & T7 = T3 & T8 = T4 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T5 & X5 = T6 & X6 = T7 & X7 = T8) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_ac) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T9 = X0 & T10 = X1 & T11 = X2 & T12 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T5 & X5 = T6 & X6 = T7 & X7 = T8) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> false) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T5 & X5 = T6 & X6 = T7 & X7 = T8) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T9 = T5 & T10 = T6 & T11 = T7 & T12 = T8 )) &
+(( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T5 & X5 = T6 & X6 = T7 & X7 = T8) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T9 & X5 = T10 & X6 = T11 & X7 = T12) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_abc) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T13 = X0 & T14 = X1 & T15 = X2 & T16 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T9 & X5 = T10 & X6 = T11 & X7 = T12) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> true) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T1 & X5 = T2 & X6 = T3 & X7 = T4) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T5 & X5 = T6 & X6 = T7 & X7 = T8) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T9 & X5 = T10 & X6 = T11 & X7 = T12) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T13 = T9 & T14 = T10 & T15 = T11 & T16 = T12 ))) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T13 = S18 & T14 = S19 & T15 = S20 & T16 = S21 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+ex2 T25: ex2 T26: ex2 T27: ex2 T28: 
+ex2 T21: ex2 T22: ex2 T23: ex2 T24: 
+ex2 T17: ex2 T18: ex2 T19: ex2 T20: 
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_b) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T17 = X0 & T18 = X1 & T19 = X2 & T20 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> false) & (X10 <=> true) & (X11 <=> false)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+( T17 = T13 & T18 = T14 & T19 = T15 & T20 = T16 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_ab) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T21 = X0 & T22 = X1 & T23 = X2 & T24 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> false) & (X11 <=> false)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T21 = T17 & T22 = T18 & T23 = T19 & T24 = T20 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T21 & X5 = T22 & X6 = T23 & X7 = T24) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_bc) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T25 = X0 & T26 = X1 & T27 = X2 & T28 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T21 & X5 = T22 & X6 = T23 & X7 = T24) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> true) & (X11 <=> false)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T21 & X5 = T22 & X6 = T23 & X7 = T24) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T25 = T21 & T26 = T22 & T27 = T23 & T28 = T24 )) &
+(( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T21 & X5 = T22 & X6 = T23 & X7 = T24) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T25 & X5 = T26 & X6 = T27 & X7 = T28) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_abc) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T29 = X0 & T30 = X1 & T31 = X2 & T32 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T25 & X5 = T26 & X6 = T27 & X7 = T28) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> true) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T13 & X5 = T14 & X6 = T15 & X7 = T16) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T13 & X8 = T14 & X9 = T15 & X10 = T16) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T13 & X7 = T14 & X8 = T15 & X9 = T16) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T17 & X5 = T18 & X6 = T19 & X7 = T20) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T21 & X5 = T22 & X6 = T23 & X7 = T24) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T25 & X5 = T26 & X6 = T27 & X7 = T28) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T29 = T25 & T30 = T26 & T31 = T27 & T32 = T28 ))) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+( T29 = T13 & T30 = T14 & T31 = T15 & T32 = T16 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> true) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+ex2 T41: ex2 T42: ex2 T43: ex2 T44: 
+ex2 T37: ex2 T38: ex2 T39: ex2 T40: 
+ex2 T33: ex2 T34: ex2 T35: ex2 T36: 
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_c) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T33 = X0 & T34 = X1 & T35 = X2 & T36 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> false) & (X10 <=> true) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+( T33 = T29 & T34 = T30 & T35 = T31 & T36 = T32 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_ac) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T37 = X0 & T38 = X1 & T39 = X2 & T40 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> false) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T37 = T33 & T38 = T34 & T39 = T35 & T40 = T36 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T37 & X5 = T38 & X6 = T39 & X7 = T40) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_bc) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T41 = X0 & T42 = X1 & T43 = X2 & T44 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T37 & X5 = T38 & X6 = T39 & X7 = T40) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> true) & (X11 <=> false)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T37 & X5 = T38 & X6 = T39 & X7 = T40) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T41 = T37 & T42 = T38 & T43 = T39 & T44 = T40 )) &
+(( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T37 & X5 = T38 & X6 = T39 & X7 = T40) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T41 & X5 = T42 & X6 = T43 & X7 = T44) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR := update(transitSR, seqNum, D_abc) ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T45 = X0 & T46 = X1 & T47 = X2 & T48 = X3 & 
+ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T41 & X5 = T42 & X6 = T43 & X7 = T44) & 
+ex1 X8: (X8 = S6) & 
+ex0 X9: ex0 X10: ex0 X11: ((X9 <=> true) & (X10 <=> true) & (X11 <=> true)) & 
+( (X0 = X4 union {X8}) &
+((X9 <=> true) => (X1 = X5 union {X8})) &
+((X9 <=> false) => (X1 = X5\{X8})) &
+((X10 <=> true) => (X2 = X6 union {X8})) &
+((X10 <=> false) => (X2 = X6\{X8})) &
+((X11 <=> true) => (X3 = X7 union {X8})) &
+((X11 <=> false) => (X3 = X7\{X8}))) )) &
+(~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = S6) & 
+( (X3 <=> X8 in X4) )) & 
+(X2 <=> ~ X3)) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = T29 & X8 = T30 & X9 = T31 & X10 = T32) & 
+ex1 X11: (X11 = S6) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = T29 & X7 = T30 & X8 = T31 & X9 = T32) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T33 & X5 = T34 & X6 = T35 & X7 = T36) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T37 & X5 = T38 & X6 = T39 & X7 = T40) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T41 & X5 = T42 & X6 = T43 & X7 = T44) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T45 = T41 & T46 = T42 & T47 = T43 & T48 = T44 ))) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ((X1 <=> P8) & (X2 <=> P9)) & 
+ex0 X3: ex0 X4: ((X3 <=> true) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+( T45 = T29 & T46 = T30 & T47 = T31 & T48 = T32 )) &
+S18' = T45 & S19' = T46 & S20' = T47 & S21' = T48 &
+(S5' <=> T0)) &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: ((X2 <=> S5)) & 
+(X1 <=> (X2 <=> true))) & 
+ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> P8) & (X4 <=> P9)) & 
+ex0 X5: ex0 X6: ((X5 <=> S7) & (X6 <=> S8)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal rcvpktRS([i])
+# pre defined(transitRS, i) /\ transitRS[i] = A_pres
+# eff if hRetranBuf < i
+#    then hRetranBuf := i;
+#         W := choose n where n >= W /\ n >= hRetranBuf
+#    fi
+#     transitRS :=
+#   choose
+#     w where
+#        w = update(transitRS, i, A_empty)
+#          \/ w = update(transitRS, i, A_pres)
+
+pred rcvpktRS(var1 P10) =
+
+## IOA source: pre defined(transitRS, i) /\ transitRS[i] = A_pres
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: (X2 = S22 & X3 = S23) & 
+ex1 X4: (X4 = P10) & 
+( (X1 <=> X4 in X2) )) & 
+ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: (X4 = S22 & X5 = S23) & 
+ex1 X6: (X6 = P10) & 
+( (X6 in X4) =>
+((X3 <=> (X6 in X5))))) & 
+ex0 X4: ((X4 <=> false)) & 
+(X2 <=> ((X3 <=> X4)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex1 T0: 
+ex1 T1: 
+ex2 T2: ex2 T3: 
+((ex0 X0: (X0 <=> true) & ex1 X1: (X1 = S12) & 
+ex1 X2: (X2 = P10) & 
+(X0 <=> (X1 < X2))) =>
+
+## IOA souce: hRetranBuf := i ##
+
+( ex1 X0: T0 = X0 & 
+X0 = P10 )
+&
+
+## IOA souce: W := choose n where n >= W /\ n >= hRetranBuf ##
+
+( ex1 X0: T1 = X0 & 
+ex1 P11: X0 = P11 &
+ex0 X1: (X1 <=> true) & ex0 X2: (ex1 X3: (X3 = P11) & 
+ex1 X4: (X4 = S4) & 
+(X2 <=> (X3 >= X4))) & 
+ex0 X3: (ex1 X4: (X4 = P11) & 
+ex1 X5: (X5 = T0) & 
+(X3 <=> (X4 >= X5))) & 
+(X1 <=> (X2 & X3)) )) &
+(~(ex0 X0: (X0 <=> true) & ex1 X1: (X1 = S12) & 
+ex1 X2: (X2 = P10) & 
+(X0 <=> (X1 < X2))) =>
+( T0 = S12 &
+T1 = S4 ))
+&
+
+## IOA souce: transitRS :=
+#   choose
+#     w where
+#        w = update(transitRS, i, A_empty)
+#          \/ w = update(transitRS, i, A_pres) ##
+
+( ex2 X0: ex2 X1: T2 = X0 & T3 = X1 & 
+ex2 P12: ex2 P13: X0 = P12 & X1 = P13 &
+ex0 X2: (X2 <=> true) & ex0 X3: (ex2 X4: ex2 X5: (X4 = P12 & X5 = P13) & 
+ex2 X6: ex2 X7: (ex2 X8: ex2 X9: (X8 = S22 & X9 = S23) & 
+ex1 X10: (X10 = P10) & 
+ex0 X11: ((X11 <=> true)) & 
+( (X6 = X8 union {X10}) &
+((X11 <=> true) => (X7 = X9 union {X10})) &
+((X11 <=> false) => (X7 = X9\{X10})))) & 
+(X3 <=> (X4 = X6 & X5 = X7))) & 
+ex0 X4: (ex2 X5: ex2 X6: (X5 = P12 & X6 = P13) & 
+ex2 X7: ex2 X8: (ex2 X9: ex2 X10: (X9 = S22 & X10 = S23) & 
+ex1 X11: (X11 = P10) & 
+ex0 X12: ((X12 <=> false)) & 
+( (X7 = X9 union {X11}) &
+((X12 <=> true) => (X8 = X10 union {X11})) &
+((X12 <=> false) => (X8 = X10\{X11})))) & 
+(X4 <=> (X5 = X7 & X6 = X8))) & 
+(X2 <=> (X3 | X4)) ) &
+S12' = T0 &
+S4' = T1 &
+S22' = T2 & S23' = T3) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: (X2 = S22 & X3 = S23) & 
+ex1 X4: (X4 = P10) & 
+( (X1 <=> X4 in X2) )) & 
+ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: (X4 = S22 & X5 = S23) & 
+ex1 X6: (X6 = P10) & 
+( (X6 in X4) =>
+((X3 <=> (X6 in X5))))) & 
+ex0 X4: ((X4 <=> false)) & 
+(X2 <=> ((X3 <=> X4)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal prepareRetranSeg([d])
+# pre readyToSend = false
+#   /\ d = RetranBuf[hRetranBuf]
+#   /\ hRetranBuf <= len(RetranBuf)
+# eff readyToSend := true
+#     seqNum := hRetranBuf
+#     segment := d
+
+pred prepareRetranSeg(var0 P30, var0 P31) =
+
+## IOA source: pre readyToSend = false
+#   /\ d = RetranBuf[hRetranBuf]
+#   /\ hRetranBuf <= len(RetranBuf)
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ((X3 <=> S5)) & 
+(X2 <=> (X3 <=> false))) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> P30) & (X5 <=> P31)) & 
+ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: (X8 = S9 & X9 = S10 & X10 = S11) & 
+ex1 X11: (X11 = S12) & 
+( (X11 in X8 & X11 ~= 0) =>
+((X6 <=> (X11 in X9)) &
+(X7 <=> (X11 in X10))))) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex1 X3: (X3 = S12) & 
+ex1 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S9 & X6 = S10 & X7 = S11) & 
+X4 = max X5) & 
+(X2 <=> (X3 <= X4))) & 
+(X0 <=> (X1 & X2))) =>
+((ex0 T0: 
+ex0 T2: ex0 T3: 
+ex1 T1: 
+
+## IOA souce: readyToSend := true
+
+(T0 <=> true)
+&
+
+## IOA souce: seqNum := hRetranBuf ##
+
+( ex1 X0: T1 = X0 & 
+X0 = S12 )
+&
+
+## IOA souce: segment := d ##
+
+( ex0 X0: ex0 X1: (T2 <=> X0) & (T3 <=> X1) & 
+(X0 <=> P30) & (X1 <=> P31) ) &
+(S5' <=> T0) &
+(S7' <=> T2) & (S8' <=> T3) &
+S6' = T1) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ((X3 <=> S5)) & 
+(X2 <=> (X3 <=> false))) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> P30) & (X5 <=> P31)) & 
+ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: (X8 = S9 & X9 = S10 & X10 = S11) & 
+ex1 X11: (X11 = S12) & 
+( (X11 in X8 & X11 ~= 0) =>
+((X6 <=> (X11 in X9)) &
+(X7 <=> (X11 in X10))))) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex1 X3: (X3 = S12) & 
+ex1 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S9 & X6 = S10 & X7 = S11) & 
+X4 = max X5) & 
+(X2 <=> (X3 <= X4))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal rcvpktSR([i])
+# pre defined(transitSR, i) /\ transitSR[i] ~= D_empty
+# eff sendAck := true
+#     if i = len(RcvBuf) + 1
+#    then if transitSR[i] = D_a then
+#            RcvBuf := RcvBuf |- a;
+#            transitSR :=
+#              choose
+#                v where v = update(transitSR, i, D_empty) \/ v = transitSR
+#          elseif transitSR[i] = D_b then
+#             RcvBuf := RcvBuf |- b;
+#             transitSR :=
+#               choose
+#                 v where v = update(transitSR, i, D_empty) \/ v = transitSR
+#          elseif transitSR[i] = D_c then
+#             RcvBuf := RcvBuf |- c;
+#             transitSR :=
+#               choose
+#                 v where v = update(transitSR, i, D_empty) \/ v = transitSR
+#          elseif transitSR[i] = D_ab then
+#             RcvBuf := choose v where v = RcvBuf |- a \/ v = RcvBuf |- b;
+#             if last(RcvBuf) = a
+#                then transitSR :=
+#                       choose
+#                         v where
+#                            v = update(transitSR, i, D_b) \/ v = transitSR
+#                else
+#                  transitSR :=
+#                    choose
+#                      v where v = update(transitSR, i, D_a) \/ v = transitSR
+#                fi
+#          elseif transitSR[i] = D_ac then
+#             RcvBuf := choose v where v = RcvBuf |- a \/ v = RcvBuf |- c;
+#             if last(RcvBuf) = a
+#                then transitSR :=
+#                       choose
+#                         v where
+#                            v = update(transitSR, i, D_c) \/ v = transitSR
+#                else
+#                  transitSR :=
+#                    choose
+#                      v where v = update(transitSR, i, D_a) \/ v = transitSR
+#                fi
+#          elseif transitSR[i] = D_bc then
+#             RcvBuf := choose v where v = RcvBuf |- b \/ v = RcvBuf |- c;
+#             if last(RcvBuf) = b
+#                then transitSR :=
+#                       choose
+#                         v where
+#                            v = update(transitSR, i, D_c) \/ v = transitSR
+#                else
+#                  transitSR :=
+#                    choose
+#                      v where v = update(transitSR, i, D_b) \/ v = transitSR
+#                fi
+#          elseif transitSR[i] = D_abc then
+#             RcvBuf :=
+#               choose
+#                 v where
+#                    v = RcvBuf |- a \/ v = RcvBuf |- b \/ v = RcvBuf |- c;
+#             if last(RcvBuf) = a then
+#                transitSR :=
+#                  choose
+#                    v where v = update(transitSR, i, D_bc) \/ v = transitSR
+#              elseif last(RcvBuf) = b then
+#                 transitSR :=
+#                   choose
+#                     v where v = update(transitSR, i, D_ac) \/ v = transitSR
+#              else
+#                transitSR :=
+#                  choose
+#                    v where v = update(transitSR, i, D_ab) \/ v = transitSR
+#              fi
+#          fi
+#    fi
+
+pred rcvpktSR(var1 P32) =
+
+## IOA source: pre defined(transitSR, i) /\ transitSR[i] ~= D_empty
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P32) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P32) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex2 T66: ex2 T67: ex2 T68: ex2 T69: 
+ex0 T0: 
+ex2 T55: ex2 T56: ex2 T57: 
+
+## IOA souce: sendAck := true
+
+(T0 <=> true)
+&
+((ex0 X0: (X0 <=> true) & ex1 X1: (X1 = P32) & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 = X2))) =>
+ex2 T44: ex2 T45: ex2 T46: 
+ex2 T51: ex2 T52: ex2 T53: ex2 T54: 
+ex2 T33: ex2 T34: ex2 T35: 
+ex2 T40: ex2 T41: ex2 T42: ex2 T43: 
+ex2 T22: ex2 T23: ex2 T24: 
+ex2 T29: ex2 T30: ex2 T31: ex2 T32: 
+ex2 T15: ex2 T16: ex2 T17: 
+ex2 T18: ex2 T19: ex2 T20: ex2 T21: 
+ex2 T8: ex2 T9: ex2 T10: 
+ex2 T11: ex2 T12: ex2 T13: ex2 T14: 
+ex2 T1: ex2 T2: ex2 T3: 
+ex2 T4: ex2 T5: ex2 T6: ex2 T7: 
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) =>
+
+## IOA souce: RcvBuf := RcvBuf |- a ##
+
+( ex2 X0: ex2 X1: ex2 X2: T1 = X0 & T2 = X1 & T3 = X2 & 
+ex2 X3: ex2 X4: ex2 X5: (X3 = S13 & X4 = S14 & X5 = S15) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+( X0 = X3 union {(max X3) + 1}) &
+(X6 => (X1 = X4 union {(max X3) + 1})) &
+(~X6 => (X1 = X4)) &
+(X7 => (X2 = X5 union {(max X3) + 1})) &
+(~X7 => (X2 = X5)) )
+&
+
+## IOA souce: transitSR :=
+#   choose v where v = update(transitSR, i, D_empty) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T4 = X0 & T5 = X1 & T6 = X2 & T7 = X3 & 
+ex2 P34: ex2 P35: ex2 P36: ex2 P37: X0 = P34 & X1 = P35 & X2 = P36 & X3 = P37 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P34 & X7 = P35 & X8 = P36 & X9 = P37) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = S18 & X15 = S19 & X16 = S20 & X17 = S21) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P34 & X8 = P35 & X9 = P36 & X10 = P37) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = S18 & X12 = S19 & X13 = S20 & X14 = S21) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) =>
+( T1 = S13 & T2 = S14 & T3 = S15 &
+T4 = S18 & T5 = S19 & T6 = S20 & T7 = S21 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: RcvBuf := RcvBuf |- b ##
+
+( ex2 X0: ex2 X1: ex2 X2: T8 = X0 & T9 = X1 & T10 = X2 & 
+ex2 X3: ex2 X4: ex2 X5: (X3 = T1 & X4 = T2 & X5 = T3) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+( X0 = X3 union {(max X3) + 1}) &
+(X6 => (X1 = X4 union {(max X3) + 1})) &
+(~X6 => (X1 = X4)) &
+(X7 => (X2 = X5 union {(max X3) + 1})) &
+(~X7 => (X2 = X5)) )
+&
+
+## IOA souce: transitSR :=
+#   choose v where v = update(transitSR, i, D_empty) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T11 = X0 & T12 = X1 & T13 = X2 & T14 = X3 & 
+ex2 P50: ex2 P51: ex2 P52: ex2 P53: X0 = P50 & X1 = P51 & X2 = P52 & X3 = P53 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P50 & X7 = P51 & X8 = P52 & X9 = P53) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T4 & X15 = T5 & X16 = T6 & X17 = T7) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P50 & X8 = P51 & X9 = P52 & X10 = P53) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T4 & X12 = T5 & X13 = T6 & X14 = T7) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T8 = T1 & T9 = T2 & T10 = T3 &
+T11 = T4 & T12 = T5 & T13 = T6 & T14 = T7 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: RcvBuf := RcvBuf |- c ##
+
+( ex2 X0: ex2 X1: ex2 X2: T15 = X0 & T16 = X1 & T17 = X2 & 
+ex2 X3: ex2 X4: ex2 X5: (X3 = T8 & X4 = T9 & X5 = T10) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+( X0 = X3 union {(max X3) + 1}) &
+(X6 => (X1 = X4 union {(max X3) + 1})) &
+(~X6 => (X1 = X4)) &
+(X7 => (X2 = X5 union {(max X3) + 1})) &
+(~X7 => (X2 = X5)) )
+&
+
+## IOA souce: transitSR :=
+#   choose v where v = update(transitSR, i, D_empty) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T18 = X0 & T19 = X1 & T20 = X2 & T21 = X3 & 
+ex2 P54: ex2 P55: ex2 P56: ex2 P57: X0 = P54 & X1 = P55 & X2 = P56 & X3 = P57 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P54 & X7 = P55 & X8 = P56 & X9 = P57) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T11 & X15 = T12 & X16 = T13 & X17 = T14) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P54 & X8 = P55 & X9 = P56 & X10 = P57) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T11 & X12 = T12 & X13 = T13 & X14 = T14) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T15 = T8 & T16 = T9 & T17 = T10 &
+T18 = T11 & T19 = T12 & T20 = T13 & T21 = T14 )) &
+(( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+ex2 T25: ex2 T26: ex2 T27: ex2 T28: 
+
+## IOA souce: RcvBuf := choose v where v = RcvBuf |- a \/ v = RcvBuf |- b ##
+
+( ex2 X0: ex2 X1: ex2 X2: T22 = X0 & T23 = X1 & T24 = X2 & 
+ex2 P58: ex2 P59: ex2 P60: X0 = P58 & X1 = P59 & X2 = P60 &
+ex0 X3: (X3 <=> true) & ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = P58 & X6 = P59 & X7 = P60) & 
+ex2 X8: ex2 X9: ex2 X10: (ex2 X11: ex2 X12: ex2 X13: (X11 = T15 & X12 = T16 & X13 = T17) & 
+ex0 X14: ex0 X15: ((X14 <=> false) & (X15 <=> false)) & 
+( X8 = X11 union {(max X11) + 1}) &
+(X14 => (X9 = X12 union {(max X11) + 1})) &
+(~X14 => (X9 = X12)) &
+(X15 => (X10 = X13 union {(max X11) + 1})) &
+(~X15 => (X10 = X13))) & 
+(X4 <=> (X5 = X8 & X6 = X9 & X7 = X10))) & 
+ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = P58 & X7 = P59 & X8 = P60) & 
+ex2 X9: ex2 X10: ex2 X11: (ex2 X12: ex2 X13: ex2 X14: (X12 = T15 & X13 = T16 & X14 = T17) & 
+ex0 X15: ex0 X16: ((X15 <=> false) & (X16 <=> true)) & 
+( X9 = X12 union {(max X12) + 1}) &
+(X15 => (X10 = X13 union {(max X12) + 1})) &
+(~X15 => (X10 = X13)) &
+(X16 => (X11 = X14 union {(max X12) + 1})) &
+(~X16 => (X11 = X14))) & 
+(X5 <=> (X6 = X9 & X7 = X10 & X8 = X11))) & 
+(X3 <=> (X4 | X5)) )
+&
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T22 & X4 = T23 & X5 = T24) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_b) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T25 = X0 & T26 = X1 & T27 = X2 & T28 = X3 & 
+ex2 P61: ex2 P62: ex2 P63: ex2 P64: X0 = P61 & X1 = P62 & X2 = P63 & X3 = P64 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P61 & X7 = P62 & X8 = P63 & X9 = P64) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T18 & X15 = T19 & X16 = T20 & X17 = T21) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> true) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P61 & X8 = P62 & X9 = P63 & X10 = P64) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T18 & X12 = T19 & X13 = T20 & X14 = T21) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T22 & X4 = T23 & X5 = T24) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T25 = T18 & T26 = T19 & T27 = T20 & T28 = T21 )) &
+( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T22 & X4 = T23 & X5 = T24) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4))))  =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_a) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T29 = X0 & T30 = X1 & T31 = X2 & T32 = X3 & 
+ex2 P65: ex2 P66: ex2 P67: ex2 P68: X0 = P65 & X1 = P66 & X2 = P67 & X3 = P68 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P65 & X7 = P66 & X8 = P67 & X9 = P68) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T25 & X15 = T26 & X16 = T27 & X17 = T28) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> true)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P65 & X8 = P66 & X9 = P67 & X10 = P68) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T25 & X12 = T26 & X13 = T27 & X14 = T28) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) ) ) &
+( ~~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T22 & X4 = T23 & X5 = T24) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T29 = T25 & T30 = T26 & T31 = T27 & T32 = T28))) &
+(~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T22 = T15 & T23 = T16 & T24 = T17 &
+T29 = T18 & T30 = T19 & T31 = T20 & T32 = T21 )) &
+(( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+ex2 T36: ex2 T37: ex2 T38: ex2 T39: 
+
+## IOA souce: RcvBuf := choose v where v = RcvBuf |- a \/ v = RcvBuf |- c ##
+
+( ex2 X0: ex2 X1: ex2 X2: T33 = X0 & T34 = X1 & T35 = X2 & 
+ex2 P69: ex2 P70: ex2 P71: X0 = P69 & X1 = P70 & X2 = P71 &
+ex0 X3: (X3 <=> true) & ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = P69 & X6 = P70 & X7 = P71) & 
+ex2 X8: ex2 X9: ex2 X10: (ex2 X11: ex2 X12: ex2 X13: (X11 = T22 & X12 = T23 & X13 = T24) & 
+ex0 X14: ex0 X15: ((X14 <=> false) & (X15 <=> false)) & 
+( X8 = X11 union {(max X11) + 1}) &
+(X14 => (X9 = X12 union {(max X11) + 1})) &
+(~X14 => (X9 = X12)) &
+(X15 => (X10 = X13 union {(max X11) + 1})) &
+(~X15 => (X10 = X13))) & 
+(X4 <=> (X5 = X8 & X6 = X9 & X7 = X10))) & 
+ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = P69 & X7 = P70 & X8 = P71) & 
+ex2 X9: ex2 X10: ex2 X11: (ex2 X12: ex2 X13: ex2 X14: (X12 = T22 & X13 = T23 & X14 = T24) & 
+ex0 X15: ex0 X16: ((X15 <=> true) & (X16 <=> false)) & 
+( X9 = X12 union {(max X12) + 1}) &
+(X15 => (X10 = X13 union {(max X12) + 1})) &
+(~X15 => (X10 = X13)) &
+(X16 => (X11 = X14 union {(max X12) + 1})) &
+(~X16 => (X11 = X14))) & 
+(X5 <=> (X6 = X9 & X7 = X10 & X8 = X11))) & 
+(X3 <=> (X4 | X5)) )
+&
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T33 & X4 = T34 & X5 = T35) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_c) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T36 = X0 & T37 = X1 & T38 = X2 & T39 = X3 & 
+ex2 P72: ex2 P73: ex2 P74: ex2 P75: X0 = P72 & X1 = P73 & X2 = P74 & X3 = P75 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P72 & X7 = P73 & X8 = P74 & X9 = P75) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T29 & X15 = T30 & X16 = T31 & X17 = T32) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> true) & (X21 <=> true)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P72 & X8 = P73 & X9 = P74 & X10 = P75) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T29 & X12 = T30 & X13 = T31 & X14 = T32) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T33 & X4 = T34 & X5 = T35) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T36 = T29 & T37 = T30 & T38 = T31 & T39 = T32 )) &
+( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T33 & X4 = T34 & X5 = T35) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4))))  =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_a) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T40 = X0 & T41 = X1 & T42 = X2 & T43 = X3 & 
+ex2 P76: ex2 P77: ex2 P78: ex2 P79: X0 = P76 & X1 = P77 & X2 = P78 & X3 = P79 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P76 & X7 = P77 & X8 = P78 & X9 = P79) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T36 & X15 = T37 & X16 = T38 & X17 = T39) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> true)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P76 & X8 = P77 & X9 = P78 & X10 = P79) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T36 & X12 = T37 & X13 = T38 & X14 = T39) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) ) ) &
+( ~~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T33 & X4 = T34 & X5 = T35) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T40 = T36 & T41 = T37 & T42 = T38 & T43 = T39))) &
+(~( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T33 = T22 & T34 = T23 & T35 = T24 &
+T40 = T29 & T41 = T30 & T42 = T31 & T43 = T32 )) &
+(( ( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T40 & X5 = T41 & X6 = T42 & X7 = T43) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+ex2 T47: ex2 T48: ex2 T49: ex2 T50: 
+
+## IOA souce: RcvBuf := choose v where v = RcvBuf |- b \/ v = RcvBuf |- c ##
+
+( ex2 X0: ex2 X1: ex2 X2: T44 = X0 & T45 = X1 & T46 = X2 & 
+ex2 P80: ex2 P81: ex2 P82: X0 = P80 & X1 = P81 & X2 = P82 &
+ex0 X3: (X3 <=> true) & ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = P80 & X6 = P81 & X7 = P82) & 
+ex2 X8: ex2 X9: ex2 X10: (ex2 X11: ex2 X12: ex2 X13: (X11 = T33 & X12 = T34 & X13 = T35) & 
+ex0 X14: ex0 X15: ((X14 <=> false) & (X15 <=> true)) & 
+( X8 = X11 union {(max X11) + 1}) &
+(X14 => (X9 = X12 union {(max X11) + 1})) &
+(~X14 => (X9 = X12)) &
+(X15 => (X10 = X13 union {(max X11) + 1})) &
+(~X15 => (X10 = X13))) & 
+(X4 <=> (X5 = X8 & X6 = X9 & X7 = X10))) & 
+ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = P80 & X7 = P81 & X8 = P82) & 
+ex2 X9: ex2 X10: ex2 X11: (ex2 X12: ex2 X13: ex2 X14: (X12 = T33 & X13 = T34 & X14 = T35) & 
+ex0 X15: ex0 X16: ((X15 <=> true) & (X16 <=> false)) & 
+( X9 = X12 union {(max X12) + 1}) &
+(X15 => (X10 = X13 union {(max X12) + 1})) &
+(~X15 => (X10 = X13)) &
+(X16 => (X11 = X14 union {(max X12) + 1})) &
+(~X16 => (X11 = X14))) & 
+(X5 <=> (X6 = X9 & X7 = X10 & X8 = X11))) & 
+(X3 <=> (X4 | X5)) )
+&
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T44 & X4 = T45 & X5 = T46) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_c) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T47 = X0 & T48 = X1 & T49 = X2 & T50 = X3 & 
+ex2 P83: ex2 P84: ex2 P85: ex2 P86: X0 = P83 & X1 = P84 & X2 = P85 & X3 = P86 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P83 & X7 = P84 & X8 = P85 & X9 = P86) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T40 & X15 = T41 & X16 = T42 & X17 = T43) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> true) & (X21 <=> true)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P83 & X8 = P84 & X9 = P85 & X10 = P86) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T40 & X12 = T41 & X13 = T42 & X14 = T43) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T44 & X4 = T45 & X5 = T46) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T47 = T40 & T48 = T41 & T49 = T42 & T50 = T43 )) &
+( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T44 & X4 = T45 & X5 = T46) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4))))  =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_b) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T51 = X0 & T52 = X1 & T53 = X2 & T54 = X3 & 
+ex2 P87: ex2 P88: ex2 P89: ex2 P90: X0 = P87 & X1 = P88 & X2 = P89 & X3 = P90 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P87 & X7 = P88 & X8 = P89 & X9 = P90) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T47 & X15 = T48 & X16 = T49 & X17 = T50) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> true) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P87 & X8 = P88 & X9 = P89 & X10 = P90) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T47 & X12 = T48 & X13 = T49 & X14 = T50) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) ) ) &
+( ~~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T44 & X4 = T45 & X5 = T46) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T51 = T47 & T52 = T48 & T53 = T49 & T54 = T50))) &
+(~( ( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T40 & X5 = T41 & X6 = T42 & X7 = T43) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T44 = T33 & T45 = T34 & T46 = T35 &
+T51 = T40 & T52 = T41 & T53 = T42 & T54 = T43 )) &
+(( ( ( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T40 & X5 = T41 & X6 = T42 & X7 = T43) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T51 & X5 = T52 & X6 = T53 & X7 = T54) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+ex2 T62: ex2 T63: ex2 T64: ex2 T65: 
+ex2 T58: ex2 T59: ex2 T60: ex2 T61: 
+
+## IOA souce: RcvBuf :=
+#   choose v where v = RcvBuf |- a \/ v = RcvBuf |- b \/ v = RcvBuf |- c ##
+
+( ex2 X0: ex2 X1: ex2 X2: T55 = X0 & T56 = X1 & T57 = X2 & 
+ex2 P91: ex2 P92: ex2 P93: X0 = P91 & X1 = P92 & X2 = P93 &
+ex0 X3: (X3 <=> true) & ex0 X4: (ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = P91 & X7 = P92 & X8 = P93) & 
+ex2 X9: ex2 X10: ex2 X11: (ex2 X12: ex2 X13: ex2 X14: (X12 = T44 & X13 = T45 & X14 = T46) & 
+ex0 X15: ex0 X16: ((X15 <=> false) & (X16 <=> false)) & 
+( X9 = X12 union {(max X12) + 1}) &
+(X15 => (X10 = X13 union {(max X12) + 1})) &
+(~X15 => (X10 = X13)) &
+(X16 => (X11 = X14 union {(max X12) + 1})) &
+(~X16 => (X11 = X14))) & 
+(X5 <=> (X6 = X9 & X7 = X10 & X8 = X11))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = P91 & X8 = P92 & X9 = P93) & 
+ex2 X10: ex2 X11: ex2 X12: (ex2 X13: ex2 X14: ex2 X15: (X13 = T44 & X14 = T45 & X15 = T46) & 
+ex0 X16: ex0 X17: ((X16 <=> false) & (X17 <=> true)) & 
+( X10 = X13 union {(max X13) + 1}) &
+(X16 => (X11 = X14 union {(max X13) + 1})) &
+(~X16 => (X11 = X14)) &
+(X17 => (X12 = X15 union {(max X13) + 1})) &
+(~X17 => (X12 = X15))) & 
+(X6 <=> (X7 = X10 & X8 = X11 & X9 = X12))) & 
+(X4 <=> (X5 | X6))) & 
+ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = P91 & X7 = P92 & X8 = P93) & 
+ex2 X9: ex2 X10: ex2 X11: (ex2 X12: ex2 X13: ex2 X14: (X12 = T44 & X13 = T45 & X14 = T46) & 
+ex0 X15: ex0 X16: ((X15 <=> true) & (X16 <=> false)) & 
+( X9 = X12 union {(max X12) + 1}) &
+(X15 => (X10 = X13 union {(max X12) + 1})) &
+(~X15 => (X10 = X13)) &
+(X16 => (X11 = X14 union {(max X12) + 1})) &
+(~X16 => (X11 = X14))) & 
+(X5 <=> (X6 = X9 & X7 = X10 & X8 = X11))) & 
+(X3 <=> (X4 | X5)) )
+&
+((ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_bc) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T58 = X0 & T59 = X1 & T60 = X2 & T61 = X3 & 
+ex2 P94: ex2 P95: ex2 P96: ex2 P97: X0 = P94 & X1 = P95 & X2 = P96 & X3 = P97 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P94 & X7 = P95 & X8 = P96 & X9 = P97) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T51 & X15 = T52 & X16 = T53 & X17 = T54) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> true) & (X20 <=> true) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P94 & X8 = P95 & X9 = P96 & X10 = P97) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T51 & X12 = T52 & X13 = T53 & X14 = T54) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) =>
+( T58 = T51 & T59 = T52 & T60 = T53 & T61 = T54 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_ac) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T62 = X0 & T63 = X1 & T64 = X2 & T65 = X3 & 
+ex2 P98: ex2 P99: ex2 P100: ex2 P101: X0 = P98 & X1 = P99 & X2 = P100 & X3 = P101 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P98 & X7 = P99 & X8 = P100 & X9 = P101) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T58 & X15 = T59 & X16 = T60 & X17 = T61) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> true) & (X20 <=> false) & (X21 <=> true)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P98 & X8 = P99 & X9 = P100 & X10 = P101) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T58 & X12 = T59 & X13 = T60 & X14 = T61) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+( T62 = T58 & T63 = T59 & T64 = T60 & T65 = T61 )) &
+( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) )  =>
+
+## IOA souce: transitSR := choose v where v = update(transitSR, i, D_ab) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T66 = X0 & T67 = X1 & T68 = X2 & T69 = X3 & 
+ex2 P102: ex2 P103: ex2 P104: ex2 P105: X0 = P102 & X1 = P103 & X2 = P104 & X3 = P105 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P102 & X7 = P103 & X8 = P104 & X9 = P105) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = T62 & X15 = T63 & X16 = T64 & X17 = T65) & 
+ex1 X18: (X18 = P32) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> true) & (X20 <=> false) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P102 & X8 = P103 & X9 = P104 & X10 = P105) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T62 & X12 = T63 & X13 = T64 & X14 = T65) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) ) ) &
+( ~( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> false)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: (ex2 X3: ex2 X4: ex2 X5: (X3 = T55 & X4 = T56 & X5 = T57) & 
+( (1 in X3) =>
+((X1 <=> (max X3) in X4) &
+(X2 <=> (max X3) in X5)))) & 
+ex0 X3: ex0 X4: ((X3 <=> false) & (X4 <=> true)) & 
+(X0 <=> ((X1 <=> X3) & (X2 <=> X4)))) ) =>
+( T66 = T62 & T67 = T63 & T68 = T64 & T69 = T65))) &
+(~( ( ( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = S18 & X5 = S19 & X6 = S20 & X7 = S21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T11 & X5 = T12 & X6 = T13 & X7 = T14) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> false) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T18 & X5 = T19 & X6 = T20 & X7 = T21) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T29 & X5 = T30 & X6 = T31 & X7 = T32) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T40 & X5 = T41 & X6 = T42 & X7 = T43) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T51 & X5 = T52 & X6 = T53 & X7 = T54) & 
+ex1 X8: (X8 = P32) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T55 = T44 & T56 = T45 & T57 = T46 &
+T66 = T51 & T67 = T52 & T68 = T53 & T69 = T54 ))) &
+(~(ex0 X0: (X0 <=> true) & ex1 X1: (X1 = P32) & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 = X2))) =>
+( T55 = S13 & T56 = S14 & T57 = S15 &
+T66 = S18 & T67 = S19 & T68 = S20 & T69 = S21 )) &
+S18' = T66 & S19' = T67 & S20' = T68 & S21' = T69 &
+(S17' <=> T0) &
+S13' = T55 & S14' = T56 & S15' = T57) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P32) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P32) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# output deliver([d])
+# pre hRcvBuf <= len(RcvBuf) /\ d = RcvBuf[hRcvBuf]
+# eff hRcvBuf := hRcvBuf + 1
+
+pred deliver(var0 P106, var0 P107) =
+
+## IOA source: pre hRcvBuf <= len(RcvBuf) /\ d = RcvBuf[hRcvBuf]
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex1 X2: (X2 = S16) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> P106) & (X4 <=> P107)) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S13 & X8 = S14 & X9 = S15) & 
+ex1 X10: (X10 = S16) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex1 T0: 
+
+## IOA souce: hRcvBuf := hRcvBuf + 1 ##
+
+( ex1 X0: T0 = X0 & 
+ex1 X1: (X1 = S16) & 
+X0 = X1 + 1 ) &
+S16' = T0) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex1 X2: (X2 = S16) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> P106) & (X4 <=> P107)) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S13 & X8 = S14 & X9 = S15) & 
+ex1 X10: (X10 = S16) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal sendpktRS([i])
+# pre sendAck = true /\ i = len(RcvBuf) + 1
+# eff sendAck := false
+#     transitRS := update(transitRS, i, A_pres)
+
+pred sendpktRS(var1 P108) =
+
+## IOA source: pre sendAck = true /\ i = len(RcvBuf) + 1
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: ((X2 <=> S17)) & 
+(X1 <=> (X2 <=> true))) & 
+ex0 X2: (ex1 X3: (X3 = P108) & 
+ex1 X4: (ex1 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S13 & X7 = S14 & X8 = S15) & 
+X5 = max X6) & 
+X4 = X5 + 1) & 
+(X2 <=> (X3 = X4))) & 
+(X0 <=> (X1 & X2))) =>
+((ex0 T0: 
+ex2 T1: ex2 T2: 
+
+## IOA souce: sendAck := false
+
+(T0 <=> false)
+&
+
+## IOA souce: transitRS := update(transitRS, i, A_pres) ##
+
+( ex2 X0: ex2 X1: T1 = X0 & T2 = X1 & 
+ex2 X2: ex2 X3: (X2 = S22 & X3 = S23) & 
+ex1 X4: (X4 = P108) & 
+ex0 X5: ((X5 <=> false)) & 
+( (X0 = X2 union {X4}) &
+((X5 <=> true) => (X1 = X3 union {X4})) &
+((X5 <=> false) => (X1 = X3\{X4}))) ) &
+(S17' <=> T0) &
+S22' = T1 & S23' = T2) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: ((X2 <=> S17)) & 
+(X1 <=> (X2 <=> true))) & 
+ex0 X2: (ex1 X3: (X3 = P108) & 
+ex1 X4: (ex1 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S13 & X7 = S14 & X8 = S15) & 
+X5 = max X6) & 
+X4 = X5 + 1) & 
+(X2 <=> (X3 = X4))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal dropSR([i])
+# pre defined(transitSR, i) /\ transitSR[i] ~= D_empty
+# eff if transitSR[i] = D_a \/ transitSR[i] = D_b \/ transitSR[i] = D_c then
+#    transitSR :=
+#      choose v where v = update(transitSR, i, D_empty) \/ v = transitSR
+#  elseif transitSR[i] = D_ab then
+#     transitSR :=
+#       choose
+#         v where
+#            v = update(transitSR, i, D_a)
+#              \/ v = update(transitSR, i, D_b)
+#              \/ v = transitSR
+#  elseif transitSR[i] = D_ac then
+#     transitSR :=
+#       choose
+#         v where
+#            v = update(transitSR, i, D_a)
+#              \/ v = update(transitSR, i, D_c)
+#              \/ v = transitSR
+#  elseif transitSR[i] = D_bc then
+#     transitSR :=
+#       choose
+#         v where
+#            v = update(transitSR, i, D_b)
+#              \/ v = update(transitSR, i, D_c)
+#              \/ v = transitSR
+#  else
+#    transitSR :=
+#      choose
+#        v where
+#           v = update(transitSR, i, D_ab)
+#             \/ v = update(transitSR, i, D_ac)
+#             \/ v = update(transitSR, i, D_bc)
+#             \/ v = transitSR
+#  fi
+
+pred dropSR(var1 P109) =
+
+## IOA source: pre defined(transitSR, i) /\ transitSR[i] ~= D_empty
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P109) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex2 T16: ex2 T17: ex2 T18: ex2 T19: 
+ex2 T12: ex2 T13: ex2 T14: ex2 T15: 
+ex2 T8: ex2 T9: ex2 T10: ex2 T11: 
+ex2 T4: ex2 T5: ex2 T6: ex2 T7: 
+ex2 T0: ex2 T1: ex2 T2: ex2 T3: 
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+
+## IOA souce: transitSR :=
+#   choose v where v = update(transitSR, i, D_empty) \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T0 = X0 & T1 = X1 & T2 = X2 & T3 = X3 & 
+ex2 P110: ex2 P111: ex2 P112: ex2 P113: X0 = P110 & X1 = P111 & X2 = P112 & X3 = P113 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = P110 & X7 = P111 & X8 = P112 & X9 = P113) & 
+ex2 X10: ex2 X11: ex2 X12: ex2 X13: (ex2 X14: ex2 X15: ex2 X16: ex2 X17: (X14 = S18 & X15 = S19 & X16 = S20 & X17 = S21) & 
+ex1 X18: (X18 = P109) & 
+ex0 X19: ex0 X20: ex0 X21: ((X19 <=> false) & (X20 <=> false) & (X21 <=> false)) & 
+( (X10 = X14 union {X18}) &
+((X19 <=> true) => (X11 = X15 union {X18})) &
+((X19 <=> false) => (X11 = X15\{X18})) &
+((X20 <=> true) => (X12 = X16 union {X18})) &
+((X20 <=> false) => (X12 = X16\{X18})) &
+((X21 <=> true) => (X13 = X17 union {X18})) &
+((X21 <=> false) => (X13 = X17\{X18})))) & 
+(X5 <=> (X6 = X10 & X7 = X11 & X8 = X12 & X9 = X13))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P110 & X8 = P111 & X9 = P112 & X10 = P113) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = S18 & X12 = S19 & X13 = S20 & X14 = S21) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) =>
+( T0 = S18 & T1 = S19 & T2 = S20 & T3 = S21 )) &
+(( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR :=
+#   choose
+#     v where
+#        v = update(transitSR, i, D_a)
+#          \/ v = update(transitSR, i, D_b)
+#          \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T4 = X0 & T5 = X1 & T6 = X2 & T7 = X3 & 
+ex2 P114: ex2 P115: ex2 P116: ex2 P117: X0 = P114 & X1 = P115 & X2 = P116 & X3 = P117 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P114 & X8 = P115 & X9 = P116 & X10 = P117) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (ex2 X15: ex2 X16: ex2 X17: ex2 X18: (X15 = T0 & X16 = T1 & X17 = T2 & X18 = T3) & 
+ex1 X19: (X19 = P109) & 
+ex0 X20: ex0 X21: ex0 X22: ((X20 <=> false) & (X21 <=> false) & (X22 <=> true)) & 
+( (X11 = X15 union {X19}) &
+((X20 <=> true) => (X12 = X16 union {X19})) &
+((X20 <=> false) => (X12 = X16\{X19})) &
+((X21 <=> true) => (X13 = X17 union {X19})) &
+((X21 <=> false) => (X13 = X17\{X19})) &
+((X22 <=> true) => (X14 = X18 union {X19})) &
+((X22 <=> false) => (X14 = X18\{X19})))) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = P114 & X9 = P115 & X10 = P116 & X11 = P117) & 
+ex2 X12: ex2 X13: ex2 X14: ex2 X15: (ex2 X16: ex2 X17: ex2 X18: ex2 X19: (X16 = T0 & X17 = T1 & X18 = T2 & X19 = T3) & 
+ex1 X20: (X20 = P109) & 
+ex0 X21: ex0 X22: ex0 X23: ((X21 <=> false) & (X22 <=> true) & (X23 <=> false)) & 
+( (X12 = X16 union {X20}) &
+((X21 <=> true) => (X13 = X17 union {X20})) &
+((X21 <=> false) => (X13 = X17\{X20})) &
+((X22 <=> true) => (X14 = X18 union {X20})) &
+((X22 <=> false) => (X14 = X18\{X20})) &
+((X23 <=> true) => (X15 = X19 union {X20})) &
+((X23 <=> false) => (X15 = X19\{X20})))) & 
+(X7 <=> (X8 = X12 & X9 = X13 & X10 = X14 & X11 = X15))) & 
+(X5 <=> (X6 | X7))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P114 & X8 = P115 & X9 = P116 & X10 = P117) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T0 & X12 = T1 & X13 = T2 & X14 = T3) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T4 = T0 & T5 = T1 & T6 = T2 & T7 = T3 )) &
+(( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR :=
+#   choose
+#     v where
+#        v = update(transitSR, i, D_a)
+#          \/ v = update(transitSR, i, D_c)
+#          \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T8 = X0 & T9 = X1 & T10 = X2 & T11 = X3 & 
+ex2 P118: ex2 P119: ex2 P120: ex2 P121: X0 = P118 & X1 = P119 & X2 = P120 & X3 = P121 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P118 & X8 = P119 & X9 = P120 & X10 = P121) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (ex2 X15: ex2 X16: ex2 X17: ex2 X18: (X15 = T4 & X16 = T5 & X17 = T6 & X18 = T7) & 
+ex1 X19: (X19 = P109) & 
+ex0 X20: ex0 X21: ex0 X22: ((X20 <=> false) & (X21 <=> false) & (X22 <=> true)) & 
+( (X11 = X15 union {X19}) &
+((X20 <=> true) => (X12 = X16 union {X19})) &
+((X20 <=> false) => (X12 = X16\{X19})) &
+((X21 <=> true) => (X13 = X17 union {X19})) &
+((X21 <=> false) => (X13 = X17\{X19})) &
+((X22 <=> true) => (X14 = X18 union {X19})) &
+((X22 <=> false) => (X14 = X18\{X19})))) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = P118 & X9 = P119 & X10 = P120 & X11 = P121) & 
+ex2 X12: ex2 X13: ex2 X14: ex2 X15: (ex2 X16: ex2 X17: ex2 X18: ex2 X19: (X16 = T4 & X17 = T5 & X18 = T6 & X19 = T7) & 
+ex1 X20: (X20 = P109) & 
+ex0 X21: ex0 X22: ex0 X23: ((X21 <=> false) & (X22 <=> true) & (X23 <=> true)) & 
+( (X12 = X16 union {X20}) &
+((X21 <=> true) => (X13 = X17 union {X20})) &
+((X21 <=> false) => (X13 = X17\{X20})) &
+((X22 <=> true) => (X14 = X18 union {X20})) &
+((X22 <=> false) => (X14 = X18\{X20})) &
+((X23 <=> true) => (X15 = X19 union {X20})) &
+((X23 <=> false) => (X15 = X19\{X20})))) & 
+(X7 <=> (X8 = X12 & X9 = X13 & X10 = X14 & X11 = X15))) & 
+(X5 <=> (X6 | X7))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P118 & X8 = P119 & X9 = P120 & X10 = P121) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T4 & X12 = T5 & X13 = T6 & X14 = T7) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T8 = T4 & T9 = T5 & T10 = T6 & T11 = T7 )) &
+(( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T8 & X5 = T9 & X6 = T10 & X7 = T11) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+
+## IOA souce: transitSR :=
+#   choose
+#     v where
+#        v = update(transitSR, i, D_b)
+#          \/ v = update(transitSR, i, D_c)
+#          \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T12 = X0 & T13 = X1 & T14 = X2 & T15 = X3 & 
+ex2 P122: ex2 P123: ex2 P124: ex2 P125: X0 = P122 & X1 = P123 & X2 = P124 & X3 = P125 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P122 & X8 = P123 & X9 = P124 & X10 = P125) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (ex2 X15: ex2 X16: ex2 X17: ex2 X18: (X15 = T8 & X16 = T9 & X17 = T10 & X18 = T11) & 
+ex1 X19: (X19 = P109) & 
+ex0 X20: ex0 X21: ex0 X22: ((X20 <=> false) & (X21 <=> true) & (X22 <=> false)) & 
+( (X11 = X15 union {X19}) &
+((X20 <=> true) => (X12 = X16 union {X19})) &
+((X20 <=> false) => (X12 = X16\{X19})) &
+((X21 <=> true) => (X13 = X17 union {X19})) &
+((X21 <=> false) => (X13 = X17\{X19})) &
+((X22 <=> true) => (X14 = X18 union {X19})) &
+((X22 <=> false) => (X14 = X18\{X19})))) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = P122 & X9 = P123 & X10 = P124 & X11 = P125) & 
+ex2 X12: ex2 X13: ex2 X14: ex2 X15: (ex2 X16: ex2 X17: ex2 X18: ex2 X19: (X16 = T8 & X17 = T9 & X18 = T10 & X19 = T11) & 
+ex1 X20: (X20 = P109) & 
+ex0 X21: ex0 X22: ex0 X23: ((X21 <=> false) & (X22 <=> true) & (X23 <=> true)) & 
+( (X12 = X16 union {X20}) &
+((X21 <=> true) => (X13 = X17 union {X20})) &
+((X21 <=> false) => (X13 = X17\{X20})) &
+((X22 <=> true) => (X14 = X18 union {X20})) &
+((X22 <=> false) => (X14 = X18\{X20})) &
+((X23 <=> true) => (X15 = X19 union {X20})) &
+((X23 <=> false) => (X15 = X19\{X20})))) & 
+(X7 <=> (X8 = X12 & X9 = X13 & X10 = X14 & X11 = X15))) & 
+(X5 <=> (X6 | X7))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P122 & X8 = P123 & X9 = P124 & X10 = P125) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T8 & X12 = T9 & X13 = T10 & X14 = T11) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) )) &
+(~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T8 & X5 = T9 & X6 = T10 & X7 = T11) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T12 = T8 & T13 = T9 & T14 = T10 & T15 = T11 )) &
+( ( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T8 & X5 = T9 & X6 = T10 & X7 = T11) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) )  =>
+
+## IOA souce: transitSR :=
+#   choose
+#     v where
+#        v = update(transitSR, i, D_ab)
+#          \/ v = update(transitSR, i, D_ac)
+#          \/ v = update(transitSR, i, D_bc)
+#          \/ v = transitSR ##
+
+( ex2 X0: ex2 X1: ex2 X2: ex2 X3: T16 = X0 & T17 = X1 & T18 = X2 & T19 = X3 & 
+ex2 P126: ex2 P127: ex2 P128: ex2 P129: X0 = P126 & X1 = P127 & X2 = P128 & X3 = P129 &
+ex0 X4: (X4 <=> true) & ex0 X5: (ex0 X6: (ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = P126 & X9 = P127 & X10 = P128 & X11 = P129) & 
+ex2 X12: ex2 X13: ex2 X14: ex2 X15: (ex2 X16: ex2 X17: ex2 X18: ex2 X19: (X16 = T12 & X17 = T13 & X18 = T14 & X19 = T15) & 
+ex1 X20: (X20 = P109) & 
+ex0 X21: ex0 X22: ex0 X23: ((X21 <=> true) & (X22 <=> false) & (X23 <=> false)) & 
+( (X12 = X16 union {X20}) &
+((X21 <=> true) => (X13 = X17 union {X20})) &
+((X21 <=> false) => (X13 = X17\{X20})) &
+((X22 <=> true) => (X14 = X18 union {X20})) &
+((X22 <=> false) => (X14 = X18\{X20})) &
+((X23 <=> true) => (X15 = X19 union {X20})) &
+((X23 <=> false) => (X15 = X19\{X20})))) & 
+(X7 <=> (X8 = X12 & X9 = X13 & X10 = X14 & X11 = X15))) & 
+ex0 X8: (ex2 X9: ex2 X10: ex2 X11: ex2 X12: (X9 = P126 & X10 = P127 & X11 = P128 & X12 = P129) & 
+ex2 X13: ex2 X14: ex2 X15: ex2 X16: (ex2 X17: ex2 X18: ex2 X19: ex2 X20: (X17 = T12 & X18 = T13 & X19 = T14 & X20 = T15) & 
+ex1 X21: (X21 = P109) & 
+ex0 X22: ex0 X23: ex0 X24: ((X22 <=> true) & (X23 <=> false) & (X24 <=> true)) & 
+( (X13 = X17 union {X21}) &
+((X22 <=> true) => (X14 = X18 union {X21})) &
+((X22 <=> false) => (X14 = X18\{X21})) &
+((X23 <=> true) => (X15 = X19 union {X21})) &
+((X23 <=> false) => (X15 = X19\{X21})) &
+((X24 <=> true) => (X16 = X20 union {X21})) &
+((X24 <=> false) => (X16 = X20\{X21})))) & 
+(X8 <=> (X9 = X13 & X10 = X14 & X11 = X15 & X12 = X16))) & 
+(X6 <=> (X7 | X8))) & 
+ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = P126 & X9 = P127 & X10 = P128 & X11 = P129) & 
+ex2 X12: ex2 X13: ex2 X14: ex2 X15: (ex2 X16: ex2 X17: ex2 X18: ex2 X19: (X16 = T12 & X17 = T13 & X18 = T14 & X19 = T15) & 
+ex1 X20: (X20 = P109) & 
+ex0 X21: ex0 X22: ex0 X23: ((X21 <=> true) & (X22 <=> true) & (X23 <=> false)) & 
+( (X12 = X16 union {X20}) &
+((X21 <=> true) => (X13 = X17 union {X20})) &
+((X21 <=> false) => (X13 = X17\{X20})) &
+((X22 <=> true) => (X14 = X18 union {X20})) &
+((X22 <=> false) => (X14 = X18\{X20})) &
+((X23 <=> true) => (X15 = X19 union {X20})) &
+((X23 <=> false) => (X15 = X19\{X20})))) & 
+(X7 <=> (X8 = X12 & X9 = X13 & X10 = X14 & X11 = X15))) & 
+(X5 <=> (X6 | X7))) & 
+ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = P126 & X8 = P127 & X9 = P128 & X10 = P129) & 
+ex2 X11: ex2 X12: ex2 X13: ex2 X14: (X11 = T12 & X12 = T13 & X13 = T14 & X14 = T15) & 
+(X6 <=> (X7 = X11 & X8 = X12 & X9 = X13 & X10 = X14))) & 
+(X4 <=> (X5 | X6)) ) ) &
+( ~( ( ( ~(ex0 X0: (X0 <=> true) & ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P109) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+(X1 <=> (X2 | X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> ((X3 <=> X6) & (X4 <=> X7) & (X5 <=> X8)))) & 
+(X0 <=> (X1 | X2))) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T0 & X5 = T1 & X6 = T2 & X7 = T3) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T4 & X5 = T5 & X6 = T6 & X7 = T7) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> false) & (X6 <=> true)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) &
+~(ex0 X0: (X0 <=> true) & ex0 X1: ex0 X2: ex0 X3: (ex2 X4: ex2 X5: ex2 X6: ex2 X7: (X4 = T8 & X5 = T9 & X6 = T10 & X7 = T11) & 
+ex1 X8: (X8 = P109) & 
+( (X8 in X4) =>
+((X1 <=> (X8 in X5)) &
+(X2 <=> (X8 in X6)) &
+(X3 <=> (X8 in X7))))) & 
+ex0 X4: ex0 X5: ex0 X6: ((X4 <=> true) & (X5 <=> true) & (X6 <=> false)) & 
+(X0 <=> ((X1 <=> X4) & (X2 <=> X5) & (X3 <=> X6)))) ) =>
+( T16 = T12 & T17 = T13 & T18 = T14 & T19 = T15)) &
+S18' = T16 & S19' = T17 & S20' = T18 & S21' = T19) &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P109) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P109) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# IOA source:
+# internal dropRS([i])
+# pre defined(transitRS, i) /\ transitRS[i] = A_pres
+# eff transitRS :=
+#   choose w where w = update(transitRS, i, A_empty) \/ w = transitRS
+
+pred dropRS(var1 P130) =
+
+## IOA source: pre defined(transitRS, i) /\ transitRS[i] = A_pres
+
+((ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: (X2 = S22 & X3 = S23) & 
+ex1 X4: (X4 = P130) & 
+( (X1 <=> X4 in X2) )) & 
+ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: (X4 = S22 & X5 = S23) & 
+ex1 X6: (X6 = P130) & 
+( (X6 in X4) =>
+((X3 <=> (X6 in X5))))) & 
+ex0 X4: ((X4 <=> false)) & 
+(X2 <=> ((X3 <=> X4)))) & 
+(X0 <=> (X1 & X2))) =>
+((ex2 T0: ex2 T1: 
+
+## IOA souce: transitRS :=
+#   choose w where w = update(transitRS, i, A_empty) \/ w = transitRS ##
+
+( ex2 X0: ex2 X1: T0 = X0 & T1 = X1 & 
+ex2 P131: ex2 P132: X0 = P131 & X1 = P132 &
+ex0 X2: (X2 <=> true) & ex0 X3: (ex2 X4: ex2 X5: (X4 = P131 & X5 = P132) & 
+ex2 X6: ex2 X7: (ex2 X8: ex2 X9: (X8 = S22 & X9 = S23) & 
+ex1 X10: (X10 = P130) & 
+ex0 X11: ((X11 <=> true)) & 
+( (X6 = X8 union {X10}) &
+((X11 <=> true) => (X7 = X9 union {X10})) &
+((X11 <=> false) => (X7 = X9\{X10})))) & 
+(X3 <=> (X4 = X6 & X5 = X7))) & 
+ex0 X4: (ex2 X5: ex2 X6: (X5 = P131 & X6 = P132) & 
+ex2 X7: ex2 X8: (X7 = S22 & X8 = S23) & 
+(X4 <=> (X5 = X7 & X6 = X8))) & 
+(X2 <=> (X3 | X4)) ) &
+S22' = T0 & S23' = T1) &
+S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6)) &
+(~(ex0 X0: (X0 <=> true) & ex0 X1: (ex2 X2: ex2 X3: (X2 = S22 & X3 = S23) & 
+ex1 X4: (X4 = P130) & 
+( (X1 <=> X4 in X2) )) & 
+ex0 X2: (ex0 X3: (ex2 X4: ex2 X5: (X4 = S22 & X5 = S23) & 
+ex1 X6: (X6 = P130) & 
+( (X6 in X4) =>
+((X3 <=> (X6 in X5))))) & 
+ex0 X4: ((X4 <=> false)) & 
+(X2 <=> ((X3 <=> X4)))) & 
+(X0 <=> (X1 & X2))) =>
+(S18' = S18 & S19' = S19 & S20' = S20 & S21' = S21 &
+(S17' <=> S17) &
+S12' = S12 &
+S4' = S4 &
+(S5' <=> S5) &
+S13' = S13 & S14' = S14 & S15' = S15 &
+S22' = S22 & S23' = S23 &
+S3' = S3 &
+(S7' <=> S7) & (S8' <=> S8) &
+S16' = S16 &
+S0' = S0 & S1' = S1 & S2' = S2 &
+S9' = S9 & S10' = S10 & S11' = S11 &
+S6' = S6));
+
+# predicates
+
+# IOA source:
+# alpha1 hSendBuf <= (len(SendBuf) + 1)
+
+pred alpha1 = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3) & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S0 & X5 = S1 & X6 = S2) & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 <= X2));
+
+pred alpha1' = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3') & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S0' & X5 = S1' & X6 = S2') & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 <= X2));
+
+# IOA source:
+# alpha2 hSendBuf > seqNum
+
+pred alpha2 = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3) & 
+ex1 X2: (X2 = S6) & 
+(X0 <=> (X1 > X2));
+
+pred alpha2' = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3') & 
+ex1 X2: (X2 = S6') & 
+(X0 <=> (X1 > X2));
+
+# IOA source:
+# alpha3 hSendBuf = len(RetranBuf) + 1
+
+pred alpha3 = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3) & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9 & X5 = S10 & X6 = S11) & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 = X2));
+
+pred alpha3' = 
+ex0 X0: (X0 <=> true) &
+ex1 X1: (X1 = S3') & 
+ex1 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9' & X5 = S10' & X6 = S11') & 
+X3 = max X4) & 
+X2 = X3 + 1) & 
+(X0 <=> (X1 = X2));
+
+# IOA source:
+# alpha4 hRetranBuf > 0 /\ (readyToSend => seqNum > 0)
+
+pred alpha4 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex1 X2: (X2 = S12) & 
+(X1 <=> (X2 > 0))) & 
+ex0 X2: (ex0 X3: ((X3 <=> S5)) & 
+ex0 X4: (ex1 X5: (X5 = S6) & 
+(X4 <=> (X5 > 0))) & 
+(X2 <=> (X3 => X4))) & 
+(X0 <=> (X1 & X2));
+
+pred alpha4' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex1 X2: (X2 = S12') & 
+(X1 <=> (X2 > 0))) & 
+ex0 X2: (ex0 X3: ((X3 <=> S5')) & 
+ex0 X4: (ex1 X5: (X5 = S6') & 
+(X4 <=> (X5 > 0))) & 
+(X2 <=> (X3 => X4))) & 
+(X0 <=> (X1 & X2));
+
+# IOA source:
+# alpha5 \A i: Int (defined(transitSR, i) => hSendBuf > i)
+
+pred alpha5 = 
+ex0 X0: (X0 <=> true) &
+all1 P133: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P133) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex1 X3: (X3 = S3) & 
+ex1 X4: (X4 = P133) & 
+(X2 <=> (X3 > X4))) & 
+(X0 <=> (X1 => X2));
+
+pred alpha5' = 
+ex0 X0: (X0 <=> true) &
+all1 P133: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18' & X3 = S19' & X4 = S20' & X5 = S21') & 
+ex1 X6: (X6 = P133) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex1 X3: (X3 = S3') & 
+ex1 X4: (X4 = P133) & 
+(X2 <=> (X3 > X4))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# alpha6 hSendBuf > len(RcvBuf) /\ len(SendBuf) >= len(RcvBuf)
+
+pred alpha6 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex1 X2: (X2 = S3) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+(X1 <=> (X2 > X3))) & 
+ex0 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S0 & X5 = S1 & X6 = S2) & 
+X3 = max X4) & 
+ex1 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S13 & X6 = S14 & X7 = S15) & 
+X4 = max X5) & 
+(X2 <=> (X3 >= X4))) & 
+(X0 <=> (X1 & X2));
+
+pred alpha6' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex1 X2: (X2 = S3') & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13' & X5 = S14' & X6 = S15') & 
+X3 = max X4) & 
+(X1 <=> (X2 > X3))) & 
+ex0 X2: (ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S0' & X5 = S1' & X6 = S2') & 
+X3 = max X4) & 
+ex1 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S13' & X6 = S14' & X7 = S15') & 
+X4 = max X5) & 
+(X2 <=> (X3 >= X4))) & 
+(X0 <=> (X1 & X2));
+
+# IOA source:
+# beta \A i: Int (i <= len(RetranBuf) => SendBuf[i] = RetranBuf[i])
+
+pred beta = 
+ex0 X0: (X0 <=> true) &
+all1 P134: ex0 X1: (ex1 X2: (X2 = P134) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9 & X5 = S10 & X6 = S11) & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = P134) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S9 & X8 = S10 & X9 = S11) & 
+ex1 X10: (X10 = P134) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred beta' = 
+ex0 X0: (X0 <=> true) &
+all1 P134: ex0 X1: (ex1 X2: (X2 = P134) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S9' & X5 = S10' & X6 = S11') & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = P134) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S9' & X8 = S10' & X9 = S11') & 
+ex1 X10: (X10 = P134) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# gamma \A d: D (segment = d /\ readyToSend => SendBuf[seqNum] = d)
+
+pred gamma = 
+ex0 X0: (X0 <=> true) &
+all0 P135: all0 P136: ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> S7) & (X4 <=> S8)) & 
+ex0 X5: ex0 X6: ((X5 <=> P135) & (X6 <=> P136)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+ex0 X3: ((X3 <=> S5)) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = S6) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> P135) & (X6 <=> P136)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred gamma' = 
+ex0 X0: (X0 <=> true) &
+all0 P135: all0 P136: ex0 X1: (ex0 X2: (ex0 X3: ex0 X4: ((X3 <=> S7') & (X4 <=> S8')) & 
+ex0 X5: ex0 X6: ((X5 <=> P135) & (X6 <=> P136)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+ex0 X3: ((X3 <=> S5')) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = S6') & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> P135) & (X6 <=> P136)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# delta1 \A i: Int (transitSR[i] = D_a => SendBuf[i] = a)
+
+pred delta1 = 
+ex0 X0: (X0 <=> true) &
+all1 P137: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18 & X6 = S19 & X7 = S20 & X8 = S21) & 
+ex1 X9: (X9 = P137) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> false) & (X7 <=> true)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = P137) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> false) & (X6 <=> false)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred delta1' = 
+ex0 X0: (X0 <=> true) &
+all1 P137: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18' & X6 = S19' & X7 = S20' & X8 = S21') & 
+ex1 X9: (X9 = P137) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> false) & (X7 <=> true)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = P137) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> false) & (X6 <=> false)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# delta2 \A i: Int (transitSR[i] = D_b => SendBuf[i] = b)
+
+pred delta2 = 
+ex0 X0: (X0 <=> true) &
+all1 P138: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18 & X6 = S19 & X7 = S20 & X8 = S21) & 
+ex1 X9: (X9 = P138) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> true) & (X7 <=> false)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = P138) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> false) & (X6 <=> true)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred delta2' = 
+ex0 X0: (X0 <=> true) &
+all1 P138: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18' & X6 = S19' & X7 = S20' & X8 = S21') & 
+ex1 X9: (X9 = P138) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> true) & (X7 <=> false)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = P138) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> false) & (X6 <=> true)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# delat3 \A i: Int (transitSR[i] = D_c => SendBuf[i] = c)
+
+pred delat3 = 
+ex0 X0: (X0 <=> true) &
+all1 P139: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18 & X6 = S19 & X7 = S20 & X8 = S21) & 
+ex1 X9: (X9 = P139) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> true) & (X7 <=> true)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = P139) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> true) & (X6 <=> false)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred delat3' = 
+ex0 X0: (X0 <=> true) &
+all1 P139: ex0 X1: (ex0 X2: ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: ex2 X8: (X5 = S18' & X6 = S19' & X7 = S20' & X8 = S21') & 
+ex1 X9: (X9 = P139) & 
+( (X9 in X5) =>
+((X2 <=> (X9 in X6)) &
+(X3 <=> (X9 in X7)) &
+(X4 <=> (X9 in X8))))) & 
+ex0 X5: ex0 X6: ex0 X7: ((X5 <=> false) & (X6 <=> true) & (X7 <=> true)) & 
+(X1 <=> ((X2 <=> X5) & (X3 <=> X6) & (X4 <=> X7)))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = P139) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: ((X5 <=> true) & (X6 <=> false)) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# epsilon1 \A i: Int
+#    (defined(transitSR, i) /\ RetranBuf[i] = a
+#       => transitSR[i] = D_a \/ transitSR[i] = D_empty)
+
+pred epsilon1 = 
+ex0 X0: (X0 <=> true) &
+all1 P140: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = P140) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9 & X7 = S10 & X8 = S11) & 
+ex1 X9: (X9 = P140) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P140) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> true)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18 & X9 = S19 & X10 = S20 & X11 = S21) & 
+ex1 X12: (X12 = P140) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+pred epsilon1' = 
+ex0 X0: (X0 <=> true) &
+all1 P140: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = P140) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9' & X7 = S10' & X8 = S11') & 
+ex1 X9: (X9 = P140) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18' & X8 = S19' & X9 = S20' & X10 = S21') & 
+ex1 X11: (X11 = P140) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> false) & (X9 <=> true)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18' & X9 = S19' & X10 = S20' & X11 = S21') & 
+ex1 X12: (X12 = P140) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# epsilon2 \A i: Int
+#    (defined(transitSR, i) /\ RetranBuf[i] = b
+#       => transitSR[i] = D_b \/ transitSR[i] = D_empty)
+
+pred epsilon2 = 
+ex0 X0: (X0 <=> true) &
+all1 P141: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = P141) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9 & X7 = S10 & X8 = S11) & 
+ex1 X9: (X9 = P141) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P141) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18 & X9 = S19 & X10 = S20 & X11 = S21) & 
+ex1 X12: (X12 = P141) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+pred epsilon2' = 
+ex0 X0: (X0 <=> true) &
+all1 P141: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = P141) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9' & X7 = S10' & X8 = S11') & 
+ex1 X9: (X9 = P141) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18' & X8 = S19' & X9 = S20' & X10 = S21') & 
+ex1 X11: (X11 = P141) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> false)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18' & X9 = S19' & X10 = S20' & X11 = S21') & 
+ex1 X12: (X12 = P141) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# epsilon3 \A i: Int
+#    (defined(transitSR, i) /\ RetranBuf[i] = c
+#       => transitSR[i] = D_c \/ transitSR[i] = D_empty)
+
+pred epsilon3 = 
+ex0 X0: (X0 <=> true) &
+all1 P142: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = P142) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9 & X7 = S10 & X8 = S11) & 
+ex1 X9: (X9 = P142) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18 & X8 = S19 & X9 = S20 & X10 = S21) & 
+ex1 X11: (X11 = P142) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> true)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18 & X9 = S19 & X10 = S20 & X11 = S21) & 
+ex1 X12: (X12 = P142) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+pred epsilon3' = 
+ex0 X0: (X0 <=> true) &
+all1 P142: ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = P142) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: (X6 = S9' & X7 = S10' & X8 = S11') & 
+ex1 X9: (X9 = P142) & 
+( (X9 in X6 & X9 ~= 0) =>
+((X4 <=> (X9 in X7)) &
+(X5 <=> (X9 in X8))))) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: (ex0 X4: ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: ex2 X10: (X7 = S18' & X8 = S19' & X9 = S20' & X10 = S21') & 
+ex1 X11: (X11 = P142) & 
+( (X11 in X7) =>
+((X4 <=> (X11 in X8)) &
+(X5 <=> (X11 in X9)) &
+(X6 <=> (X11 in X10))))) & 
+ex0 X7: ex0 X8: ex0 X9: ((X7 <=> false) & (X8 <=> true) & (X9 <=> true)) & 
+(X3 <=> ((X4 <=> X7) & (X5 <=> X8) & (X6 <=> X9)))) & 
+ex0 X4: (ex0 X5: ex0 X6: ex0 X7: (ex2 X8: ex2 X9: ex2 X10: ex2 X11: (X8 = S18' & X9 = S19' & X10 = S20' & X11 = S21') & 
+ex1 X12: (X12 = P142) & 
+( (X12 in X8) =>
+((X5 <=> (X12 in X9)) &
+(X6 <=> (X12 in X10)) &
+(X7 <=> (X12 in X11))))) & 
+ex0 X8: ex0 X9: ex0 X10: ((X8 <=> false) & (X9 <=> false) & (X10 <=> false)) & 
+(X4 <=> ((X5 <=> X8) & (X6 <=> X9) & (X7 <=> X10)))) & 
+(X2 <=> (X3 | X4))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta1 defined(transitSR, seqNum) /\ segment = a => transitSR[seqNum] ~= D_b
+
+pred zeta1 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta1' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta2 defined(transitSR, seqNum) /\ segment = a => transitSR[seqNum] ~= D_c
+
+pred zeta2 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta2' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta3 defined(transitSR, seqNum) /\ segment = b => transitSR[seqNum] ~= D_a
+
+pred zeta3 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta3' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta4 defined(transitSR, seqNum) /\ segment = b => transitSR[seqNum] ~= D_c
+
+pred zeta4 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta4' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> false) & (X7 <=> true)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta5 defined(transitSR, seqNum) /\ segment = c => transitSR[seqNum] ~= D_a
+
+pred zeta5 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta5' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# zeta6 defined(transitSR, seqNum) /\ segment = c => transitSR[seqNum] ~= D_b
+
+pred zeta6 = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18 & X4 = S19 & X5 = S20 & X6 = S21) & 
+ex1 X7: (X7 = S6) & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7) & (X5 <=> S8)) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = S6) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred zeta6' = 
+ex0 X0: (X0 <=> true) &
+ex0 X1: (ex0 X2: (ex2 X3: ex2 X4: ex2 X5: ex2 X6: (X3 = S18' & X4 = S19' & X5 = S20' & X6 = S21') & 
+ex1 X7: (X7 = S6') & 
+( (X2 <=> X7 in X3) )) & 
+ex0 X3: (ex0 X4: ex0 X5: ((X4 <=> S7') & (X5 <=> S8')) & 
+ex0 X6: ex0 X7: ((X6 <=> true) & (X7 <=> false)) & 
+(X3 <=> ((X4 <=> X6) & (X5 <=> X7)))) & 
+(X1 <=> (X2 & X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = S6') & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> false) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# eta1 \A i: Int (defined(transitSR, i) => transitSR[i] ~= D_ab)
+
+pred eta1 = 
+ex0 X0: (X0 <=> true) &
+all1 P143: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P143) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P143) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred eta1' = 
+ex0 X0: (X0 <=> true) &
+all1 P143: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18' & X3 = S19' & X4 = S20' & X5 = S21') & 
+ex1 X6: (X6 = P143) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = P143) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> false) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# eta2 \A i: Int (defined(transitSR, i) => transitSR[i] ~= D_ac)
+
+pred eta2 = 
+ex0 X0: (X0 <=> true) &
+all1 P144: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P144) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P144) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred eta2' = 
+ex0 X0: (X0 <=> true) &
+all1 P144: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18' & X3 = S19' & X4 = S20' & X5 = S21') & 
+ex1 X6: (X6 = P144) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = P144) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> false) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# eta3 \A i: Int (defined(transitSR, i) => transitSR[i] ~= D_bc)
+
+pred eta3 = 
+ex0 X0: (X0 <=> true) &
+all1 P145: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P145) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P145) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred eta3' = 
+ex0 X0: (X0 <=> true) &
+all1 P145: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18' & X3 = S19' & X4 = S20' & X5 = S21') & 
+ex1 X6: (X6 = P145) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = P145) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> true) & (X8 <=> false)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# eta4 \A i: Int (defined(transitSR, i) => transitSR[i] ~= D_abc)
+
+pred eta4 = 
+ex0 X0: (X0 <=> true) &
+all1 P146: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18 & X3 = S19 & X4 = S20 & X5 = S21) & 
+ex1 X6: (X6 = P146) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18 & X7 = S19 & X8 = S20 & X9 = S21) & 
+ex1 X10: (X10 = P146) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+pred eta4' = 
+ex0 X0: (X0 <=> true) &
+all1 P146: ex0 X1: (ex2 X2: ex2 X3: ex2 X4: ex2 X5: (X2 = S18' & X3 = S19' & X4 = S20' & X5 = S21') & 
+ex1 X6: (X6 = P146) & 
+( (X1 <=> X6 in X2) )) & 
+ex0 X2: (ex0 X3: ex0 X4: ex0 X5: (ex2 X6: ex2 X7: ex2 X8: ex2 X9: (X6 = S18' & X7 = S19' & X8 = S20' & X9 = S21') & 
+ex1 X10: (X10 = P146) & 
+( (X10 in X6) =>
+((X3 <=> (X10 in X7)) &
+(X4 <=> (X10 in X8)) &
+(X5 <=> (X10 in X9))))) & 
+ex0 X6: ex0 X7: ex0 X8: ((X6 <=> true) & (X7 <=> true) & (X8 <=> true)) & 
+(X2 <=> (~(X3 <=> X6) | ~(X4 <=> X7) | ~(X5 <=> X8)))) & 
+(X0 <=> (X1 => X2));
+
+# IOA source:
+# omega \A i: Int (i <= len(RcvBuf) => SendBuf[i] = RcvBuf[i])
+
+pred omega = 
+ex0 X0: (X0 <=> true) &
+all1 P147: ex0 X1: (ex1 X2: (X2 = P147) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13 & X5 = S14 & X6 = S15) & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0 & X6 = S1 & X7 = S2) & 
+ex1 X8: (X8 = P147) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S13 & X8 = S14 & X9 = S15) & 
+ex1 X10: (X10 = P147) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred omega' = 
+ex0 X0: (X0 <=> true) &
+all1 P147: ex0 X1: (ex1 X2: (X2 = P147) & 
+ex1 X3: (ex2 X4: ex2 X5: ex2 X6: (X4 = S13' & X5 = S14' & X6 = S15') & 
+X3 = max X4) & 
+(X1 <=> (X2 <= X3))) & 
+ex0 X2: (ex0 X3: ex0 X4: (ex2 X5: ex2 X6: ex2 X7: (X5 = S0' & X6 = S1' & X7 = S2') & 
+ex1 X8: (X8 = P147) & 
+( (X8 in X5 & X8 ~= 0) =>
+((X3 <=> (X8 in X6)) &
+(X4 <=> (X8 in X7))))) & 
+ex0 X5: ex0 X6: (ex2 X7: ex2 X8: ex2 X9: (X7 = S13' & X8 = S14' & X9 = S15') & 
+ex1 X10: (X10 = P147) & 
+( (X10 in X7 & X10 ~= 0) =>
+((X5 <=> (X10 in X8)) &
+(X6 <=> (X10 in X9))))) & 
+(X2 <=> ((X3 <=> X5) & (X4 <=> X6)))) & 
+(X0 <=> (X1 => X2));
+
+pred Inv =
+alpha1 & alpha2 & alpha3 & alpha4 & alpha5 & alpha6 & beta & gamma & delta1 & delta2 & delat3 & epsilon1 & epsilon2 & epsilon3 & zeta1 & zeta2 & zeta3 & zeta4 & zeta5 & zeta6 & eta1 & eta2 & eta3 & eta4 & omega;
+
+pred Inv' =
+alpha1' & alpha2' & alpha3' & alpha4' & alpha5' & alpha6' & beta' & gamma' & delta1' & delta2' & delat3' & epsilon1' & epsilon2' & epsilon3' & zeta1' & zeta2' & zeta3' & zeta4' & zeta5' & zeta6' & eta1' & eta2' & eta3' & eta4' & omega';
+
+pred IsWFseqD(var2 Q0, var2 Q1, var2 Q2) =
+all1 p: (p in Q0 & p > 0 => p - 1 in Q0) &
+0 in Q0  & 0 notin Q1 & 0 notin Q2 &
+all1 q: ((q in Q1 | q in Q2) => q in Q0) & (IsWFseqD(S0, S1, S2) & IsWFseqD(S9, S10, S11) & IsWFseqD(S13, S14, S15));

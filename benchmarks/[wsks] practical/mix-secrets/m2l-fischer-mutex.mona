@@ -1,0 +1,1526 @@
+
+ws1s ;
+var1 $ ;
+lastpos $;
+var2  atl1p1  ;
+var2  atl2p1  ;
+var2  atl3p1  ;
+var2  atl4p1  ;
+var2  atl5p1  ;
+var2  t1p1  ;
+var2  t2p1  ;
+var2  t3p1  ;
+var2  t4p1  ;
+var2  t5p1  ;
+var2  t6p1  ;
+var2  atl1p2  ;
+var2  atl2p2  ;
+var2  atl3p2  ;
+var2  atl4p2  ;
+var2  atl5p2  ;
+var2  t1p2  ;
+var2  t2p2  ;
+var2  t3p2  ;
+var2  t4p2  ;
+var2  t5p2  ;
+var2  t6p2  ;
+var2  xeq0  ;
+var2  xeq1  ;
+var2  xeq2  ;
+
+pred prop1(var1 x2, var1 x3) =
+
+    # invariant
+    ( all1 x4 :
+        (x2<=x4 & x4<=x3)
+        => ( x4 in (({0,..., $} \ ((( xeq0  inter  xeq1 ) union ( xeq0  inter  xeq2 )) union ( xeq1  inter  xeq2 ))) inter (( xeq0  union  xeq1 ) union  xeq2 )))
+    )
+;
+
+
+pred prop2(var1 x5, var1 x6) =
+
+    # invariant
+    ( all1 x7 :
+        (x5<=x7 & x7<=x6)
+        => ( x7 in (({0,..., $} \ (((((((((( atl1p1  inter  atl2p1 ) union ( atl1p1  inter  atl3p1 )) union ( atl1p1  inter  atl4p1 )) union ( atl1p1  inter  atl5p1 )) union ( atl2p1  inter  atl3p1 )) union ( atl2p1  inter  atl4p1 )) union ( atl2p1  inter  atl5p1 )) union ( atl3p1  inter  atl4p1 )) union ( atl3p1  inter  atl5p1 )) union ( atl4p1  inter  atl5p1 ))) inter (((( atl1p1  union  atl2p1 ) union  atl3p1 ) union  atl4p1 ) union  atl5p1 )))
+    )
+;
+
+
+pred prop3(var1 x8, var1 x9) =
+
+    # invariant
+    ( all1 x10 :
+        (x8<=x10 & x10<=x9)
+        => ( x10 in ({0,..., $} \ ((((((((((((((( t1p1  inter  t2p1 ) union ( t1p1  inter  t3p1 )) union ( t1p1  inter  t4p1 )) union ( t1p1  inter  t5p1 )) union ( t1p1  inter  t6p1 )) union ( t2p1  inter  t3p1 )) union ( t2p1  inter  t4p1 )) union ( t2p1  inter  t5p1 )) union ( t2p1  inter  t6p1 )) union ( t3p1  inter  t4p1 )) union ( t3p1  inter  t5p1 )) union ( t3p1  inter  t6p1 )) union ( t4p1  inter  t5p1 )) union ( t4p1  inter  t6p1 )) union ( t5p1  inter  t6p1 ))))
+    )
+;
+
+
+pred prop4(var1 x11, var1 x12) =
+
+    # chop
+    ( ex1 x13 :
+    (x11<=x13 & x13<=x12)
+    &
+        (# now
+            ( x11=x13 )
+        &     (x11 in ( atl1p1  inter  xeq0 ))
+        )
+    &
+        # true
+        ( x13<=x12 )
+    )
+;
+
+
+pred prop5(var1 x14, var1 x15) =
+
+    (# and
+        # box
+        ( all1 x16,x17 :
+        (x14<=x16 & x16<=x17 & x17<=x15)
+        =>
+            (# implies
+               (# now
+                    ( x16=x17 )
+               &     (x16 in  t1p1 )
+               )
+            =>
+               (# now
+                    ( x16=x17 )
+               &     (x16 in ( atl1p1  inter  xeq0 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x18,x19 :
+        (x14<=x18 & x18<=x19 & x19<=x15)
+        =>
+            (# implies
+               # chop
+               ( ex1 x20 :
+               (x18<=x20 & x20<=x19)
+               &
+                    (# now
+                        ( x18=x20 )
+                    &     (x18 in  t1p1 )
+                    )
+               &
+                    # leneq
+                    ( x19 = x20+1 )
+               )
+            =>
+               # chop
+               ( ex1 x21 :
+               (x18<=x21 & x21<=x19)
+               &
+                    # leneq
+                    ( x21 = x18+1 )
+               &
+                    (# now
+                        ( x21=x19 )
+                    &     (x21 in  atl2p1 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop6(var1 x22, var1 x23) =
+
+    (# and
+        (# and
+            # box
+            ( all1 x24,x25 :
+            (x22<=x24 & x24<=x25 & x25<=x23)
+            =>
+               (# implies
+                    (# now
+                        ( x24=x25 )
+                    &     (x24 in  t2p1 )
+                    )
+               =>
+                    (# now
+                        ( x24=x25 )
+                    &     (x24 in  atl2p1 )
+                    )
+               )
+            )
+        &
+            # box
+            ( all1 x26,x27 :
+            (x22<=x26 & x26<=x27 & x27<=x23)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x28 :
+                    (x26<=x28 & x28<=x27)
+                    &
+                        (# now
+                            ( x26=x28 )
+                        &     (x26 in  t2p1 )
+                        )
+                    &
+                        # leneq
+                        ( x27 = x28+1 )
+                    )
+               =>
+                    # chop
+                    ( ex1 x29 :
+                    (x26<=x29 & x29<=x27)
+                    &
+                        # leneq
+                        ( x29 = x26+1 )
+                    &
+                        (# now
+                            ( x29=x27 )
+                        &     (x29 in ( atl3p1  inter  xeq1 ))
+                        )
+                    )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x30,x31 :
+        (x22<=x30 & x30<=x31 & x31<=x23)
+        =>
+            (# implies
+               # invariant
+               ( all1 x32 :
+                    (x30<=x32 & x32<=x31)
+                    => ( x32 in ( atl2p1  inter ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 ))))
+               )
+            =>
+               (# or
+                    # lenless
+                    ( x31 < x30+8 )
+               |
+                    # leneq
+                    ( x31 = x30+8 )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop7(var1 x33, var1 x34) =
+
+    (# and
+        (# and
+            (# and
+               # box
+               ( all1 x35,x36 :
+               (x33<=x35 & x35<=x36 & x36<=x34)
+               =>
+                    (# implies
+                        (# now
+                            ( x35=x36 )
+                        &     (x35 in  t3p1 )
+                        )
+                    =>
+                        (# now
+                            ( x35=x36 )
+                        &     (x35 in  atl3p1 )
+                        )
+                    )
+               )
+            &
+               # box
+               ( all1 x37,x38 :
+               (x33<=x37 & x37<=x38 & x38<=x34)
+               =>
+                    (# implies
+                        # chop
+                        ( ex1 x39 :
+                        (x37<=x39 & x39<=x38)
+                        &
+                            (# now
+                                ( x37=x39 )
+                            &     (x37 in  t3p1 )
+                            )
+                        &
+                            # leneq
+                            ( x38 = x39+1 )
+                        )
+                    =>
+                        # chop
+                        ( ex1 x40 :
+                        (x37<=x40 & x40<=x38)
+                        &
+                            # leneq
+                            ( x40 = x37+1 )
+                        &
+                            (# now
+                                ( x40=x38 )
+                            &     (x40 in  atl4p1 )
+                            )
+                        )
+                    )
+               )
+            )
+        &
+            (# implies
+               # lenless
+               ( x34 < x33+7 )
+            =>
+               # invariant
+               ( all1 x41 :
+                    (x33<=x41 & x41<=x34)
+                    => ( x41 in ({0,..., $} \  t3p1 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x42,x43 :
+        (x33<=x42 & x42<=x43 & x43<=x34)
+        =>
+            (# implies
+               # chop
+               ( ex1 x44 :
+               (x42<=x44 & x44<=x43)
+               &
+                    # chop
+                    ( ex1 x45 :
+                    (x42<=x45 & x45<=x44)
+                    &
+                        (# now
+                            ( x42=x45 )
+                        &     (x42 in ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 ))
+                        )
+                    &
+                        # leneq
+                        ( x44 = x45+1 )
+                    )
+               &
+                    # lenless
+                    ( x43 < x44+7 )
+               )
+            =>
+               # chop
+               ( ex1 x46 :
+               (x42<=x46 & x46<=x43)
+               &
+                    # leneq
+                    ( x46 = x42+1 )
+               &
+                    # invariant
+                    ( all1 x47 :
+                        (x46<=x47 & x47<=x43)
+                        => ( x47 in ({0,..., $} \  t3p1 ))
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop8(var1 x48, var1 x49) =
+
+    (# and
+        # box
+        ( all1 x50,x51 :
+        (x48<=x50 & x50<=x51 & x51<=x49)
+        =>
+            (# implies
+               (# now
+                    ( x50=x51 )
+               &     (x50 in  t4p1 )
+               )
+            =>
+               (# now
+                    ( x50=x51 )
+               &     (x50 in ( atl4p1  inter  xeq1 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x52,x53 :
+        (x48<=x52 & x52<=x53 & x53<=x49)
+        =>
+            (# implies
+               # chop
+               ( ex1 x54 :
+               (x52<=x54 & x54<=x53)
+               &
+                    (# now
+                        ( x52=x54 )
+                    &     (x52 in  t4p1 )
+                    )
+               &
+                    # leneq
+                    ( x53 = x54+1 )
+               )
+            =>
+               # chop
+               ( ex1 x55 :
+               (x52<=x55 & x55<=x53)
+               &
+                    # leneq
+                    ( x55 = x52+1 )
+               &
+                    (# now
+                        ( x55=x53 )
+                    &     (x55 in  atl5p1 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop9(var1 x56, var1 x57) =
+
+    (# and
+        # box
+        ( all1 x58,x59 :
+        (x56<=x58 & x58<=x59 & x59<=x57)
+        =>
+            (# implies
+               (# now
+                    ( x58=x59 )
+               &     (x58 in  t5p1 )
+               )
+            =>
+               (# now
+                    ( x58=x59 )
+               &     (x58 in ( atl4p1  inter ({0,..., $} \  xeq1 )))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x60,x61 :
+        (x56<=x60 & x60<=x61 & x61<=x57)
+        =>
+            (# implies
+               # chop
+               ( ex1 x62 :
+               (x60<=x62 & x62<=x61)
+               &
+                    (# now
+                        ( x60=x62 )
+                    &     (x60 in  t5p1 )
+                    )
+               &
+                    # leneq
+                    ( x61 = x62+1 )
+               )
+            =>
+               # chop
+               ( ex1 x63 :
+               (x60<=x63 & x63<=x61)
+               &
+                    # leneq
+                    ( x63 = x60+1 )
+               &
+                    (# now
+                        ( x63=x61 )
+                    &     (x63 in  atl1p1 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop10(var1 x64, var1 x65) =
+
+    (# and
+        # box
+        ( all1 x66,x67 :
+        (x64<=x66 & x66<=x67 & x67<=x65)
+        =>
+            (# implies
+               (# now
+                    ( x66=x67 )
+               &     (x66 in  t6p1 )
+               )
+            =>
+               (# now
+                    ( x66=x67 )
+               &     (x66 in  atl5p1 )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x68,x69 :
+        (x64<=x68 & x68<=x69 & x69<=x65)
+        =>
+            (# implies
+               # chop
+               ( ex1 x70 :
+               (x68<=x70 & x70<=x69)
+               &
+                    (# now
+                        ( x68=x70 )
+                    &     (x68 in  t6p1 )
+                    )
+               &
+                    # leneq
+                    ( x69 = x70+1 )
+               )
+            =>
+               # chop
+               ( ex1 x71 :
+               (x68<=x71 & x71<=x69)
+               &
+                    # leneq
+                    ( x71 = x68+1 )
+               &
+                    (# now
+                        ( x71=x69 )
+                    &     (x71 in ( atl1p1  inter  xeq0 ))
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop11(var1 x72, var1 x73) =
+
+    (# and
+        (# and
+            (# and
+               (# and
+                    # box
+                    ( all1 x74,x75 :
+                    (x72<=x74 & x74<=x75 & x75<=x73)
+                    =>
+                        (# implies
+                            # chop
+                            ( ex1 x76 :
+                            (x74<=x76 & x76<=x75)
+                            &
+                                (# now
+                                    ( x74=x76 )
+                                &     (x74 in  atl1p1 )
+                                )
+                            &
+                                (# inside
+                                    # ext
+                                    (x76<x75)
+                                & ( all1 x77 :
+                                    (x76<=x77 & x77<x75)
+                                    => ( x77 in ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 )))
+                                  )
+                                )
+                            )
+                        =>
+                            # invariant
+                            ( all1 x78 :
+                                (x74<=x78 & x78<=x75)
+                                => ( x78 in  atl1p1 )
+                            )
+                        )
+                    )
+               &
+                    # box
+                    ( all1 x79,x80 :
+                    (x72<=x79 & x79<=x80 & x80<=x73)
+                    =>
+                        (# implies
+                            # chop
+                            ( ex1 x81 :
+                            (x79<=x81 & x81<=x80)
+                            &
+                                (# now
+                                    ( x79=x81 )
+                                &     (x79 in  atl2p1 )
+                                )
+                            &
+                                (# inside
+                                    # ext
+                                    (x81<x80)
+                                & ( all1 x82 :
+                                    (x81<=x82 & x82<x80)
+                                    => ( x82 in ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 )))
+                                  )
+                                )
+                            )
+                        =>
+                            # invariant
+                            ( all1 x83 :
+                                (x79<=x83 & x83<=x80)
+                                => ( x83 in  atl2p1 )
+                            )
+                        )
+                    )
+               )
+            &
+               # box
+               ( all1 x84,x85 :
+               (x72<=x84 & x84<=x85 & x85<=x73)
+               =>
+                    (# implies
+                        # chop
+                        ( ex1 x86 :
+                        (x84<=x86 & x86<=x85)
+                        &
+                            (# now
+                                ( x84=x86 )
+                            &     (x84 in  atl3p1 )
+                            )
+                        &
+                            (# inside
+                                # ext
+                                (x86<x85)
+                            & ( all1 x87 :
+                                (x86<=x87 & x87<x85)
+                                => ( x87 in ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 )))
+                              )
+                            )
+                        )
+                    =>
+                        # invariant
+                        ( all1 x88 :
+                            (x84<=x88 & x88<=x85)
+                            => ( x88 in  atl3p1 )
+                        )
+                    )
+               )
+            )
+        &
+            # box
+            ( all1 x89,x90 :
+            (x72<=x89 & x89<=x90 & x90<=x73)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x91 :
+                    (x89<=x91 & x91<=x90)
+                    &
+                        (# now
+                            ( x89=x91 )
+                        &     (x89 in  atl4p1 )
+                        )
+                    &
+                        (# inside
+                            # ext
+                            (x91<x90)
+                        & ( all1 x92 :
+                            (x91<=x92 & x92<x90)
+                            => ( x92 in ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 )))
+                          )
+                        )
+                    )
+               =>
+                    # invariant
+                    ( all1 x93 :
+                        (x89<=x93 & x93<=x90)
+                        => ( x93 in  atl4p1 )
+                    )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x94,x95 :
+        (x72<=x94 & x94<=x95 & x95<=x73)
+        =>
+            (# implies
+               # chop
+               ( ex1 x96 :
+               (x94<=x96 & x96<=x95)
+               &
+                    (# now
+                        ( x94=x96 )
+                    &     (x94 in  atl5p1 )
+                    )
+               &
+                    (# inside
+                        # ext
+                        (x96<x95)
+                    & ( all1 x97 :
+                        (x96<=x97 & x97<x95)
+                        => ( x97 in ({0,..., $} \ ((((( t1p1  union  t2p1 ) union  t3p1 ) union  t4p1 ) union  t5p1 ) union  t6p1 )))
+                      )
+                    )
+               )
+            =>
+               # invariant
+               ( all1 x98 :
+                    (x94<=x98 & x98<=x95)
+                    => ( x98 in  atl5p1 )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop12(var1 x99, var1 x100) =
+
+    # invariant
+    ( all1 x101 :
+        (x99<=x101 & x101<=x100)
+        => ( x101 in (({0,..., $} \ (((((((((( atl1p2  inter  atl2p2 ) union ( atl1p2  inter  atl3p2 )) union ( atl1p2  inter  atl4p2 )) union ( atl1p2  inter  atl5p2 )) union ( atl2p2  inter  atl3p2 )) union ( atl2p2  inter  atl4p2 )) union ( atl2p2  inter  atl5p2 )) union ( atl3p2  inter  atl4p2 )) union ( atl3p2  inter  atl5p2 )) union ( atl4p2  inter  atl5p2 ))) inter (((( atl1p2  union  atl2p2 ) union  atl3p2 ) union  atl4p2 ) union  atl5p2 )))
+    )
+;
+
+
+pred prop13(var1 x102, var1 x103) =
+
+    # invariant
+    ( all1 x104 :
+        (x102<=x104 & x104<=x103)
+        => ( x104 in ({0,..., $} \ ((((((((((((((( t1p2  inter  t2p2 ) union ( t1p2  inter  t3p2 )) union ( t1p2  inter  t4p2 )) union ( t1p2  inter  t5p2 )) union ( t1p2  inter  t6p2 )) union ( t2p2  inter  t3p2 )) union ( t2p2  inter  t4p2 )) union ( t2p2  inter  t5p2 )) union ( t2p2  inter  t6p2 )) union ( t3p2  inter  t4p2 )) union ( t3p2  inter  t5p2 )) union ( t3p2  inter  t6p2 )) union ( t4p2  inter  t5p2 )) union ( t4p2  inter  t6p2 )) union ( t5p2  inter  t6p2 ))))
+    )
+;
+
+
+pred prop14(var1 x105, var1 x106) =
+
+    # chop
+    ( ex1 x107 :
+    (x105<=x107 & x107<=x106)
+    &
+        (# now
+            ( x105=x107 )
+        &     (x105 in ( atl1p2  inter  xeq0 ))
+        )
+    &
+        # true
+        ( x107<=x106 )
+    )
+;
+
+
+pred prop15(var1 x108, var1 x109) =
+
+    (# and
+        # box
+        ( all1 x110,x111 :
+        (x108<=x110 & x110<=x111 & x111<=x109)
+        =>
+            (# implies
+               (# now
+                    ( x110=x111 )
+               &     (x110 in  t1p2 )
+               )
+            =>
+               (# now
+                    ( x110=x111 )
+               &     (x110 in ( atl1p2  inter  xeq0 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x112,x113 :
+        (x108<=x112 & x112<=x113 & x113<=x109)
+        =>
+            (# implies
+               # chop
+               ( ex1 x114 :
+               (x112<=x114 & x114<=x113)
+               &
+                    (# now
+                        ( x112=x114 )
+                    &     (x112 in  t1p2 )
+                    )
+               &
+                    # leneq
+                    ( x113 = x114+1 )
+               )
+            =>
+               # chop
+               ( ex1 x115 :
+               (x112<=x115 & x115<=x113)
+               &
+                    # leneq
+                    ( x115 = x112+1 )
+               &
+                    (# now
+                        ( x115=x113 )
+                    &     (x115 in  atl2p2 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop16(var1 x116, var1 x117) =
+
+    (# and
+        (# and
+            # box
+            ( all1 x118,x119 :
+            (x116<=x118 & x118<=x119 & x119<=x117)
+            =>
+               (# implies
+                    (# now
+                        ( x118=x119 )
+                    &     (x118 in  t2p2 )
+                    )
+               =>
+                    (# now
+                        ( x118=x119 )
+                    &     (x118 in  atl2p2 )
+                    )
+               )
+            )
+        &
+            # box
+            ( all1 x120,x121 :
+            (x116<=x120 & x120<=x121 & x121<=x117)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x122 :
+                    (x120<=x122 & x122<=x121)
+                    &
+                        (# now
+                            ( x120=x122 )
+                        &     (x120 in  t2p2 )
+                        )
+                    &
+                        # leneq
+                        ( x121 = x122+1 )
+                    )
+               =>
+                    # chop
+                    ( ex1 x123 :
+                    (x120<=x123 & x123<=x121)
+                    &
+                        # leneq
+                        ( x123 = x120+1 )
+                    &
+                        (# now
+                            ( x123=x121 )
+                        &     (x123 in ( atl3p2  inter  xeq2 ))
+                        )
+                    )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x124,x125 :
+        (x116<=x124 & x124<=x125 & x125<=x117)
+        =>
+            (# implies
+               # invariant
+               ( all1 x126 :
+                    (x124<=x126 & x126<=x125)
+                    => ( x126 in ( atl2p2  inter ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 ))))
+               )
+            =>
+               (# or
+                    # lenless
+                    ( x125 < x124+8 )
+               |
+                    # leneq
+                    ( x125 = x124+8 )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop17(var1 x127, var1 x128) =
+
+    (# and
+        (# and
+            (# and
+               # box
+               ( all1 x129,x130 :
+               (x127<=x129 & x129<=x130 & x130<=x128)
+               =>
+                    (# implies
+                        (# now
+                            ( x129=x130 )
+                        &     (x129 in  t3p2 )
+                        )
+                    =>
+                        (# now
+                            ( x129=x130 )
+                        &     (x129 in  atl3p2 )
+                        )
+                    )
+               )
+            &
+               # box
+               ( all1 x131,x132 :
+               (x127<=x131 & x131<=x132 & x132<=x128)
+               =>
+                    (# implies
+                        # chop
+                        ( ex1 x133 :
+                        (x131<=x133 & x133<=x132)
+                        &
+                            (# now
+                                ( x131=x133 )
+                            &     (x131 in  t3p2 )
+                            )
+                        &
+                            # leneq
+                            ( x132 = x133+1 )
+                        )
+                    =>
+                        # chop
+                        ( ex1 x134 :
+                        (x131<=x134 & x134<=x132)
+                        &
+                            # leneq
+                            ( x134 = x131+1 )
+                        &
+                            (# now
+                                ( x134=x132 )
+                            &     (x134 in  atl4p2 )
+                            )
+                        )
+                    )
+               )
+            )
+        &
+            (# implies
+               # lenless
+               ( x128 < x127+7 )
+            =>
+               # invariant
+               ( all1 x135 :
+                    (x127<=x135 & x135<=x128)
+                    => ( x135 in ({0,..., $} \  t3p2 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x136,x137 :
+        (x127<=x136 & x136<=x137 & x137<=x128)
+        =>
+            (# implies
+               # chop
+               ( ex1 x138 :
+               (x136<=x138 & x138<=x137)
+               &
+                    # chop
+                    ( ex1 x139 :
+                    (x136<=x139 & x139<=x138)
+                    &
+                        (# now
+                            ( x136=x139 )
+                        &     (x136 in ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 ))
+                        )
+                    &
+                        # leneq
+                        ( x138 = x139+1 )
+                    )
+               &
+                    # lenless
+                    ( x137 < x138+7 )
+               )
+            =>
+               # chop
+               ( ex1 x140 :
+               (x136<=x140 & x140<=x137)
+               &
+                    # leneq
+                    ( x140 = x136+1 )
+               &
+                    # invariant
+                    ( all1 x141 :
+                        (x140<=x141 & x141<=x137)
+                        => ( x141 in ({0,..., $} \  t3p2 ))
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop18(var1 x142, var1 x143) =
+
+    (# and
+        # box
+        ( all1 x144,x145 :
+        (x142<=x144 & x144<=x145 & x145<=x143)
+        =>
+            (# implies
+               (# now
+                    ( x144=x145 )
+               &     (x144 in  t4p2 )
+               )
+            =>
+               (# now
+                    ( x144=x145 )
+               &     (x144 in ( atl4p2  inter  xeq2 ))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x146,x147 :
+        (x142<=x146 & x146<=x147 & x147<=x143)
+        =>
+            (# implies
+               # chop
+               ( ex1 x148 :
+               (x146<=x148 & x148<=x147)
+               &
+                    (# now
+                        ( x146=x148 )
+                    &     (x146 in  t4p2 )
+                    )
+               &
+                    # leneq
+                    ( x147 = x148+1 )
+               )
+            =>
+               # chop
+               ( ex1 x149 :
+               (x146<=x149 & x149<=x147)
+               &
+                    # leneq
+                    ( x149 = x146+1 )
+               &
+                    (# now
+                        ( x149=x147 )
+                    &     (x149 in  atl5p2 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop19(var1 x150, var1 x151) =
+
+    (# and
+        # box
+        ( all1 x152,x153 :
+        (x150<=x152 & x152<=x153 & x153<=x151)
+        =>
+            (# implies
+               (# now
+                    ( x152=x153 )
+               &     (x152 in  t5p2 )
+               )
+            =>
+               (# now
+                    ( x152=x153 )
+               &     (x152 in ( atl4p2  inter ({0,..., $} \  xeq2 )))
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x154,x155 :
+        (x150<=x154 & x154<=x155 & x155<=x151)
+        =>
+            (# implies
+               # chop
+               ( ex1 x156 :
+               (x154<=x156 & x156<=x155)
+               &
+                    (# now
+                        ( x154=x156 )
+                    &     (x154 in  t5p2 )
+                    )
+               &
+                    # leneq
+                    ( x155 = x156+1 )
+               )
+            =>
+               # chop
+               ( ex1 x157 :
+               (x154<=x157 & x157<=x155)
+               &
+                    # leneq
+                    ( x157 = x154+1 )
+               &
+                    (# now
+                        ( x157=x155 )
+                    &     (x157 in  atl1p2 )
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop20(var1 x158, var1 x159) =
+
+    (# and
+        # box
+        ( all1 x160,x161 :
+        (x158<=x160 & x160<=x161 & x161<=x159)
+        =>
+            (# implies
+               (# now
+                    ( x160=x161 )
+               &     (x160 in  t6p2 )
+               )
+            =>
+               (# now
+                    ( x160=x161 )
+               &     (x160 in  atl5p2 )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x162,x163 :
+        (x158<=x162 & x162<=x163 & x163<=x159)
+        =>
+            (# implies
+               # chop
+               ( ex1 x164 :
+               (x162<=x164 & x164<=x163)
+               &
+                    (# now
+                        ( x162=x164 )
+                    &     (x162 in  t6p2 )
+                    )
+               &
+                    # leneq
+                    ( x163 = x164+1 )
+               )
+            =>
+               # chop
+               ( ex1 x165 :
+               (x162<=x165 & x165<=x163)
+               &
+                    # leneq
+                    ( x165 = x162+1 )
+               &
+                    (# now
+                        ( x165=x163 )
+                    &     (x165 in ( atl1p2  inter  xeq0 ))
+                    )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop21(var1 x166, var1 x167) =
+
+    (# and
+        (# and
+            (# and
+               (# and
+                    # box
+                    ( all1 x168,x169 :
+                    (x166<=x168 & x168<=x169 & x169<=x167)
+                    =>
+                        (# implies
+                            # chop
+                            ( ex1 x170 :
+                            (x168<=x170 & x170<=x169)
+                            &
+                                (# now
+                                    ( x168=x170 )
+                                &     (x168 in  atl1p2 )
+                                )
+                            &
+                                (# inside
+                                    # ext
+                                    (x170<x169)
+                                & ( all1 x171 :
+                                    (x170<=x171 & x171<x169)
+                                    => ( x171 in ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 )))
+                                  )
+                                )
+                            )
+                        =>
+                            # invariant
+                            ( all1 x172 :
+                                (x168<=x172 & x172<=x169)
+                                => ( x172 in  atl1p2 )
+                            )
+                        )
+                    )
+               &
+                    # box
+                    ( all1 x173,x174 :
+                    (x166<=x173 & x173<=x174 & x174<=x167)
+                    =>
+                        (# implies
+                            # chop
+                            ( ex1 x175 :
+                            (x173<=x175 & x175<=x174)
+                            &
+                                (# now
+                                    ( x173=x175 )
+                                &     (x173 in  atl2p2 )
+                                )
+                            &
+                                (# inside
+                                    # ext
+                                    (x175<x174)
+                                & ( all1 x176 :
+                                    (x175<=x176 & x176<x174)
+                                    => ( x176 in ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 )))
+                                  )
+                                )
+                            )
+                        =>
+                            # invariant
+                            ( all1 x177 :
+                                (x173<=x177 & x177<=x174)
+                                => ( x177 in  atl2p2 )
+                            )
+                        )
+                    )
+               )
+            &
+               # box
+               ( all1 x178,x179 :
+               (x166<=x178 & x178<=x179 & x179<=x167)
+               =>
+                    (# implies
+                        # chop
+                        ( ex1 x180 :
+                        (x178<=x180 & x180<=x179)
+                        &
+                            (# now
+                                ( x178=x180 )
+                            &     (x178 in  atl3p2 )
+                            )
+                        &
+                            (# inside
+                                # ext
+                                (x180<x179)
+                            & ( all1 x181 :
+                                (x180<=x181 & x181<x179)
+                                => ( x181 in ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 )))
+                              )
+                            )
+                        )
+                    =>
+                        # invariant
+                        ( all1 x182 :
+                            (x178<=x182 & x182<=x179)
+                            => ( x182 in  atl3p2 )
+                        )
+                    )
+               )
+            )
+        &
+            # box
+            ( all1 x183,x184 :
+            (x166<=x183 & x183<=x184 & x184<=x167)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x185 :
+                    (x183<=x185 & x185<=x184)
+                    &
+                        (# now
+                            ( x183=x185 )
+                        &     (x183 in  atl4p2 )
+                        )
+                    &
+                        (# inside
+                            # ext
+                            (x185<x184)
+                        & ( all1 x186 :
+                            (x185<=x186 & x186<x184)
+                            => ( x186 in ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 )))
+                          )
+                        )
+                    )
+               =>
+                    # invariant
+                    ( all1 x187 :
+                        (x183<=x187 & x187<=x184)
+                        => ( x187 in  atl4p2 )
+                    )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x188,x189 :
+        (x166<=x188 & x188<=x189 & x189<=x167)
+        =>
+            (# implies
+               # chop
+               ( ex1 x190 :
+               (x188<=x190 & x190<=x189)
+               &
+                    (# now
+                        ( x188=x190 )
+                    &     (x188 in  atl5p2 )
+                    )
+               &
+                    (# inside
+                        # ext
+                        (x190<x189)
+                    & ( all1 x191 :
+                        (x190<=x191 & x191<x189)
+                        => ( x191 in ({0,..., $} \ ((((( t1p2  union  t2p2 ) union  t3p2 ) union  t4p2 ) union  t5p2 ) union  t6p2 )))
+                      )
+                    )
+               )
+            =>
+               # invariant
+               ( all1 x192 :
+                    (x188<=x192 & x192<=x189)
+                    => ( x192 in  atl5p2 )
+               )
+            )
+        )
+    )
+;
+
+
+pred prop22(var1 x193, var1 x194) =
+
+    (# and
+        (# and
+            # box
+            ( all1 x195,x196 :
+            (x193<=x195 & x195<=x196 & x196<=x194)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x197 :
+                    (x195<=x197 & x197<=x196)
+                    &
+                        (# now
+                            ( x195=x197 )
+                        &     (x195 in  xeq0 )
+                        )
+                    &
+                        (# inside
+                            # ext
+                            (x197<x196)
+                        & ( all1 x198 :
+                            (x197<=x198 & x198<x196)
+                            => ( x198 in ({0,..., $} \ ((( t2p1  union  t6p1 ) union  t2p2 ) union  t6p2 )))
+                          )
+                        )
+                    )
+               =>
+                    # invariant
+                    ( all1 x199 :
+                        (x195<=x199 & x199<=x196)
+                        => ( x199 in  xeq0 )
+                    )
+               )
+            )
+        &
+            # box
+            ( all1 x200,x201 :
+            (x193<=x200 & x200<=x201 & x201<=x194)
+            =>
+               (# implies
+                    # chop
+                    ( ex1 x202 :
+                    (x200<=x202 & x202<=x201)
+                    &
+                        (# now
+                            ( x200=x202 )
+                        &     (x200 in  xeq1 )
+                        )
+                    &
+                        (# inside
+                            # ext
+                            (x202<x201)
+                        & ( all1 x203 :
+                            (x202<=x203 & x203<x201)
+                            => ( x203 in ({0,..., $} \ ((( t2p1  union  t6p1 ) union  t2p2 ) union  t6p2 )))
+                          )
+                        )
+                    )
+               =>
+                    # invariant
+                    ( all1 x204 :
+                        (x200<=x204 & x204<=x201)
+                        => ( x204 in  xeq1 )
+                    )
+               )
+            )
+        )
+    &
+        # box
+        ( all1 x205,x206 :
+        (x193<=x205 & x205<=x206 & x206<=x194)
+        =>
+            (# implies
+               # chop
+               ( ex1 x207 :
+               (x205<=x207 & x207<=x206)
+               &
+                    (# now
+                        ( x205=x207 )
+                    &     (x205 in  xeq2 )
+                    )
+               &
+                    (# inside
+                        # ext
+                        (x207<x206)
+                    & ( all1 x208 :
+                        (x207<=x208 & x208<x206)
+                        => ( x208 in ({0,..., $} \ ((( t2p1  union  t6p1 ) union  t2p2 ) union  t6p2 )))
+                      )
+                    )
+               )
+            =>
+               # invariant
+               ( all1 x209 :
+                    (x205<=x209 & x209<=x206)
+                    => ( x209 in  xeq2 )
+               )
+            )
+        )
+    )
+;
+
+
+
+( ex1 x0: ex1 x1:
+(
+    ( 0 = x0) & (x1 = $)
+)
+ &
+( #conclusion
+    (# implies
+        (# and
+            (# and
+               (# and
+                    (# and
+                        (# and
+                            (# and
+                                (# and
+                                    (# and
+(# and
+    (# and
+        (# and
+            (# and
+               (# and
+                    (# and
+                        (# and
+                            (# and
+                                (# and
+                                    (# and
+(# and
+    (# and
+        (# and
+            # unfold prop1
+            prop1(x0,x1)
+        &
+            # unfold prop2
+            prop2(x0,x1)
+        )
+    &
+        # unfold prop3
+        prop3(x0,x1)
+    )
+&
+    # unfold prop4
+    prop4(x0,x1)
+)
+                                    &
+# unfold prop5
+prop5(x0,x1)
+                                    )
+                                &
+                                    # unfold prop6
+                                    prop6(x0,x1)
+                                )
+                            &
+                                # unfold prop7
+                                prop7(x0,x1)
+                            )
+                        &
+                            # unfold prop8
+                            prop8(x0,x1)
+                        )
+                    &
+                        # unfold prop9
+                        prop9(x0,x1)
+                    )
+               &
+                    # unfold prop10
+                    prop10(x0,x1)
+               )
+            &
+               # unfold prop11
+               prop11(x0,x1)
+            )
+        &
+            # unfold prop12
+            prop12(x0,x1)
+        )
+    &
+        # unfold prop13
+        prop13(x0,x1)
+    )
+&
+    # unfold prop14
+    prop14(x0,x1)
+)
+                                    &
+# unfold prop15
+prop15(x0,x1)
+                                    )
+                                &
+                                    # unfold prop16
+                                    prop16(x0,x1)
+                                )
+                            &
+                                # unfold prop17
+                                prop17(x0,x1)
+                            )
+                        &
+                            # unfold prop18
+                            prop18(x0,x1)
+                        )
+                    &
+                        # unfold prop19
+                        prop19(x0,x1)
+                    )
+               &
+                    # unfold prop20
+                    prop20(x0,x1)
+               )
+            &
+               # unfold prop21
+               prop21(x0,x1)
+            )
+        &
+            # unfold prop22
+            prop22(x0,x1)
+        )
+    =>
+        (# not
+            ( x0<=x1 )
+        &   ~
+            # dimond
+            ( ex1 x210,x211 :
+            (x0<=x210 & x210<=x211 & x211<=x1)
+            &
+               (# now
+                    ( x210=x211 )
+               &     (x210 in ( atl5p1  inter  atl5p2 ))
+               )
+            )
+        )
+    )
+)
+);

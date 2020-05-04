@@ -1,0 +1,168 @@
+##########################
+## PRESBURGER PREDICATES
+##########################
+
+#A < B
+pred lt (var2 A,B) = ex1 i : ( ((i notin A) & (i in B)) 
+         & all1 j : ( (j > i) => ~((j in A) & (j notin B))));
+
+
+#A <= B
+pred lte (var2 A, B) = lt(A,B) | (A = B);
+
+pred plus_carry(var2 A, B, C, S) = 
+((0 in C) <=> (0 in A) & (0 in B)) 
+&  ((0 in S) <=> ((0 in A) & (0 notin B)) | ((0 notin A) & (0 in B)))
+&  (all1 i : ( (i > 0) => ( 
+                             ((i in C) <=> ((i in A) & (i in B)) 
+                             | ( ((i in A) | (i in B)) & (i - 1 in C)))
+                          & 
+                             ((i in S) <=> ((i notin A) & (i notin B) & (i - 1 in C))
+                                         | ((i notin A) & (i in B) & (i - 1 notin C))
+                                         | ((i in A) & (i notin B) & (i - 1 notin C))
+                                         | ((i in A) & (i in B) & (i - 1 in C))))));
+#A+B=S
+pred plus(var2 A, B, S) = ex2 C : plus_carry(A, B, C, S);
+
+#X-Y=Z
+pred subtract(var2 X,Y,Z) = plus(Y,Z,X);
+
+########################################
+## EUCLID
+########################################
+var0 r;
+var2 IB,A,AN,B,BN,B1,B1N,A1,A1N;
+
+# design
+
+pred presentEqNext(var2 A,A1,B,B1,AN,A1N,BN,B1N) =
+   (A1N=A1) & (B1N=B1) & (AN=A) & (BN=B);
+
+#initial state is 0,0,0,0
+pred R0(var2 A,A1,B,B1) = empty(A1) & empty(A) & empty(B1) & empty(B);
+
+pred fullTrans(var0 r, var2 IA,IB,A,A1,B,B1,AN,A1N,BN,B1N) =
+ ( ( r            & (A1N=IA)   & (B1N=IB)   & (AN=IA)          & (BN=IB)         )
+  |(~r  & lt(A,B) & (A1N=A1)   & (B1N=B1)   & (AN=A)           & subtract(B,A,BN))
+  |(~r  & lt(B,A) & (A1N=A1)   & (B1N=B1)   & subtract(A,B,AN) & (BN=B)          )
+  |(~r  & (A=B)   & (A1N=A1)   & (B1N=B1)   & (AN=A)           & (BN=B)          ) );
+
+pred trans(var2 A,A1,B,B1,AN,A1N,BN,B1N) =
+ ex0 r : (ex2 IA,IB : fullTrans(r,IA,IB,A,A1,B,B1,AN,A1N,BN,B1N));
+
+## iteration 1
+
+# image in terms of next state variables 
+pred newNextStates1(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R0(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates1(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates1(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R1(var2 A,A1,B,B1) = newStates1(A,A1,B,B1) | R0(A,A1,B,B1);
+
+
+## iteration 2
+
+# image in terms of next state variables 
+pred newNextStates2(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R1(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates2(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates2(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R2(var2 A,A1,B,B1) = newStates2(A,A1,B,B1) | R1(A,A1,B,B1);
+
+
+## iteration 3
+
+# image in terms of next state variables 
+pred newNextStates3(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R2(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates3(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates3(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R3(var2 A,A1,B,B1) = newStates3(A,A1,B,B1) | R2(A,A1,B,B1);
+
+
+## iteration 4
+
+# image in terms of next state variables 
+pred newNextStates4(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R3(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates4(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates4(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R4(var2 A,A1,B,B1) = newStates4(A,A1,B,B1) | R3(A,A1,B,B1);
+
+
+## iteration 5
+
+# image in terms of next state variables 
+pred newNextStates5(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R4(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates5(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates5(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R5(var2 A,A1,B,B1) = newStates5(A,A1,B,B1) | R4(A,A1,B,B1);
+
+
+## iteration 6
+
+# image in terms of next state variables 
+pred newNextStates6(var2 AN,A1N,BN,B1N) =
+ ex2 A,A1,B,B1 : (R5(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+pred newStates6(var2 A,A1,B,B1) =
+ ex2 AN,A1N,BN,B1N : (newNextStates6(AN,A1N,BN,B1N) 
+                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+pred R6(var2 A,A1,B,B1) = newStates6(A,A1,B,B1) | R5(A,A1,B,B1);
+
+## iteration 7
+
+# image in terms of next state variables 
+#pred newNextStates7(var2 AN,A1N,BN,B1N) =
+# ex2 A,A1,B,B1 : (R6(A,A1,B,B1) & trans(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# image in terms of present state variables 
+#pred newStates7(var2 A,A1,B,B1) =
+# ex2 AN,A1N,BN,B1N : (newNextStates7(AN,A1N,BN,B1N) 
+#                         & presentEqNext(A,A1,B,B1,AN,A1N,BN,B1N));
+
+# cumulative set of reachable states
+#pred R7(var2 A,A1,B,B1) = newStates7(A,A1,B,B1) | R6(A,A1,B,B1);
+
+
+#fullTrans(r,IA,IB,A,A1,B,B1,AN,A1N,BN,B1N);
+#trans(A,A1,B,B1,AN,A1N,BN,B1N);
+#R0(A,A1,B,B1);
+#R1(A,A1,B,B1);
+#R2(A,A1,B,B1);
+R3(A,A1,B,B1);
+#R4(A,A1,B,B1);
+#R5(A,A1,B,B1);
+#R6(A,A1,B,B1);
+#R7(A,A1,B,B1);
+
+

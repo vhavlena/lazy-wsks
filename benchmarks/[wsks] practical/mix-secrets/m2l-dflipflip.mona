@@ -1,0 +1,85 @@
+m2l-str;
+
+#################### CIRCUIT
+
+pred nand(var2 I1, I2, O) =
+ all1 t : t < $ => (t + 1 in O <=> ~(t in I1 & t in I2));
+
+pred nand3(var2 I1, I2, I3,O) = 
+ all1 t : t<$ => (t + 1 in O <=> ~(t in I1 & t in I2 & t in I3));
+
+pred dtype_imp(var2 D, CK, Q,P1, P2, P3, P4, P5)= 
+   nand(P2,D, P1) & nand3(P3,CK,P1,P2) &  
+   nand(P4,CK,P3) & nand(P1,P3,P4)     &  
+   nand(P3,P5,Q)  & nand(Q,P2,P5);
+
+
+# TEMPORAL LOGIC
+
+pred stable(var1 t1, t2, var2 F) =
+  all1 t:  (t1 <= t & t < t2) => (t in F <=> t1 in F);
+
+pred next(var1 t1, t2, var2 F) = 
+  t1 < t2 &  t2 in F & (all1 t : (t1 < t & t < t2) => ~(t in F));
+
+pred rise(var1 t, var2 F) =
+ t > 0 & t - 1 notin F & t in F;
+
+########## Gordons Specification
+
+const c1 = 2;
+const c2 = 3;
+const c3 = 4;
+const c4 = 1;
+
+pred dtype(var2 D,CK,Q)=
+all1 t1, t2: 
+c1 <= t1 & 
+t1 < t2 & t2 + c4 <= $ =>
+	((rise(t1,CK)    &
+         next(t1,t2,CK)  &
+         (t1 + c2) < t2   &
+         stable(t1 - c1 ,t1, D)) => 
+         (stable(t1 + c3 ,t2 + c4, Q) &
+         (t1 in D <=> t2 in Q)));
+
+
+##################### THEOREMS 
+
+pred test(var2 D,CK,Q,P1,P2,P3,P4,P5)=
+#($>0& dtype_imp(D,CK,Q,P1,P2,P3,P4,P5)) => 
+dtype_imp(D,CK,Q,P1,P2,P3,P4,P5) => dtype(D,CK,Q);
+
+
+
+
+######### MONA counter-example for test(D,CK,Q,P1,P2,P3,P4,P5);
+#P1 = {1,2,3,4,5,6}
+#P2 = {1,3,4,5}
+#P3 = {1,3,4,5,6}
+#P4 = {1,3}
+#P5 = {1,3,5}
+#D = {}
+#CK = {1,5}
+#Q = {1,3,5}
+######### BMC counter-example for test(D,CK,Q,P1,P2,P3,P4,P5);
+#CK = { 1 5 }
+#D = { 3 4 }
+#P1 = { 0 1 2 3 6 }
+#P2 = { 0 1 3 4 5 6 }
+#P3 = { 0 1 2 3 4 5 }
+#P4 = { 5 6 }
+#P5 = { 3 5 }
+#Q = { 0 1 2 3 5 }
+
+
+var2 P1,P2,P3,P4,P5,CK,D,Q;
+
+pred mona = P1 = {1,2,3,4,5,6} & P2 = {1,3,4,5} &P3 = {1,3,4,5,6} & P4 = {1,3} & P5 = {1,3,5} & D = {} &CK = {1,5} &Q = {1,3,5};
+pred bmc = P1={0,1,2,3,6}& P2 ={0,1,3,4,5,6 }&P3 ={0,1,2,3,4,5 }& P4 = {5,6}&P5 ={3,5}& CK={1,5}& D={3,4}&Q={0,1,2,3,5};
+
+assert mona();
+dtype_imp(D,CK,Q,P1,P2,P3,P4,P5) => dtype(D,CK,Q);
+
+
+
