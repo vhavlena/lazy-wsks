@@ -19,6 +19,7 @@ isAtomSup autdict (Lo.MonaAt at _) = case (Map.lookup (show at) autdict) of
 isAtomSup _ _ = Right True
 
 
+-- |Is formula supported in the lazy decision procedure
 isFormulaSup :: BD.MonaAutDict -> Lo.Formula -> Either String Bool
 isFormulaSup autdict (Lo.FormulaAtomic atom) = isAtomSup autdict atom
 isFormulaSup autdict (Lo.Disj f1 f2) = (isFormulaSup autdict f1) >> (isFormulaSup autdict f2)
